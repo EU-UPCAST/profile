@@ -2,10 +2,10 @@ import streamlit as st
 import requests
 
 def main():
-    st.title("UPCAST Data Profiler Demo")
+    st.title("UPCAST Data Profiling Demo")
 
     # Get list of available apps
-    response = requests.get("http://localhost:8000/get_profilers")
+    response = requests.get("http://localhost:8000/profile/get_profilers")
     available_apps = response.json()
 
     # Display dropdown menu for selecting profiler
@@ -21,7 +21,7 @@ def main():
             # Send request to FastAPI to run selected app with uploaded file
             files = {"file": uploaded_file}
             data = {"selected_app": selected_app}
-            response = requests.post("http://localhost:8000/generate_profile", files=files, data=data)
+            response = requests.post("http://localhost:8000/profile/generate_profile", files=files, data=data)
 
             # Parse JSON response
             response_data = response.json()
