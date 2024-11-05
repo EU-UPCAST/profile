@@ -1,0 +1,92 @@
+dataset__args:
+    dataset:
+        default: "arxpr"
+        choices: ["ega","arxpr", "nhrf", "nhrf2", "simple_test"]
+    dataset_length:
+        default: 1
+        help: "number of papers to analyse"
+    remove_fields:
+        default: "default"
+        choices: ["default", "None", "empty", "non-single"]
+        help: "Remove fields to avoid predicting fields without labels (empty) or all fields with no/several values(non-single). Defaults based on dataset, to non-single if there are labels, else None."
+    listed_output:
+        default: False
+        help: "predict several values per field"
+
+form_filler__llm__args:
+    ff_model:
+        default: "llama3.1I-8b-q4"
+        help: "llm for form filler"
+    outlines_ff_max_tokens:
+        default: 100
+        help: "max number of tokens per field for the outlines form filler"
+    openai_ff_max_tokens:
+        default: 1000
+        help: "max number of tokens for the entire schema for openai form filler"
+    answer_in_quotes:
+        default: True
+        help: "if form foller llm should output answer in quotes. This is needed to not get very short answers, if NOT using listed output"
+
+
+form_filler__outlines__sampler__args:
+    sampler:
+        default: "beam"
+        choices: ["greedy","beam", "multi"]
+        help: "sampler type"
+
+form_filler__outlines__sampler__beam__args:
+    sampler_beams:
+        default: 2
+        help: "number of beams"
+
+form_filler__outlines__sampler__multinomial__args:
+    sampler_top_k:
+        default: 100
+    sampler_top_p:
+        default: 1
+    sampler_temp:
+        default: 0.4
+        help: "temperature"
+
+context_shortener__args:
+    context_shortener:
+        default: "rag"
+        choices: ["full_paper", "rag","rerank", "reduce"]
+
+context_shortener__rag__args:
+    retriever_type:
+        default: "simple"
+        choices: ["simple", "fusion", "metadata"]
+    rag_chunk_size: 
+        default: 2048
+    rag_chunk_overlap:
+        default: 128
+    similarity_k: 
+        default: 1
+    mmr_param:
+        default: 1.0
+    rag_llm: 
+        default: "llama3.1"
+
+context_shortener__reduce__args:
+    reduce_max_tokens:
+        default: 50
+    reduce_temperature:
+        default: 0.4
+    reduce_chunk_size: 
+        default: 20000
+    reduce_chunk_overlap:
+        default: 400
+
+query_storage__args:
+    load:
+        default: True
+        help: "wether to try loading  results from json before calling formfiller"
+    save:
+        default: True
+        help: "wether to save results to json"
+
+other__args:
+    log:
+        default: True
+        help: "Log inputs/outputs to weave"
