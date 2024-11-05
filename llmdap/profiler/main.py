@@ -266,10 +266,13 @@ def load_modules(args, preloaded_dspy_model = None):
         pydantic_form = metadata_schemas.ega_schema
     elif args.dataset == "nhrf":
         loader = dataset_loader.load_nhrf_examples
-        pydantic_form = metadata_schemas.nhrf_schema
+        pydantic_form = metadata_schemas.nhrf_qa_schema
     elif args.dataset == "nhrf2":
         loader = dataset_loader.load_nhrf_examples2
         pydantic_form = metadata_schemas.nhrf_schema
+    elif args.dataset == "nhrf3":
+        loader = dataset_loader.load_nhrf_examples3
+        pydantic_form = metadata_schemas.nhrf_qa_schema_2
     elif args.dataset == "simple_test":
         loader = dataset_loader.get_simple_test
         pydantic_form = metadata_schemas.arxpr_schema 

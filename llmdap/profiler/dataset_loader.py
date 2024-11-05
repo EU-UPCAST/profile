@@ -66,6 +66,10 @@ def load_nhrf_examples2(max_amount):
     paper_texts, labels = load_paper_text(labels, max_amount, data_folder)
     return paper_texts, labels
 
+def load_nhrf_examples3(max_amount):
+    paper_texts, labels = load_nhrf_examples2(max_amount)
+    return paper_texts, {}
+
 def load_nhrf_examples(max_amount):
     data_folder = "/mnt/data/upcast/data/"
 
