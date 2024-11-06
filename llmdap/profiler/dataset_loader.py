@@ -92,7 +92,6 @@ def load_ega_data(max_amount = 10):
     paper_texts, labels = load_paper_text(labels, max_amount, data_folder)
     return paper_texts, labels
 
-
 def load_arxpr_data(max_amount = 10):
     """ mode : "single" or "elements" """
     data_folder = "/mnt/data/upcast/data/"
@@ -103,6 +102,7 @@ def load_arxpr_data(max_amount = 10):
     #    holdout_labels = json.load(file)
 
     # count fields:
+    items = list(train_labels.items())
     ones = {field:0 for field in items[0][1]}
     anys = {field:0 for field in items[0][1]}
 
@@ -119,6 +119,31 @@ def load_arxpr_data(max_amount = 10):
     print("N datasets with at least one label, for each field")
     pprint(anys)
 
+
+    train_paper_texts, train_labels = load_paper_text(train_labels, max_amount, data_folder)
+    ###holdout_paper_texts, holdout_labels = load_paper_text(holdout_labels, max_amount)
+
+    return train_paper_texts, train_labels
+
+
+def load_study_type_data(max_amount = 10):
+    """ mode : "single" or "elements" """
+    data_folder = "/mnt/data/upcast/data/"
+
+    with open(data_folder + "arxpr_metadataset_train.json") as file:
+        train_labels = json.load(file)
+    #with open(data_folder + "arxpr_metadataset_holdout.json") as file:
+    #    holdout_labels = json.load(file)
+
+    # restrict labels to those with study type, and remove the other fields
+    study_type_labels = {}
+    type_name = "study_type_18"
+    for i, key in enumerate(train_labels):
+        if i>= max_amount:
+            break
+        if type_name in train_labels[key]:
+            study_type_labels[key] = {type_name : train_labels[key][type_name]}
+    train_labels = study_type_labels
 
     train_paper_texts, train_labels = load_paper_text(train_labels, max_amount, data_folder)
     ###holdout_paper_texts, holdout_labels = load_paper_text(holdout_labels, max_amount)

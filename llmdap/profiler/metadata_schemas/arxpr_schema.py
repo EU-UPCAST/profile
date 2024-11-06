@@ -40,6 +40,10 @@ class Metadata_form(BaseModel):
     no_of_samples_22 : int = Field(description = "number of samples",)
     no_of_samples_23 : int = Field(description = "number of samples",)
 
+class Study_type_metadata_form(BaseModel):
+    study_type_18 : Literal['transcription profiling by array', 'rna-seq of coding rna', 'chip-seq', 'rna-seq of non coding rna', 'comparative genomic hybridization by array', 'other', 'methylation profiling by array', 'chip-chip by tiling array', 'methylation profiling by high throughput sequencing', 'unknown experiment type', 'chip-chip by array', 'genotyping by array', 'microrna profiling by array', 'transcription profiling by tiling array', 'rna-seq of coding rna from single cells', 'dna-seq', 'transcription profiling by rt-pcr', 'cell line - high-throughput sequencing', 'proteomic profiling by array', 'animal - high-throughput sequencing', 'transcription profiling by sage', 'high-throughput sequencing', 'atac-seq', 'rnai profiling by array', 'baseline'] = Field(description = "Study type",)
+    # 25 first (including "other" already)
+
 class Unconstrained_metadata_form(BaseModel):
     """Information about dataset."""
 

@@ -261,6 +261,9 @@ def load_modules(args, preloaded_dspy_model = None):
     if args.dataset == "arxpr":
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
+    elif args.dataset == "study_type":
+        loader = dataset_loader.load_study_type_data
+        pydantic_form = metadata_schemas.study_type_schema 
     elif args.dataset == "ega":
         loader = dataset_loader.load_ega_data
         pydantic_form = metadata_schemas.ega_schema
