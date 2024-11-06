@@ -96,19 +96,11 @@ def load_ega_data(max_amount = 10):
 def load_arxpr_data(max_amount = 10):
     """ mode : "single" or "elements" """
     data_folder = "/mnt/data/upcast/data/"
-    with open(data_folder + "arxpr_metadataset_restricted_values.json") as file:
-        labels = json.load(file)
 
-    # shuffle
-    assert len(labels) == 11371 # should not change after we have started tuning
-    items = list(labels.items())
-    import random
-    random.seed(1) # same each time!
-    random.shuffle(items)
-
-    # define train/test sets
-    train_labels = dict(items[:5000])
-    holdout_labels = dict(items[5000:]) #can increase the number after tuning, but not decrease
+    with open(data_folder + "arxpr_metadataset_train.json") as file:
+        train_labels = json.load(file)
+    #with open(data_folder + "arxpr_metadataset_holdout.json") as file:
+    #    holdout_labels = json.load(file)
 
     # count fields:
     ones = {field:0 for field in items[0][1]}
