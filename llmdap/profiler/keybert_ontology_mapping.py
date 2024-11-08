@@ -1,0 +1,63 @@
+# test - extract keywords from a text and return the closest ontology concept from a given ontology
+from keybert import KeyBERT
+from sentence_transformers import SentenceTransformer, util
+from owlready2 import get_ontology
+
+
+def get_subontology(
+            mode, # label or description
+            top_level_node_iri = "http://purl.obolibrary.org/obo/OBI_0000070", # node labeled "assay"
+            ):
+    # Step 1: Load the ontology using OWLReady2 and extract concept labels
+    ontology_path = "../ontologies/efo.owl"  # Path to your OWL file
+    ontology = get_ontology(ontology_path).load()
+    
+    # Step 2: Prune ontology and get descriptions
+    # Extract labels for each concept in the ontology
+    top_level_node = ontology.search_one(iri = top_level_node_iri)
+    descendants = top_level_node.descendants()
+    ontology_descriptions = []
+    for node in descendants:
+        node_descriptions = node.IAO_0000115
+
+        if len(node_descriptions) and mode in ["description", "both"]:
+            ontology_descriptions.append(node_descriptions[-1]) # in 4 cases for the assay subontology, there are 2 or 3 descriptions. In all cases the last one is best (they are very similar)
+        if not (len(node_descriptions) and mode == "description"):
+            ontology_descriptions.append(node.label[0]) # there are 2 labels on some cases, (the if editors prefered label is different i think), but not among these ones without description
+    #print(f"Ontology descriptions tail: {ontology_descriptions[-4:]}")
+    return ontology_descriptions
+
+
+def get_kw_model(): return KeyBERT()
+def get_keywords(text, kw_model, n_keywords): 
+    keywords_and_scores = kw_model.extract_keywords(text, top_n=n_keywords)
+    keywords = [x[0] for x in keywords_and_scores]
+    scores = [x[1] for x in keywords_and_scores]
+    return keywords, scores
+def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id)
+def get_similarity_matrix(kw_embeddings, target_embeddings):  return util.cos_sim(kw_embeddings, target_embeddings)
+
+if __name__ == "__main__":
+
+    # test subontology
+    print(len(get_subontology("label")))
+    print(len(get_subontology("description")))
+    print(len(get_subontology("both")))
+
+    text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
+
+    #print(0)
+    kw_model = get_kw_model()
+    #print(1) # ^takes a while
+    kws, scores = get_keywords(text, kw_model, 5)
+    #print(2) # ^lot quicker
+    emb_model = get_embedding_model()
+    #print(3)
+    targets = get_subontology("description")
+
+    #print(4)
+    kw_emb = emb_model.encode(kws)
+    target_emb = emb_model.encode(targets)
+    similarity = get_similarity_matrix(kw_emb, target_emb)
+    print(similarity)
+    print(similarity.shape)

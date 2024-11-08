@@ -1,8 +1,10 @@
 import dspy
 import pprint
+import torch
 
 import RAG
 import restrictedmap
+import keybert_ontology_mapping as kom
 
 
 
@@ -205,3 +207,87 @@ class Rerank(ContextShortener):
             print("")
         return q
 
+
+class Keybert(ContextShortener):
+    def __init__(self, mode, n_keywords = 5, top_k=3):
+        self.n_keywords = n_keywords # number of keywords to extract from each chunk
+        self.top_k = top_k # number of chunks to merge and return
+        #self.mode = mode
+
+        self.kw_model = kom.get_kw_model()
+        self.emb_model = kom.get_embedding_model()
+        
+
+        #self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
+        self.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
+        self.target_emb = self.emb_model.encode(self.descriptions)
+
+    def set_document(self, document, chunk_sizes = (5000,500)):
+        self.chunks = restrictedmap.recursive_split( # TODO renew this part
+                document, 
+                reverse=True, 
+                chunk_size=chunk_sizes[0],
+                chunk_overlap=chunk_sizes[1])
+
+        self.keywordss = []
+        self.keyword_scoress = []
+        self.keyword_embeddingss = []
+        for chunk in self.chunks:
+            keywords, scores = kom.get_keywords(chunk, self.kw_model, n_keywords=self.n_keywords)
+            embs = self.emb_model.encode(keywords)
+
+            self.keywordss.append(keywords)
+            self.keyword_scoress.append(scores)
+            self.keyword_embeddingss.append(embs)
+
+    def __call__(self, **kwargs):
+
+        chunk_scores = []
+        for i in range(len(self.chunks)):
+
+            #print(self.keyword_embeddingss[i], self.descriptions)
+            similarity = kom.get_similarity_matrix(
+                    self.keyword_embeddingss[i], self.target_emb
+                    )
+            #print(self.chunks[i])
+            #print(self.keywordss[i])
+
+            chunk_scores.append(
+                    # store score and index
+                    (self.calculate_chunk_relevance(similarity, self.keyword_scoress[i]), i)
+                    )
+            #print(chunk_scores[i])
+
+        chunk_scores = sorted(chunk_scores, key = lambda x: -x[0]) # sort in decreasing order, by score
+
+        # print chunks
+        #for score, index in chunk_scores:
+        #    print(score, self.chunks[index])
+
+        #q= ""
+        #for i in range(min(len(chunk_scores), self.top_k)):
+
+        chosen_chunks = [self.chunks[chunk_scores[i][1]] for i in range(min(len(self.chunks), self.top_k))]
+        return "\n...\n".join(chosen_chunks)
+
+
+
+    def calculate_chunk_relevance(self, similarity, keyword_scores):
+
+        # Reduce ontology value dimension NOTE this can be done in many different ways!
+        #similarity_per_kw = similarity.mean(dim=1)
+        similarity_per_kw = similarity.max(dim=1).values #  can also get indices, to get max description
+
+        # reduce to single score # NOTE this can also be changed.
+        keyword_scores = torch.Tensor(keyword_scores)
+        product = similarity_per_kw.inner(keyword_scores)
+        return product
+
+
+
+if __name__=="__main__":
+    text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
+    kb = Keybert("dummy_mode")
+    kb.set_document(text, (100,0))
+
+    print(kb())
