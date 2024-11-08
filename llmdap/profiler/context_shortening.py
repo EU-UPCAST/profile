@@ -218,8 +218,7 @@ class Keybert(ContextShortener):
         self.emb_model = kom.get_embedding_model()
         
 
-        #self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
-        self.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
+        self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
         self.target_emb = self.emb_model.encode(self.descriptions)
 
     def set_document(self, document, chunk_sizes = (5000,500)):
@@ -288,6 +287,10 @@ class Keybert(ContextShortener):
 if __name__=="__main__":
     text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
     kb = Keybert("dummy_mode")
+
+    kb.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
+    kb.target_emb = kb.emb_model.encode(kb.descriptions)
+
     kb.set_document(text, (100,0))
 
     print(kb())
