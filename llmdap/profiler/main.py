@@ -335,7 +335,7 @@ def load_modules(args, preloaded_dspy_model = None):
                 chunk_sizes = (args.reduce_chunk_size, args.reduce_chunk_overlap),
                 mmr_param = args.mmr_param,
                 maxsum_factor = args.maxsum_factor,
-                keyphrase_range = args.keyphrase_range,
+                keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff)
                 )
     else:
         print(args.context_shortener)

@@ -56,9 +56,9 @@ keybert_vs_rag= {
             2000, 
             #5000
             ]},
-        "reduce_chunk_overlap" : {"values" : [100]},
+        "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [3,]},
-        "n_keywords" : {"values" : [8,]},
+        "n_keywords" : {"value" : 8},
     }
 
 keybert_params = {
@@ -74,13 +74,9 @@ keybert_params = {
             2000, 
             #5000
             ]},
-        "reduce_chunk_overlap" : {"values" : [100]},
+        "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [1,2]},#3,]},
-        "n_keywords" : {"values" : [
-            #5,
-            8,
-            #20
-            ]},
+        "n_keywords" : {"value" : 8},
     }
 
 openai_parameters = {
@@ -154,7 +150,7 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     sweep_id = wandb.sweep(sweep=sweep_configuration, project="upcast_profiler")
 
     wandb.agent(sweep_id, function=sweep_run, count=sweep_count)
-    wandb.teardown()
+    #wandb.teardown()
 
 if __name__ == "__main__":
 
@@ -165,7 +161,7 @@ if __name__ == "__main__":
     #          dataset = "study_type",
     #          )
     #run_sweep(keybert_vs_rag, 
-    #          dataset_length = 100,
+    #          dataset_length = 50,
     #          sweep_count = 2,
     #          method = "grid",
     #          dataset = "study_type",
@@ -179,7 +175,7 @@ if __name__ == "__main__":
               )
 
     run_sweep(keybert_params, 
-              dataset_length = 100,
+              dataset_length = 50,
               sweep_count = 18,
               method = "grid",
               dataset = "study_type",

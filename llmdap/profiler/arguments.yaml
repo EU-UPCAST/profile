@@ -73,8 +73,13 @@ context_shortener__keybert__args:
         default: 5
     maxsum_factor: 
         default: 5
-    keyphrase_range:
-        default: [1,1]
+
+    # range is (min, min+diff), so default is (1,2)
+    keyphrase_min: # needs to be minimum 1
+        default: 1
+    keyphrase_range_diff: # needs to be minimum 0
+        default: 1 
+
 
 context_shortener__reduce__args:
     reduce_max_tokens:
