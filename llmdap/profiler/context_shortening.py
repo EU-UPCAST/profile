@@ -87,18 +87,19 @@ class RAGShortener(ContextShortener):
                                   mmr_param = self.mmr_param,
                                   )
 
+        # # Simple retriever
+        # if self.retriever_type == "simple":
+        #     self.retriever = vs.build_retriever()
 
-        # Simple retriever
-        if self.retriever_type == "simple":
-            self.retriever = vs.build_retriever()
+        # # Fancy retriever
+        # if self.retriever_type == "fusion":
+        #     self.retriever = vs.build_fusion_retriever()
 
-        # Fancy retriever
-        if self.retriever_type == "fusion":
-            self.retriever = vs.build_fusion_retriever()
+        # # Retriver with metadata (temporary)
+        # if self.retriever_type == "metadata":
+        #     self.retriever = vs.build_query_engine()
 
-        # Retriver with metadata (temporary)
-        if self.retriever_type == "metadata":
-            self.retriever = vs.build_query_engine()
+        self.retriever = vs.build_query_engine()
 
 
     def __call__(self, **kwargs):
