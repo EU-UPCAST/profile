@@ -209,7 +209,6 @@ class VectorStoreWeave(weave.Model):
         pipeline = IngestionPipeline(transformations=extractors)
 
         nodes = []
-
         splits = self._pseudo_markdown_splitter(document, self.chunk_size, self.chunk_overlap)
 
         for doc in splits:
@@ -219,12 +218,12 @@ class VectorStoreWeave(weave.Model):
                 print(f'\nMD Headers: {doc.metadata} \nOther Headers: {split["headers"]} \nSize change: {len(doc.page_content)} ? {len(split["text"])}')
                 print(f'{split["text"]}')
 
+            # Avoid creating a node with empty text
+            if len(split["text"]) == 0: continue
+
             nodes.append(TextNode(text=split['text']))
-
         docs = pipeline.run(documents=nodes)
-
         self.index = VectorStoreIndex(nodes=docs)
-
 
 
     def _set_lm_models(self):
