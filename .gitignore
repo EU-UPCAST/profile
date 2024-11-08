@@ -5,3 +5,4 @@ llmdap/profiler/wandb/
 llmdap/profiler/openai_key.py
 llmdap/profiler/all_results/**.json
 llmdap/ontologies/efo.owl
+*.swp

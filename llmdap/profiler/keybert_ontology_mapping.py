@@ -29,15 +29,41 @@ def get_subontology(
 
 
 def get_kw_model(): return KeyBERT()
-def get_keywords(text, kw_model, n_keywords): 
-    keywords_and_scores = kw_model.extract_keywords(text, top_n=n_keywords)
+def get_keywords(text, kw_model, **kwargs): 
+    keywords_and_scores = kw_model.extract_keywords(text, **kwargs)
     keywords = [x[0] for x in keywords_and_scores]
     scores = [x[1] for x in keywords_and_scores]
     return keywords, scores
 def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id)
 def get_similarity_matrix(kw_embeddings, target_embeddings):  return util.cos_sim(kw_embeddings, target_embeddings)
 
+
+
 if __name__ == "__main__":
+
+    # chessecake test / example
+    text = "I like cheese. I love cake."
+    targets = ["cheese", "cake", "cheesecake"] # to speed up testing
+
+    kw_model = get_kw_model()
+    kws, scores = get_keywords(text, kw_model, top_n =2)
+    print(kws, scores) # cheese and cake
+
+    emb_model = get_embedding_model()
+    kw_emb = emb_model.encode(kws)
+    target_emb = emb_model.encode(targets)
+
+    # using keybert
+    similarity = get_similarity_matrix(kw_emb, target_emb)
+    print(similarity) # cheese and cake are most relevant targets
+
+    # no keybert - similarity between original text and targets
+    text_emb = emb_model.encode([text])
+    similarity = get_similarity_matrix(text_emb, target_emb)
+    print(similarity) # cheescake is most relevant target (!)
+
+    quit()
+
 
     # test subontology
     print(len(get_subontology("label")))
@@ -49,7 +75,7 @@ if __name__ == "__main__":
     #print(0)
     kw_model = get_kw_model()
     #print(1) # ^takes a while
-    kws, scores = get_keywords(text, kw_model, 5)
+    kws, scores = get_keywords(text, kw_model, top_n=5)
     #print(2) # ^lot quicker
     emb_model = get_embedding_model()
     #print(3)

@@ -209,9 +209,21 @@ class Rerank(ContextShortener):
 
 
 class Keybert(ContextShortener):
-    def __init__(self, mode, n_keywords = 5, top_k=3):
+    def __init__(self, mode, 
+            n_keywords = 5, 
+            top_k=3, 
+            chunk_sizes = (5000,500),
+            mmr_param = 1,
+            maxsum_factor = 1,
+            keyphrase_range = (1,1),
+            ):
         self.n_keywords = n_keywords # number of keywords to extract from each chunk
         self.top_k = top_k # number of chunks to merge and return
+        self.chunk_sizes = chunk_sizes
+        assert mmr_param == 1 or maxsum_factor == 1
+        self.mmr_param = mmr_param
+        self.maxsum_factor = maxsum_factor
+        self.keyphrase_range = keyphrase_range
         #self.mode = mode
 
         self.kw_model = kom.get_kw_model()
@@ -221,18 +233,29 @@ class Keybert(ContextShortener):
         self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
         self.target_emb = self.emb_model.encode(self.descriptions)
 
-    def set_document(self, document, chunk_sizes = (5000,500)):
+    def set_document(self, document):
         self.chunks = restrictedmap.recursive_split( # TODO renew this part
                 document, 
                 reverse=True, 
-                chunk_size=chunk_sizes[0],
-                chunk_overlap=chunk_sizes[1])
+                chunk_size=self.chunk_sizes[0],
+                chunk_overlap=self.chunk_sizes[1])
 
         self.keywordss = []
         self.keyword_scoress = []
         self.keyword_embeddingss = []
         for chunk in self.chunks:
-            keywords, scores = kom.get_keywords(chunk, self.kw_model, n_keywords=self.n_keywords)
+            keywords, scores = kom.get_keywords(
+                    chunk, 
+                    self.kw_model, 
+                    # kwargs
+                    keyphrase_ngram_range = self.keyphrase_range,
+                    top_n=self.n_keywords,
+                    use_maxsum = self.maxsum_factor>1,
+                    use_mmr = self.mmr_param<1,
+                    diversity = self.mmr_param,
+                    nr_candidates = int(self.n_keywords * self.maxsum_factor),
+                    )
+
             embs = self.emb_model.encode(keywords)
 
             self.keywordss.append(keywords)
@@ -286,11 +309,12 @@ class Keybert(ContextShortener):
 
 if __name__=="__main__":
     text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
-    kb = Keybert("dummy_mode")
+    kb = Keybert("dummy_mode", chunk_sizes = (100,0), keyphrase_range=(1,3))
 
     kb.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
     kb.target_emb = kb.emb_model.encode(kb.descriptions)
 
-    kb.set_document(text, (100,0))
-
+    kb.set_document(text)
+    print(kb.keywordss)
+    print(kb.keyword_scoress)
     print(kb())

@@ -158,13 +158,25 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 if __name__ == "__main__":
 
-
-    #run_sweep(keybert_params, 
-    #          dataset_length = 10,
-    #          sweep_count = 18,
+    #run_sweep(keybert_vs_rag, 
+    #          dataset_length = 3,
+    #          sweep_count = 2,
     #          method = "grid",
     #          dataset = "study_type",
     #          )
+    #run_sweep(keybert_vs_rag, 
+    #          dataset_length = 100,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset = "study_type",
+    #          )
+
+    run_sweep(keybert_params, 
+              dataset_length = 3,
+              sweep_count = 18,
+              method = "grid",
+              dataset = "study_type",
+              )
 
     run_sweep(keybert_params, 
               dataset_length = 100,

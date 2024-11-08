@@ -332,6 +332,10 @@ def load_modules(args, preloaded_dspy_model = None):
                 args.context_shortener.split("-")[1],
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
+                chunk_sizes = (args.reduce_chunk_size, args.reduce_chunk_overlap),
+                mmr_param = args.mmr_param,
+                maxsum_factor = args.maxsum_factor,
+                keyphrase_range = args.keyphrase_range,
                 )
     else:
         print(args.context_shortener)
