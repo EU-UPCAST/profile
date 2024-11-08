@@ -204,7 +204,7 @@ class VectorStoreWeave(weave.Model):
         
         """
         
-        # self._set_lm_models()
+        self._set_lm_models()
         extractors = self._set_metadata_extractors()
         pipeline = IngestionPipeline(transformations=extractors)
 
