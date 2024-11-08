@@ -186,14 +186,9 @@ def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
     return full_xmls, labels
 
 if __name__=="__main__":
-    #print(load_ega_data(1)[1])
-    # t,l = load_arxpr_data(5)
+    # print(load_ega_data(1)[1])
+    t,l = load_arxpr_data(5)
     
-    t,l = load_arxpr_data(1)
-    text = t['25918225']
-
-    print(text)
-
-    # print(l.keys())
+    print(l.keys())
 
 
