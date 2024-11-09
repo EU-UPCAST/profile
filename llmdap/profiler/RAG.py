@@ -84,7 +84,7 @@ class VectorStoreWeave(weave.Model):
     # signature: type 
 
 
-    def _pseudo_markdown_splitter(self, text: str, chunk_size, chunk_overlap, markdown_headers=[]):
+    def _pseudo_markdown_splitter(self, text: str, chunk_size, chunk_overlap, markdown_headers=[], exclude_headers=[], verbose=True):
         """
         Borrowing the LangChain markdown splitter to spot header str in lieu of #, ##, ###, etc. 
         Keeps the md-formated header in medatdata dict if found, else nothing.
@@ -110,23 +110,35 @@ class VectorStoreWeave(weave.Model):
         from langchain_text_splitters import RecursiveCharacterTextSplitter
 
         # Expands and relocate this as necessary
-        markdown_headers = [
-            ("METHODS", "methods"),
-            ("RESULTS", "result"),
-            ("FIG", "figure"),
-            ("INTRO", "introduction"),
-            ("REF", "reference"),
-            ("SUPPL", "supplement"),
-        ]
+        markdown_headers = [("METHODS", "methods"), ("METHODOLOGY", "methods"),   
+                            ("RESULT", "result"), ("RESULTS", "result"),
+                            ("FIG", "figure"), ("FIGURE", "figure"),
+                            ("INTRO", "introduction"), ("INTRODUCTION", "introduction"),
+                            ("REF", "reference"), ("REFERENCES", "reference"),
+                            ("DISCUSS", "discussion"), ("DISCUSSION", "discussion"),
+                            ("SUPPL", "supplement"), ("SUPPLEMENT", "supplement"),
+                            ("abstract_title_1", "abstract"),
+                            ]
 
-        # Split by headers
+        exclude_headers = ['reference', 'supplement']
+
+        # split by headers
         markdown_splitter = MarkdownHeaderTextSplitter(markdown_headers)
         md_header_splits = markdown_splitter.split_text(text)
 
-        # Chunk
+        # filter by exclusion headers
+        toss = [doc for doc in md_header_splits for exclusion in exclude_headers if exclusion in doc.metadata] 
+        md_filtered_splits = [doc for doc in md_header_splits if doc not in toss]    
+
+        # chunk
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-        splits = text_splitter.split_documents(md_header_splits)
-        
+        splits = text_splitter.split_documents(md_filtered_splits)
+
+        if verbose:
+            print(f"md_header_splits: {len(md_header_splits)}")
+            print(f"toss: {len(toss)} \n{toss}")
+            print(f"md_filtered_splits: {len(md_filtered_splits)} \n{md_filtered_splits}")
+
         return splits
 
 
@@ -173,14 +185,21 @@ class VectorStoreWeave(weave.Model):
         # Expands and relocate this as necessary
         headers = ["introduction",
                     "paragraph",
-                    "title_1",
-                    "title_2",
+                    "title_1", "title_2",
                     "fig_caption",
                     "abstract",
                     "supplementary material",
                     "materials and methods",
+                    "results",
+                    "discussion",
                     "results and discussion",
-                    "footnote_title"
+                    "footnote_title",
+                    "figures and tables",
+                    "summary", 
+                    "ref",
+                    "lancetref",
+                    "experimental procedures"
+                    "fig1", "fig2", "fig3", "fig4", "fig5", "fig6", "fig7", "fig8", "fig9", "fig10",
                     ]
 
         cleaned_docs = {}
