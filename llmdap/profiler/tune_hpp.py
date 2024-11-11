@@ -48,7 +48,10 @@ keybert_vs_rag= {
             "4om",
             # add non-mini version
             ]},
-        "context_shortener" : {"values" : ["rag", "keybert-both"]},
+        "context_shortener" : {"values" : [
+            "keybert-both",
+            "rag", 
+            ]},
         "rag_chunk_size" : {"values" : [512,]},
         "reduce_chunk_size" : {"values" : [
             #500, 
@@ -160,22 +163,22 @@ if __name__ == "__main__":
     #          method = "grid",
     #          dataset = "study_type",
     #          )
-    #run_sweep(keybert_vs_rag, 
-    #          dataset_length = 50,
-    #          sweep_count = 2,
+    run_sweep(keybert_vs_rag, 
+              dataset_length = 100,
+              sweep_count = 2,
+              method = "grid",
+              dataset = "study_type",
+              )
+
+    #run_sweep(keybert_params, 
+    #          dataset_length = 3,
+    #          sweep_count = 18,
     #          method = "grid",
     #          dataset = "study_type",
     #          )
 
     run_sweep(keybert_params, 
-              dataset_length = 3,
-              sweep_count = 18,
-              method = "grid",
-              dataset = "study_type",
-              )
-
-    run_sweep(keybert_params, 
-              dataset_length = 50,
+              dataset_length = 100,
               sweep_count = 18,
               method = "grid",
               dataset = "study_type",

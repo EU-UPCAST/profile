@@ -86,8 +86,8 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
     all_times = []
     skips = 0
     # iterate through documents
-    for key in documents:
-        print("loading doc", key)
+    for docnr, key in enumerate(documents):
+        print("loading doc", key, ", nr", docnr, "/", len(documents))
         start_time = time.time()
         paper_text = documents[key]
         if labels:
@@ -103,6 +103,7 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
 
         if filled_form is None:
     
+            print("--------- setting document")
             context_shortener.set_document(paper_text)
     
             # fill out the form

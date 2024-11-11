@@ -257,7 +257,10 @@ class Keybert(ContextShortener):
                     )
 
             embs = self.emb_model.encode(keywords)
-
+  
+            if len(keywords)==0:
+                print(f"no keyword chunk: ***{chunk}***")
+                continue
             self.keywordss.append(keywords)
             self.keyword_scoress.append(scores)
             self.keyword_embeddingss.append(embs)
@@ -265,13 +268,11 @@ class Keybert(ContextShortener):
     def __call__(self, **kwargs):
 
         chunk_scores = []
-        for i in range(len(self.chunks)):
+        for i in range(len(self.keyword_embeddingss)):
 
-            #print(self.keyword_embeddingss[i], self.descriptions)
             similarity = kom.get_similarity_matrix(
                     self.keyword_embeddingss[i], self.target_emb
                     )
-            #print(self.chunks[i])
             #print(self.keywordss[i])
 
             chunk_scores.append(
