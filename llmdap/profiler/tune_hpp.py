@@ -44,12 +44,9 @@ def sweep_run():
     wandb.log(score)
 
 keybert_vs_rag= {
-        "ff_model" :{"values" : [
-            "4om",
-            # add non-mini version
-            ]},
+        "ff_model" :{"value" : "4om"},
         "context_shortener" : {"values" : [
-            "keybert-both",
+            #"keybert-both",
             "rag", 
             ]},
         "rag_chunk_size" : {"values" : [512,]},
@@ -65,21 +62,22 @@ keybert_vs_rag= {
     }
 
 keybert_params = {
-        "ff_model" :{"values" : [
-            "4om",
-            # add non-mini version
+        "context_shortener" : {"values" : [
+            #"keybert-label",
+            "keybert-description", 
+            #"keybert-both"
             ]},
-        "context_shortener" : {"values" : ["keybert-label", "keybert-description", "keybert-both"]},
+        "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
             #250
             500, 
             1000, 
-            2000, 
+            #2000, 
             #5000
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [1,2]},#3,]},
-        "n_keywords" : {"value" : 8},
+        "similarity_k" : {"values" : [4,6,8,10]},#,2,3,]},
+        "n_keywords" : {"values" : [8,12]},
     }
 
 openai_parameters = {
@@ -159,13 +157,19 @@ if __name__ == "__main__":
 
     #run_sweep(keybert_vs_rag, 
     #          dataset_length = 3,
-    #          sweep_count = 2,
+    #          sweep_count = 1,
     #          method = "grid",
     #          dataset = "study_type",
     #          )
-    run_sweep(keybert_vs_rag, 
+    #run_sweep(keybert_vs_rag, 
+    #          dataset_length = 10,
+    #          sweep_count = 1,
+    #          method = "grid",
+    #          dataset = "study_type",
+    #          )
+    run_sweep(keybert_params, 
               dataset_length = 100,
-              sweep_count = 2,
+              sweep_count = 16,
               method = "grid",
               dataset = "study_type",
               )
@@ -177,12 +181,12 @@ if __name__ == "__main__":
     #          dataset = "study_type",
     #          )
 
-    run_sweep(keybert_params, 
-              dataset_length = 100,
-              sweep_count = 18,
-              method = "grid",
-              dataset = "study_type",
-              )
+    #run_sweep(keybert_params, 
+    #          dataset_length = 100,
+    #          sweep_count = 18,
+    #          method = "grid",
+    #          dataset = "study_type",
+    #          )
 
 
 
@@ -198,29 +202,3 @@ if __name__ == "__main__":
     #          method = "grid",
     #          )
 
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 100,
-    #          sweep_count =6,
-    #          method = "grid",
-    #          )
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 100,
-    #          sweep_count =4,
-    #          method = "grid",
-    #          )
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 15,
-    #          sweep_count =18,
-    #          method = "grid",
-    #          )
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 100,
-    #          sweep_count =18,
-    #          method = "grid",
-    #          )
-    #run_sweep(reduce_parameters, 
-    #          dataset_length = 9,
-    #          sweep_count = 100,
-    #          #method = "grid",
-    #          method = "random",
-    #          )

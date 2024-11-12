@@ -4,6 +4,7 @@ import torch
 
 import RAG
 import restrictedmap
+from chunking import chunk_by_headeres_and_clean
 import keybert_ontology_mapping as kom
 
 
@@ -235,11 +236,8 @@ class Keybert(ContextShortener):
         self.target_emb = self.emb_model.encode(self.descriptions)
 
     def set_document(self, document):
-        self.chunks = restrictedmap.recursive_split( # TODO renew this part
-                document, 
-                reverse=True, 
-                chunk_size=self.chunk_sizes[0],
-                chunk_overlap=self.chunk_sizes[1])
+        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False, split_by_periods=False)
+        self.chunks = [chunk.text for chunk in self.chunks]
 
         self.keywordss = []
         self.keyword_scoress = []
@@ -274,22 +272,17 @@ class Keybert(ContextShortener):
             similarity = kom.get_similarity_matrix(
                     self.keyword_embeddingss[i], self.target_emb
                     )
-            #print(self.keywordss[i])
 
             chunk_scores.append(
                     # store score and index
                     (self.calculate_chunk_relevance(similarity, self.keyword_scoress[i]), i)
                     )
-            #print(chunk_scores[i])
 
         chunk_scores = sorted(chunk_scores, key = lambda x: -x[0]) # sort in decreasing order, by score
 
         # print chunks
         #for score, index in chunk_scores:
         #    print(score, self.chunks[index])
-
-        #q= ""
-        #for i in range(min(len(chunk_scores), self.top_k)):
 
         chosen_chunks = [self.chunks[chunk_scores[i][1]] for i in range(min(len(self.chunks), self.top_k))]
         return "\n...\n".join(chosen_chunks)
