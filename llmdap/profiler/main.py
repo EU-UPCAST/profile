@@ -86,14 +86,15 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
     all_times = []
     skips = 0
     # iterate through documents
-    for key in documents:
-        print("loading doc", key)
+    for docnr, key in enumerate(documents):
+        print("loading doc", key, ", nr", docnr, "/", len(documents))
         start_time = time.time()
         paper_text = documents[key]
         if labels:
             paper_labels = labels[key]
             if len(paper_labels) == len(remove_fields(paper_labels)):
                 print("!!! No usable labels, skippping paper")
+                continue
 
         filled_form = None
 
@@ -103,6 +104,7 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
 
         if filled_form is None:
     
+            print("--------- setting document")
             context_shortener.set_document(paper_text)
     
             # fill out the form
@@ -170,6 +172,7 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
         print(np.mean(final_score))
         
         info_to_log = means_by_field
+        info_to_log["final_scores"] = final_score
         info_to_log["total_score"] = np.mean(final_score)
         info_to_log["total_accuracy"] = np.mean(final_accuracy)
         info_to_log["total_similarity"] = np.mean(final_similarity)
@@ -325,7 +328,20 @@ def load_modules(args, preloaded_dspy_model = None):
                 )
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
+    elif args.context_shortener[:8] == "keybert-":
+        if not args.dataset == "study_type":
+            raise ValueError
+        context_shortener = context_shortening.Keybert(
+                args.context_shortener.split("-")[1],
+                n_keywords = args.n_keywords,
+                top_k = args.similarity_k,
+                chunk_sizes = (args.reduce_chunk_size, args.reduce_chunk_overlap),
+                mmr_param = args.mmr_param,
+                maxsum_factor = args.maxsum_factor,
+                keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff)
+                )
     else:
+        print(args.context_shortener)
         raise ValueError
 
 
@@ -337,7 +353,7 @@ def load_modules(args, preloaded_dspy_model = None):
                     listify_form = args.listed_output,
                     max_tokens = args.openai_ff_max_tokens,
                     verbose=False)#True)
-        elif args.context_shortener=="rag":
+        elif args.context_shortener=="rag" or args.context_shortener[:8]=="keybert-":
             form_filler = form_filling.OpenAISequentialFormFiller(
                     model_id=model_id,
                     pydantic_form = pydantic_form,

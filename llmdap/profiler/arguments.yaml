@@ -51,7 +51,7 @@ form_filler__outlines__sampler__multinomial__args:
 context_shortener__args:
     context_shortener:
         default: "rag"
-        choices: ["full_paper", "rag","rerank", "reduce", "keybert-label", "keybert-description"]
+        choices: ["full_paper", "rag","rerank", "reduce", "keybert-label", "keybert-description", "keybert-both"]
 
 context_shortener__rag__args:
     retriever_type:
@@ -67,6 +67,19 @@ context_shortener__rag__args:
         default: 1.0
     rag_llm: 
         default: "llama3.1"
+
+context_shortener__keybert__args:
+    n_keywords: 
+        default: 5
+    maxsum_factor: 
+        default: 1
+
+    # range is (min, min+diff), so default is (1,2)
+    keyphrase_min: # needs to be minimum 1
+        default: 1
+    keyphrase_range_diff: # needs to be minimum 0
+        default: 1 
+
 
 context_shortener__reduce__args:
     reduce_max_tokens:

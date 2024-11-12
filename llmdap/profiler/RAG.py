@@ -21,6 +21,7 @@ from llama_index.retrievers.bm25 import BM25Retriever
 
 from llama_index.core import get_response_synthesizer
 from llama_index.core.schema import MetadataMode
+from llama_index.core.schema import TextNode
 
 # from llama_index.extractors.entity import EntityExtractor
 from llama_index.core.node_parser import TokenTextSplitter
@@ -33,6 +34,8 @@ from llama_index.core.extractors import (
     KeywordExtractor,
     BaseExtractor,
 )
+
+from chunking import chunk_by_headeres_and_clean
 
 def set_openai_api_key():
     import openai
@@ -81,6 +84,22 @@ class VectorStoreWeave(weave.Model):
 
     # need to validate the signature scheme before initializing it here
     # signature: type 
+
+
+
+
+    def _store_nodes(self, document, verbose=False):
+        """ indexing with metadata
+        
+        """
+        
+        self._set_lm_models()
+        extractors = self._set_metadata_extractors()
+        pipeline = IngestionPipeline(transformations=extractors)
+
+        nodes = chunk_by_headeres_and_clean(document, chunk_size=self.chunk_size, chunk_overlap = self.chunk_overlap, verbose = verbose)
+        docs = pipeline.run(documents=nodes)
+        self.index = VectorStoreIndex(nodes=docs)
 
 
     def _set_lm_models(self):
@@ -137,25 +156,34 @@ class VectorStoreWeave(weave.Model):
 
 
     def _set_metadata_extractors(self):
-        """ define a set of mode metadata extractors for IngestionPipeline """
+        """ define a set of mode metadata extractors for IngestionPipeline
+            Note:   for input text from UnstructureXLMXMLLoader, exclude SentenceSplitter() as chunking
+                    is performed at a prior stage.
+
+        """
+
+        # # Temporary LLM config
+        # Settings.embed_model = OllamaEmbedding(model_name="llama3")
+        # Settings.llm = Ollama(model="llama3") 
+
         metadata_extractors = [
-            SentenceSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap),
-            QuestionsAnsweredExtractor(questions=3),
-            KeywordExtractor(keywords=5),
+            # SentenceSplitter(chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap),
+            # QuestionsAnsweredExtractor(questions=3),
+            # KeywordExtractor(keywords=5),
             # EntityExtractor(prediction_threshold=0.5)
         ]
         return metadata_extractors
 
 
-    def _store_nodes(self, document):
-        """ indexing with metadata
-            TODO: need to fix Doc loader for pipeline.run; temporary fix -> .from_documents()
-        """
+    # def _store_nodes(self, document):
+    #     """ indexing with metadata
+    #         TODO: need to fix Doc loader for pipeline.run; temporary fix -> .from_documents()
+    #     """
         
-        self._set_lm_models()
-        extractors = self._set_metadata_extractors()
-        self.index = VectorStoreIndex.from_documents(
-            [Document(text=document)], transformations=extractors)
+    #     self._set_lm_models()
+    #     extractors = self._set_metadata_extractors()
+    #     self.index = VectorStoreIndex.from_documents(
+    #         [Document(text=document)], transformations=extractors)
         
 
     def build_query_engine(self):
@@ -170,5 +198,3 @@ class VectorStoreWeave(weave.Model):
     @weave.op()
     def predict(self):
         pass
-
-

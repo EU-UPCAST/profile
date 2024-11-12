@@ -1,8 +1,11 @@
 import dspy
 import pprint
+import torch
 
 import RAG
 import restrictedmap
+from chunking import chunk_by_headeres_and_clean
+import keybert_ontology_mapping as kom
 
 
 
@@ -87,18 +90,19 @@ class RAGShortener(ContextShortener):
                                   mmr_param = self.mmr_param,
                                   )
 
+        # # Simple retriever
+        # if self.retriever_type == "simple":
+        #     self.retriever = vs.build_retriever()
 
-        # Simple retriever
-        if self.retriever_type == "simple":
-            self.retriever = vs.build_retriever()
+        # # Fancy retriever
+        # if self.retriever_type == "fusion":
+        #     self.retriever = vs.build_fusion_retriever()
 
-        # Fancy retriever
-        if self.retriever_type == "fusion":
-            self.retriever = vs.build_fusion_retriever()
+        # # Retriver with metadata (temporary)
+        # if self.retriever_type == "metadata":
+        #     self.retriever = vs.build_query_engine()
 
-        # Retriver with metadata (temporary)
-        if self.retriever_type == "metadata":
-            self.retriever = vs.build_query_engine()
+        self.retriever = vs.build_query_engine()
 
 
     def __call__(self, **kwargs):
@@ -205,3 +209,107 @@ class Rerank(ContextShortener):
             print("")
         return q
 
+
+class Keybert(ContextShortener):
+    def __init__(self, mode, 
+            n_keywords = 5, 
+            top_k=3, 
+            chunk_sizes = (5000,500),
+            mmr_param = 1,
+            maxsum_factor = 1,
+            keyphrase_range = (1,1),
+            ):
+        self.n_keywords = n_keywords # number of keywords to extract from each chunk
+        self.top_k = top_k # number of chunks to merge and return
+        self.chunk_sizes = chunk_sizes
+        assert mmr_param == 1 or maxsum_factor == 1
+        self.mmr_param = mmr_param
+        self.maxsum_factor = maxsum_factor
+        self.keyphrase_range = keyphrase_range
+        #self.mode = mode
+
+        self.kw_model = kom.get_kw_model()
+        self.emb_model = kom.get_embedding_model()
+        
+
+        self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
+        self.target_emb = self.emb_model.encode(self.descriptions)
+
+    def set_document(self, document):
+        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False, split_by_periods=False)
+        self.chunks = [chunk.text for chunk in self.chunks]
+
+        self.keywordss = []
+        self.keyword_scoress = []
+        self.keyword_embeddingss = []
+        for chunk in self.chunks:
+            keywords, scores = kom.get_keywords(
+                    chunk, 
+                    self.kw_model, 
+                    # kwargs
+                    keyphrase_ngram_range = self.keyphrase_range,
+                    top_n=self.n_keywords,
+                    use_maxsum = self.maxsum_factor>1,
+                    use_mmr = self.mmr_param<1,
+                    diversity = self.mmr_param,
+                    nr_candidates = int(self.n_keywords * self.maxsum_factor),
+                    )
+
+            embs = self.emb_model.encode(keywords)
+  
+            if len(keywords)==0:
+                print(f"no keyword chunk: ***{chunk}***")
+                continue
+            self.keywordss.append(keywords)
+            self.keyword_scoress.append(scores)
+            self.keyword_embeddingss.append(embs)
+
+    def __call__(self, **kwargs):
+
+        chunk_scores = []
+        for i in range(len(self.keyword_embeddingss)):
+
+            similarity = kom.get_similarity_matrix(
+                    self.keyword_embeddingss[i], self.target_emb
+                    )
+
+            chunk_scores.append(
+                    # store score and index
+                    (self.calculate_chunk_relevance(similarity, self.keyword_scoress[i]), i)
+                    )
+
+        chunk_scores = sorted(chunk_scores, key = lambda x: -x[0]) # sort in decreasing order, by score
+
+        # print chunks
+        #for score, index in chunk_scores:
+        #    print(score, self.chunks[index])
+
+        chosen_chunks = [self.chunks[chunk_scores[i][1]] for i in range(min(len(self.chunks), self.top_k))]
+        return "\n...\n".join(chosen_chunks)
+
+
+
+    def calculate_chunk_relevance(self, similarity, keyword_scores):
+
+        # Reduce ontology value dimension NOTE this can be done in many different ways!
+        #similarity_per_kw = similarity.mean(dim=1)
+        similarity_per_kw = similarity.max(dim=1).values #  can also get indices, to get max description
+
+        # reduce to single score # NOTE this can also be changed.
+        keyword_scores = torch.Tensor(keyword_scores)
+        product = similarity_per_kw.inner(keyword_scores)
+        return product
+
+
+
+if __name__=="__main__":
+    text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
+    kb = Keybert("dummy_mode", chunk_sizes = (100,0), keyphrase_range=(1,3))
+
+    kb.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
+    kb.target_emb = kb.emb_model.encode(kb.descriptions)
+
+    kb.set_document(text)
+    print(kb.keywordss)
+    print(kb.keyword_scoress)
+    print(kb())
