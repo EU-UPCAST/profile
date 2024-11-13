@@ -242,7 +242,8 @@ class Keybert(ContextShortener):
         self.keywordss = []
         self.keyword_scoress = []
         self.keyword_embeddingss = []
-        for chunk in self.chunks:
+        self.indices_with_keywords = []
+        for (i, chunk) in enumerate(self.chunks):
             keywords, scores = kom.get_keywords(
                     chunk, 
                     self.kw_model, 
@@ -257,25 +258,26 @@ class Keybert(ContextShortener):
 
             embs = self.emb_model.encode(keywords)
   
-            if len(keywords)==0:
+            if len(keywords)==0: # short chunks may have no keyword. Note that this require som extra index handling
                 print(f"no keyword chunk: ***{chunk}***")
                 continue
             self.keywordss.append(keywords)
             self.keyword_scoress.append(scores)
             self.keyword_embeddingss.append(embs)
+            self.indices_with_keywords.append(i)
 
     def __call__(self, **kwargs):
 
         chunk_scores = []
-        for i in range(len(self.keyword_embeddingss)):
+        for kw_i, chunk_i in enumerate(self.indices_with_keywords): # keyword indices and chunk indices can be different
 
             similarity = kom.get_similarity_matrix(
-                    self.keyword_embeddingss[i], self.target_emb
+                    self.keyword_embeddingss[kw_i], self.target_emb
                     )
 
             chunk_scores.append(
                     # store score and index
-                    (self.calculate_chunk_relevance(similarity, self.keyword_scoress[i]), i)
+                    (self.calculate_chunk_relevance(similarity, self.keyword_scoress[kw_i]), chunk_i) # store index of corresponding chunk in tuple with the score
                     )
 
         chunk_scores = sorted(chunk_scores, key = lambda x: -x[0]) # sort in decreasing order, by score
