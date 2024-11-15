@@ -6,6 +6,18 @@ NOTE: Due to the experimental nature of the current stage of the project (i.e. t
 I think once experiments are done, we should make another repo with just the relevant stuff to open-source.
 
 
+## Some preliminary results:
+Predicting the study_type field of 79 papers:
+
+| Retrieval method    | generation model | Accuracy |
+|:--------------------|:-----------------|:---------|
+|Full paper in context| GPT 4o-mini      | 0.52     |
+|Regular retrieval    | GPT 4o-mini      | 0.468    |
+|Keybert-based rerank | GPT 4o-mini      | 0.760    |
+
+(note that these tests are on a relative small test sample, on which they have been tuned, so more tests are required before concluding)
+
+
 ## How to run:
 
 setup environment:
