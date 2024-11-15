@@ -13,7 +13,8 @@ Predicting the study_type field of 79 papers:
 |:--------------------|:-----------------|:---------|
 |Full paper in context| GPT 4o-mini      | 0.52     |
 |Regular retrieval    | GPT 4o-mini      | 0.468    |
-|Keybert-based rerank | GPT 4o-mini      | 0.760    |
+|Keybert-based rerank using ontology | GPT 4o-mini      | 0.760    |
+|Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.797    |
 
 (note that these tests are on a relative small test sample, on which they have been tuned, so more tests are required before concluding)
 
