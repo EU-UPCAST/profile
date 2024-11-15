@@ -1,4 +1,60 @@
-# UPCAST_profiling
+# UPCAST profiling
+
+This is the upcast profiling tool, that aims to profile biomedical datasets based on the papers/documents presenting the datasets.
+
+NOTE: Due to the experimental nature of the current stage of the project (i.e. trying out lots of different approaches as well as continuously adjusting the scope and tasks), the code it quite messy - lots of modules/arguments are no longer used (but kept in case they will be), functionalities that only work in specific cases etc. - and the code is not aimed to be particularly user friendly.
+I think once experiments are done, we should make another repo with just the relevant stuff to open-source.
+
+
+## How to run:
+
+setup environment:
+```
+conda create --name upcast python==3.10.14
+conda activate upcast
+pip install -r profiler/requirements.txt
+pip install --upgrade werkzeug==2.3.8
+```
+(werkzeug must be downgraded from the required version, causing a warning)
+
+run on a simple test case:
+```
+cd profiler
+python main.py --dataset simple_test --no-log
+```
+
+Running on the other datasets require quite a bit more work as of now, to download the papers and prepare the metadata files.
+
+## Quick file overview
+
+Folders:
+- data: for preparing the datasets - downloading papers and metadata + collecting metadata into one json file
+-  ontologies: some scripts with experiments for exploring the ontologies, + some ontology files.
+- llm_ui: user interface app made early in the project (i.e. currently outdated, but may eventually be connected to the rest of the pipeline again)
+- profiler: the llm pipeline
+- profile/metadata_schemas: pydantic schemas describing the format of the output of the pipeline
+
+Some files to know about:
+- `profiler/main.py`: assemples the pipeline and runs it according to the arguments. Calls:
+  - `profiler/dataset_loader.py` for dataset loading
+  - `profiler/context_shortening.py` for reducing the size of the context fed to the llm (meant as a generalisation of the retrieval concept in rag - can be regular retrieval, keybert based retrieval, just feeding the full paper, or using llm to summarice)
+  - `profiler/form_filling.py` for the generation part, with structured output handled in different ways according to the llm and the flied. Returns an object following the correct pydantic schema for the specified dataset.
+  - `profiler/evaluation.py` to calculate the score
+- `profiler/arguments.py`: defines all the arguments for main.py. Run `python main.py --help` to list them.
+- `profiler/tune_hpp.py`: uses sweeps from weights and biases for hyper parameter tuning. Calls main.py.
+- `profiler/chunker_test.ipynb`: notebook with some testing of the chunker
+- `profiler/optimize`: dspy prompt optimization - not updated in a while/currently not in use
+
+Some missing files (in .gitignore)
+- `profiler/openai_key.py`: the file with the openai api key
+- `ontologies/efo.owl`: the ontology used for the keybert-retriever for study type - the file is too large for github.
+
+
+
+
+
+
+
 
 
 
