@@ -10,12 +10,17 @@ I think once experiments are done, we should make another repo with just the rel
 
 setup environment:
 ```
-pip install profiler/requirements.txt -r
+conda create --name upcast python==3.10.14
+conda activate upcast
+pip install -r profiler/requirements.txt
+pip install --upgrade werkzeug==2.3.8
 ```
+(werkzeug must be downgraded from the required version, causing a warning)
 
 run on a simple test case:
 ```
-python profiler/main.py --dataset simple_test
+cd profiler
+python main.py --dataset simple_test --no-log
 ```
 
 Running on the other datasets require quite a bit more work as of now, to download the papers and prepare the metadata files.

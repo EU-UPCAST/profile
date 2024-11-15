@@ -11,6 +11,7 @@ from typing import Optional
 import argparse
 import time
 import json
+import os
 
 import dataset_loader
 import metadata_schemas 
@@ -71,6 +72,7 @@ def save_form(key, argstring, form_dict):
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         data= {}
     data[argstring] = form_dict
+    os.makedirs("all_results", exist_ok = True)
     with open("all_results/"+key+".json", "w") as f:
         json.dump(data, f)
 
