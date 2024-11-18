@@ -48,10 +48,16 @@ form_filler__outlines__sampler__multinomial__args:
         default: 0.4
         help: "temperature"
 
+form_filler__direct_keyword__args:
+    dk_norm_order:
+        default: 2
+    
+
+
 context_shortener__args:
     context_shortener:
         default: "rag"
-        choices: ["full_paper", "rag","rerank", "reduce", "keybert-label", "keybert-description", "keybert-both"]
+        choices: ["full_paper", "rag","rerank", "reduce", "keybert-label","keybert-literal", "keybert-description", "keybert-both"]
 
 context_shortener__rag__args:
     retriever_type:

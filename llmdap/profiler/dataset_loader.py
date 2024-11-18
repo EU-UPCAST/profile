@@ -113,11 +113,12 @@ def load_arxpr_data(max_amount = 10):
                 anys[field] += 1
             if l==1:
                 ones[field] += 1
-    from pprint import pprint
-    print("N datasets with exactly one label, for each field:")
-    pprint(ones)
-    print("N datasets with at least one label, for each field")
-    pprint(anys)
+    #from pprint import pprint
+    #print("N datasets with exactly one label, for each field:")
+    #pprint(ones)
+    #print("N datasets with at least one label, for each field")
+    #pprint(anys)
+    #quit()
 
 
     train_paper_texts, train_labels = load_paper_text(train_labels, max_amount, data_folder)

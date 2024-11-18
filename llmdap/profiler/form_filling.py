@@ -7,6 +7,7 @@ import weave
 import json
 import copy
 import pprint
+import numpy as np
 
 from dspy_x_outlines import make_dspy_generator, make_constrained_generator
 from dspy_x_openai import GPT3
@@ -71,6 +72,7 @@ def get_constraints_from_field(field):
     return field_type, min_l, max_l
 
 
+
 class FieldFiller(dspy.Module):
     """
     dspy module for filling out a single field in a pydantic form.
@@ -81,7 +83,7 @@ class FieldFiller(dspy.Module):
 
         self.answer_generator = answer_generator
         self.answer_in_quotes = answer_in_quotes
-        self.listify = listify 
+        self.listify = listify
         self.predictor = dspy.Predict(signature=signature)
         self.signature = signature
         self.verbose = verbose
@@ -112,7 +114,7 @@ class FieldFiller(dspy.Module):
         # generate answer
         prompt_input["context"] = context
         answer = self.answer_generator(self.predictor, **prompt_input)
-        
+
 
         if self.listify:
             assert answer[0] == "["
@@ -172,7 +174,7 @@ def parse_single_output(field_type, stringoutput, answer_in_quotes = None):
 
 class SequentialFormFiller(dspy.Module):
     """
-    Class for iterating through a pydantic schema, and predict each field sequentially. 
+    Class for iterating through a pydantic schema, and predict each field sequentially.
     Uses outlines to ensure correct field types.
     Dspy is wrapped around outlines, to enable optimization.
     """
@@ -190,7 +192,7 @@ class SequentialFormFiller(dspy.Module):
         self.signature = ListedFormFillSignature if listify_form else FormFillSignature
         self.verbose = verbose
         self.max_tokens = max_tokens
-    
+
         self.answer_in_quotes=answer_in_quotes
         self.listify_form = listify_form
         if not pydantic_form is None:
@@ -213,10 +215,10 @@ class SequentialFormFiller(dspy.Module):
             # only make a new generator if it is not equal to one already generated
             if not (field_type, min_l, max_l) in self.dspy_generators:
                 outlines_generator = make_constrained_generator(
-                        llm_model=self.llm_model, 
-                        field_type=field_type, 
-                        min_l=min_l, 
-                        max_l=max_l, 
+                        llm_model=self.llm_model,
+                        field_type=field_type,
+                        min_l=min_l,
+                        max_l=max_l,
                         answer_in_quotes=self.answer_in_quotes,
                         listify_form = self.listify_form,
                         sampler = self.sampler)
@@ -268,9 +270,9 @@ class SequentialFormFiller(dspy.Module):
 
             # make prompt input
             prompt_input = {
-                           "context":None, 
-                           "answer_field_name":fieldname, 
-                           "answer_field_description":field.description, 
+                           "context":None,
+                           "answer_field_name":fieldname,
+                           "answer_field_description":field.description,
                            "answer_field_type":str(field_type),
                            "answer_field_examples":examples
                             }
@@ -331,7 +333,7 @@ def get_subschema(original_schema: pydantic.BaseModel, exclude_fields: list = []
         if not field in exclude_fields:
 
             properties = original_schema.schema()["properties"][field]
-            print(properties)
+            #print(properties)
             if remove_maxlength_and_examples:
                 # this is needed for openai api
                 if "maxLength" in properties:
@@ -581,4 +583,139 @@ class OpenAISequentialFormFiller(dspy.Module):
         self.llm_model = lm
         copy.llm_model = lm
         return copy
+
+
+
+class DirectKeywordSimilarityFiller(dspy.Module):
+    """
+    Replaces the sequential form filler when using the direct keyword similarity approach.
+    Retrieves similarity matrices instead of chunks, uses the best match as answer instead of generating using llm
+    """
+    def __init__(self,
+                 pydantic_form = None,
+                 listify_form = False,
+                 order = 2,
+                 verbose = False,
+                 ):
+        self.verbose = verbose
+        self.order = order
+        if listify_form:
+            raise NotImplementedError # not yet (but could be relatively easy)
+        self.listify_form = listify_form
+        if not pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
+    def set_pydantic_form(self, pydantic_form):
+        self.pydantic_form = pydantic_form
+
+
+    def prepare_field_fillers(self):
+        self.field_fillers = {}
+        fields = self.pydantic_form.__fields__
+        for fieldname in fields:
+            field = fields[fieldname]
+            field_type, min_l, max_l = get_constraints_from_field(field)
+            generator = self.dspy_generators[(field_type, min_l, max_l)]
+            self.field_fillers[fieldname] = FieldFiller(
+                    answer_generator = generator,
+                    signature = self.signature,
+                    verbose = self.verbose,
+                    answer_in_quotes = self.answer_in_quotes,
+                    listify = self.listify_form,
+                    )
+
+    @weave.op()
+    def forward(self, context_shortener, exclude_fields = []):
+
+        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
+
+        fields = pydantic_form.__fields__
+        output_dict = {}
+
+        # iterate through fields
+        if self.verbose:
+            print("--INFO--:starting to iterate through fields")
+        for fieldname in fields:
+            field = fields[fieldname]
+            field_type = field.annotation
+
+
+
+            # generate output
+            output = self.get_best_answer_for_field(context_shortener, field_type)
+
+            output_dict[fieldname] = output
+
+        if self.verbose:
+            print("--INFO--: fields iterated")
+
+        # listify form
+        if self.listify_form:
+            pydantic_form = listify_pydantic.conlistify_pydantic_model(pydantic_form, min_length=1)
+        else:
+            pydantic_form = pydantic_form
+
+        if self.listify_form:
+            output = pydantic_form(**output_dict)
+        else:
+            # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
+            output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+        torch.cuda.empty_cache()
+        return output
+
+    def get_best_answer_for_field(self, context_shortener, field_type):
+
+        target_keywords = context_shortener.descriptions # strings to match (e.g. ontology node labels or allowed answers)
+        target_keywords = [t.lower() for t in target_keywords] # to lower, to match the allowed answers
+        if getattr(field_type, "__origin__", None) is typing.Literal:
+            allowed_answers = field_type.__args__
+
+            #print(target_keywords)
+            #print(allowed_answers)
+            #print([ans in target_keywords for ans in allowed_answers])
+
+            for ans in allowed_answers:
+                assert ans in target_keywords # if not all allowed answers are in the targets, it will not be possible to predict them (could still try predicting the others in certain cases i guess - e.g. ignoring "other", then predict other if best match is not good (future work)
+            allowed_indices = []
+            for i, kw in enumerate(target_keywords):
+                if kw in allowed_answers:
+                    allowed_indices.append(i)
+        else:
+            allowed_indices = list(range(len(target_keywords)))
+
+
+        # get similarities
+        similarities = context_shortener.get_similarity_matrices()
+
+        # prep similarities:
+        prepared_similarities = []
+        for (similarity, kw_scores) in similarities:
+            
+            # only keep allowed answers
+            similarity = similarity[:,allowed_indices]
+
+            # clip minimum to 0, to ignore negatives when using norms later
+            similarity = similarity.clip(min=0)
+
+            # adjust for keyword scores
+            kw_scores = torch.Tensor(kw_scores)
+            similarity = torch.matmul(similarity.T, kw_scores)
+
+            prepared_similarities.append(similarity)
+
+        # to numpy array
+        prepared_similarities = np.array([sim.numpy() for sim in prepared_similarities])
+
+        # calculate which answer/node matches the chunks best
+        best_match_index = self.calculate_best_match(prepared_similarities)
+        best_string = target_keywords[allowed_indices[best_match_index]]
+        #print("best string:", best_string)
+        return best_string
+
+    def calculate_best_match(self, similarities):
+        scores_per_node = np.linalg.norm(similarities, ord=self.order, axis=0)
+        am = np.argmax(scores_per_node)
+        return am
+
+
+
 

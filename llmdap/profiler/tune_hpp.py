@@ -43,6 +43,20 @@ def sweep_run():
 
     wandb.log(score)
 
+dk_params = {
+        "ff_model" :{"value" : "keybert"},
+        "context_shortener" : {"value" : "keybert-literal"},
+        "reduce_chunk_size" : {"values" : [
+            #500, 
+            #1000, 
+            2000, 
+            #5000
+            ]},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "dk_norm_order" : {"values" : [1,2,10]},
+        "n_keywords" : {"value" : 8},
+    }
+
 keybert_vs_rag= {
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"values" : [
@@ -65,19 +79,28 @@ keybert_params = {
         "context_shortener" : {"values" : [
             #"keybert-label",
             "keybert-description", 
+            "keybert-literal", 
             #"keybert-both"
             ]},
         "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
             #250
             500, 
-            1000, 
+            #1000, 
             #2000, 
             #5000
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [4,6,8,10]},#,2,3,]},
-        "n_keywords" : {"values" : [8,12]},
+        "similarity_k" : {"values" : [
+            #10,
+            #12,
+            14,
+            #16
+            ]},#4,6,8,10]},#,2,3,]},
+        "n_keywords" : {"values" : [
+            #5, 
+            8
+            ]},#,12]},
     }
 
 openai_parameters = {
@@ -155,50 +178,16 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 if __name__ == "__main__":
 
-    #run_sweep(keybert_vs_rag, 
-    #          dataset_length = 3,
-    #          sweep_count = 1,
-    #          method = "grid",
-    #          dataset = "study_type",
-    #          )
-    #run_sweep(keybert_vs_rag, 
+    #run_sweep(dk_params, 
     #          dataset_length = 10,
-    #          sweep_count = 1,
+    #          sweep_count = 4,
     #          method = "grid",
     #          dataset = "study_type",
     #          )
-    run_sweep(keybert_params, 
+    run_sweep(dk_params, 
               dataset_length = 100,
-              sweep_count = 16,
+              sweep_count = 3,
               method = "grid",
               dataset = "study_type",
               )
-
-    #run_sweep(keybert_params, 
-    #          dataset_length = 3,
-    #          sweep_count = 18,
-    #          method = "grid",
-    #          dataset = "study_type",
-    #          )
-
-    #run_sweep(keybert_params, 
-    #          dataset_length = 100,
-    #          sweep_count = 18,
-    #          method = "grid",
-    #          dataset = "study_type",
-    #          )
-
-
-
-
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 10,
-    #          sweep_count = 6,
-    #          method = "grid",
-    #          )
-    #run_sweep(rag_parameters, 
-    #          dataset_length = 25,
-    #          sweep_count =6,
-    #          method = "grid",
-    #          )
 

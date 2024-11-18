@@ -212,6 +212,7 @@ class Rerank(ContextShortener):
 
 class Keybert(ContextShortener):
     def __init__(self, mode, 
+            pydantic_form,
             n_keywords = 5, 
             top_k=3, 
             chunk_sizes = (5000,500),
@@ -231,8 +232,16 @@ class Keybert(ContextShortener):
         self.kw_model = kom.get_kw_model()
         self.emb_model = kom.get_embedding_model()
         
+        if mode == "literal":
+            fields = pydantic_form.__fields__
+            assert len(fields) == 1 # TODO allow more and other fields
+            for fieldname in fields:
+                field = fields[fieldname]
+                field_type = field.annotation
+            self.descriptions = field_type.__args__
+        else:
+            self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
 
-        self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
         self.target_emb = self.emb_model.encode(self.descriptions)
 
     def set_document(self, document):
@@ -288,6 +297,18 @@ class Keybert(ContextShortener):
 
         chosen_chunks = [self.chunks[chunk_scores[i][1]] for i in range(min(len(self.chunks), self.top_k))]
         return "\n...\n".join(chosen_chunks)
+
+    def get_similarity_matrices(self):
+        """this function returns the similarity matrix per chunk - for usage with direct keywords-based classification (as opposed to for retrieval/reranking)"""
+        similarities = []
+
+        for kw_i, chunk_i in enumerate(self.indices_with_keywords): # keyword indices and chunk indices can be different
+
+            similarity = kom.get_similarity_matrix(
+                    self.keyword_embeddingss[kw_i], self.target_emb
+                    )
+            similarities.append((similarity, self.keyword_scoress[kw_i]))
+        return similarities
 
 
 
