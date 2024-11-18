@@ -4,5 +4,6 @@ llmdap/ontologies/__pycache__/
 llmdap/profiler/wandb/
 llmdap/profiler/openai_key.py
 llmdap/profiler/all_results/**.json
+llmdap/profiler/output_log.txt
 llmdap/ontologies/efo.owl
 *.swp

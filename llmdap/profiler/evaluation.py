@@ -145,5 +145,9 @@ def score_general_prediction(labels, filled_form, verbose = False):
                 print("pred:", pred)
                 print("field score:", score)
 
+            ## save (just for checking answer distribution - remove this)
+            #with open("output_log.txt", "a") as file:
+            #    file.write(f"{label}:{pred}\n")
+
 
     return scores

@@ -213,6 +213,7 @@ def load_modules(args, preloaded_dspy_model = None):
 
     # load llm
     model_is_openai = False
+    direct_keybert = False
     if args.ff_model == "4om": # openai model
         model_id = "gpt-4o-mini"
         model_is_openai = True
@@ -221,6 +222,8 @@ def load_modules(args, preloaded_dspy_model = None):
         model_id = "gpt-4o"
         model_is_openai = True
         set_openai_api_key()
+    elif args.ff_model == "keybert":
+        direct_keybert = True
     elif args.ff_model == "None": # do not load any model (used for retrieval evaluation)
         model_id = ""
         model_is_openai = True
@@ -335,12 +338,13 @@ def load_modules(args, preloaded_dspy_model = None):
             raise ValueError
         context_shortener = context_shortening.Keybert(
                 args.context_shortener.split("-")[1],
+                pydantic_form = pydantic_form,
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
                 chunk_sizes = (args.reduce_chunk_size, args.reduce_chunk_overlap),
                 mmr_param = args.mmr_param,
                 maxsum_factor = args.maxsum_factor,
-                keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff)
+                keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff),
                 )
     else:
         print(args.context_shortener)
@@ -364,6 +368,12 @@ def load_modules(args, preloaded_dspy_model = None):
                     verbose=False)
         else:
             raise NotImplementedError
+    elif direct_keybert:
+        form_filler = form_filling.DirectKeywordSimilarityFiller(
+                pydantic_form=pydantic_form,
+                listify_form=args.listed_output,
+                order = args.dk_norm_order,
+                verbose=False)
 
     else:
         # load llm form filler
