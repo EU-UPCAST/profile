@@ -94,7 +94,7 @@ Some missing files (in .gitignore)
   - Only fields with reasonably distributed values were selected (disregarding e.g. developmental stage and strain where most of the values are unique, and software, where most values are the same) 
   - This resulted in the fields found in the metadata schema.
   - Fields where all/most occurances have a small set of values, were set as Literal fields (i.e. multiple choice/categorization) (with values like "other" for values outside the selected allowable ones), the others as free text (still limited by length to avoid full sentece answers etc).
-- (in the remainder of data/make_somple_json.count_fields()) The jsons were then merged into one json with the selected fields. In cases where a paper is connected to several datasets, all the values are used.
+- (in the remainder of data/make_somple_json) The jsons were then merged into one json with the selected fields. In cases where a paper is connected to several datasets, all the values are used.
 
 #### Further restrictions upon loading the data
 - On the profiler pipeline, for now, all fields with more than one value is ignored.
