@@ -269,6 +269,11 @@ def load_modules(args, preloaded_dspy_model = None):
     if args.dataset == "arxpr":
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
+    elif args.dataset[:6] == "arxpr2":
+        dataset_literal_length = args.dataset.split("2_")[1]
+        def loader(max_amount=10):
+            return dataset_loader.load_arxpr_data(max_amount, version = "2_25") # loaded dataset always 25, only pydantic form depends on literal_length
+        pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
     elif args.dataset == "study_type":
         loader = dataset_loader.load_study_type_data
         pydantic_form = metadata_schemas.study_type_schema 

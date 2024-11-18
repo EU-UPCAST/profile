@@ -230,16 +230,27 @@ def simplify_jsons():
     with open(folder+"../arxpr_simplified.json", "w") as f:
         json.dump(all_jsons_combined, f, indent=4)
 
-def make_metadataset():
-    """
-    Load simplified json and a metadata schema, and stores all fields that are in the schema
-    """
-
-    # load desired fields
+def make_arxpr_metadataset():
     import sys
     import os
     sys.path.append(os.getcwd() + '/..')
     from profiler.metadata_schemas import arxpr_schema as form
+    out_file = folder+"../arxpr_metadataset_true_values.json"
+    make_metadataset(form, out_file)
+
+def make_arxpr2_metadataset():
+    import sys
+    import os
+    sys.path.append(os.getcwd() + '/..')
+    from profiler.metadata_schemas import arxpr2_schemas as form
+    form = form["25"]
+    out_file = folder+"../arxpr2_25_metadataset_true_values.json"
+    make_metadataset(form, out_file)
+
+def make_metadataset(form, out_file):
+    """
+    Load simplified json and a metadata schema, and stores all fields that are in the schema
+    """
     fields = list(form.__fields__.keys())
 
     with open(folder+"../arxpr_simplified.json", "r") as f:
@@ -260,7 +271,7 @@ def make_metadataset():
 
         #pprint.pprint(metadataset)
 
-    with open(folder+"../arxpr_metadataset_true_values.json", "w") as f:
+    with open(out_file, "w") as f:
         json.dump(metadataset, f, indent=4)
 
 def restrict_metadataset():
@@ -303,9 +314,51 @@ def restrict_metadataset():
     with open(folder+"../arxpr_metadataset_restricted_values.json", "w") as f:
         json.dump(metadataset, f, indent=4)
 
+def restrict_arxpr2_metadataset():
+    """
+    similar to restrict_metadataset, but with arxpr2_schemas["25"] ( the version were only 25 most common values are included)
+    some other differnces:
+    - duplicate values are merged (i.e. if one paper has two labels but they are the same)
+    - if there are multiple different avlues, all of them are removed
+    - values not within these 25 are removed ( as opposed to marked "other")
+    the values are still stored in list form for backwards compatability even though they are never multiple
+    """
+    # load desired fields
+    import sys
+    import os
+    sys.path.append(os.getcwd() + '/..')
+    from profiler.metadata_schemas import arxpr2_schemas as form
+    form = form["25"]
+    fields = list(form.__fields__.keys())
+
+    with open(folder+"../arxpr2_25_metadataset_true_values.json", "r") as f:
+        metadataset = json.load(f)
+    refined_metadataset = {}
+
+    for pmid in metadataset:
+        for fieldname in fields:
+            field_values = metadataset[pmid][fieldname]
+
+            # remove duplicates
+            field_values = list(set(field_values))
+
+            # drop if multiple
+            if len(field_values)>1:
+                field_values = []
+
+            # drop uncommon ones
+            if len(field_values) and (not field_values[0] in form.__fields__[fieldname].annotation.__args__):
+                field_values = []
+
+            metadataset[pmid][fieldname] = field_values
+
+
+    with open(folder+"../arxpr2_25_metadataset_restricted_values.json", "w") as f:
+        json.dump(metadataset, f, indent=4)
 
 if __name__ == "__main__":
     # count_fields()
     # simplify_jsons()
-    # make_metadataset()
-    restrict_metadataset()
+    # make_arxpr_metadataset()
+    make_arxpr2_metadataset()
+    restrict_arxpr2_metadataset()

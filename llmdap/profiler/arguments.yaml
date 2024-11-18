@@ -1,7 +1,7 @@
 dataset__args:
     dataset:
         default: "arxpr"
-        choices: ["ega","arxpr", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
+        choices: ["ega","arxpr", "arxpr2_25", "arxpr2_50", "arxpr2_100", "arxpr2_200", "arxpr2_400", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
     dataset_length:
         default: 1
         help: "number of papers to analyse"
