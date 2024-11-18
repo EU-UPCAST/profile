@@ -372,7 +372,6 @@ def load_modules(args, preloaded_dspy_model = None):
         form_filler = form_filling.DirectKeywordSimilarityFiller(
                 pydantic_form=pydantic_form,
                 listify_form=args.listed_output,
-                order = args.dk_norm_order,
                 verbose=False)
 
     else:

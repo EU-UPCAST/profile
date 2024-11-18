@@ -53,7 +53,6 @@ dk_params = {
             #5000
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
-        "dk_norm_order" : {"values" : [1,2,10]},
         "n_keywords" : {"value" : 8},
     }
 
@@ -186,7 +185,7 @@ if __name__ == "__main__":
     #          )
     run_sweep(dk_params, 
               dataset_length = 100,
-              sweep_count = 3,
+              sweep_count = 1,
               method = "grid",
               dataset = "study_type",
               )

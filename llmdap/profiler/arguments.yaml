@@ -47,10 +47,6 @@ form_filler__outlines__sampler__multinomial__args:
     sampler_temp:
         default: 0.4
         help: "temperature"
-
-form_filler__direct_keyword__args:
-    dk_norm_order:
-        default: 2
     
 
 

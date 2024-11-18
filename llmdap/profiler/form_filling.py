@@ -594,7 +594,7 @@ class DirectKeywordSimilarityFiller(dspy.Module):
     def __init__(self,
                  pydantic_form = None,
                  listify_form = False,
-                 order = 2,
+                 order = np.inf, # max norm works quite a bit better than sum/1- or 2-norm
                  verbose = False,
                  ):
         self.verbose = verbose
