@@ -98,6 +98,9 @@ folder = "/mnt/data/upcast/data/arxpr/"
 files = os.listdir(folder)
 
 def count_fields():
+    """iterate through all jsons metadata files, and find all the fields, and count the number of appearances of each fields.
+    Print each field with some info.
+    """
     field_counter = FieldCounter()
     
     i = 0
@@ -162,7 +165,10 @@ def find_field(field, obj):
 
 
 def simplify_jsons():
-
+    """
+    For each json metadata file, find all values connected to the desired fields (in "interesting_fields.txt"),
+    then merge this into one large json: "arxpr_simplified.josn".
+    """
     with open("interesting_fields.txt", "r") as f:
         text = f.read()
     text = text.lower() # put everythiong in lowercase
@@ -225,6 +231,9 @@ def simplify_jsons():
         json.dump(all_jsons_combined, f, indent=4)
 
 def make_metadataset():
+    """
+    Load simplified json and a metadata schema, and stores all fields that are in the schema
+    """
 
     # load desired fields
     import sys
@@ -255,6 +264,9 @@ def make_metadataset():
         json.dump(metadataset, f, indent=4)
 
 def restrict_metadataset():
+    """
+    Load data from make_metadataset, and a metadata schema, and restricts the values to the "allowed" ones (in the literal in the schema)
+    """
     # load desired fields
     import sys
     import os
@@ -277,7 +289,7 @@ def restrict_metadataset():
                 if value in form.__fields__[fieldname].annotation.__args__:
                     refined_values.append(value)
                 else:   
-                    refined_values.append(form.__fields__[fieldname].annotation.__args__[-1])
+                    refined_values.append("other" if fieldname=="study_type_18" else form.__fields__[fieldname].annotation.__args__[-1])
             metadataset[key][fieldname] = refined_values
 
 
@@ -295,5 +307,5 @@ def restrict_metadataset():
 if __name__ == "__main__":
     # count_fields()
     # simplify_jsons()
-    make_metadataset()
+    # make_metadataset()
     restrict_metadataset()
