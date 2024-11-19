@@ -26,6 +26,15 @@ Predicting arxpr2_100 fields for the first 100 papers:
 |Keybert-based rerank using allowed answers | best keyword     | 0.333    |
 
 
+Shuffling literal worsen score for gpt:
+(keybert-literal with 4om)
+| generation model | Accuracy |
+|:-----------------|:---------|
+| arxpr2_400       | 0.692    |
+| arxpr2s_400      | 0.530    |
+
+
+
 (note that these tests are on a relative small test sample, on which they have been tuned, so more tests are required before concluding)
 
 
