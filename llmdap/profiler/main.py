@@ -97,6 +97,11 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
             if len(paper_labels) == len(remove_fields(paper_labels)):
                 print("!!! No usable labels, skippping paper")
                 continue
+            if "arxpr2_" in argstring:
+                # skip the common ones just to avoid having a very skewed score. TODO: solve this problem in a better way
+                if set(paper_labels.keys())-set(remove_fields(paper_labels)) <= {"assay_by_molecule_14", "study_type_18"}:
+                    print("!!! only the common labels, skippping paper")
+                    continue
 
         filled_form = None
 
@@ -269,6 +274,11 @@ def load_modules(args, preloaded_dspy_model = None):
     if args.dataset == "arxpr":
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
+    elif args.dataset[:6] == "arxpr2":
+        dataset_literal_length = args.dataset.split("2_")[1]
+        def loader(max_amount=10):
+            return dataset_loader.load_arxpr_data(max_amount, version = "2_25") # loaded dataset always 25, only pydantic form depends on literal_length
+        pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
     elif args.dataset == "study_type":
         loader = dataset_loader.load_study_type_data
         pydantic_form = metadata_schemas.study_type_schema 
@@ -334,7 +344,7 @@ def load_modules(args, preloaded_dspy_model = None):
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
     elif args.context_shortener[:8] == "keybert-":
-        if not args.dataset == "study_type":
+        if not args.dataset[:7] in ["study_t", "arxpr2_"]: # keybert requires all fields are literals, or have ontology
             raise ValueError
         context_shortener = context_shortening.Keybert(
                 args.context_shortener.split("-")[1],

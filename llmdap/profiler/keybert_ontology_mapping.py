@@ -8,6 +8,8 @@ def get_subontology(
             mode, # label or description
             top_level_node_iri = "http://purl.obolibrary.org/obo/OBI_0000070", # node labeled "assay"
             ):
+    """ get the description and/or labels of every node that is a descendant of the "assay" node (or another specified, on the efo ontology"""
+
     # Step 1: Load the ontology using OWLReady2 and extract concept labels
     ontology_path = "../ontologies/efo.owl"  # Path to your OWL file
     ontology = get_ontology(ontology_path).load()
@@ -47,6 +49,8 @@ if __name__ == "__main__":
 
     kw_model = get_kw_model()
     kws, scores = get_keywords(text, kw_model, top_n =2)
+                                  #use_maxsum=True, nr_candidates=4)
+
     print(kws, scores) # cheese and cake
 
     emb_model = get_embedding_model()
