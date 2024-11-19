@@ -90,6 +90,28 @@ keybert_params = {
     }
 
 
+maxsum_params = {
+        "context_shortener" : {"values" : [
+            "keybert-literal", 
+            ]},
+        "ff_model" :{"value" : "4om"},
+        "reduce_chunk_size" : {"values" : [
+            500, 
+            ]},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            4,
+            #14,
+            #16
+            ]},
+        "n_keywords" : {"values" : [
+            8
+            ]},
+        "maxsum_factor" : {"values" : [
+            1, 1.1, 1.5
+            ]},
+    }
+
 def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None):
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["dataset"] = {"value" : dataset}
@@ -110,13 +132,20 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     #wandb.teardown()
 
 if __name__ == "__main__":
+    run_sweep(maxsum_params, 
+              dataset_length = 100,
+              sweep_count = 3,
+              method = "grid",
+              dataset = "arxpr2_100",
+              name="maxsumtes1",
+              )
 
-    for name, params in [("direct_kw", dk_params), ("4om", openai_params), ("kw-4om", keybert_params), ("rag-4om", rag_params)]:
-        run_sweep(params, 
-                  dataset_length = 100,
-                  sweep_count = 1,
-                  method = "grid",
-                  dataset = "arxpr2_100",
-                  name=name,
-                  )
+    #for name, params in [("direct_kw", dk_params), ("4om", openai_params), ("kw-4om", keybert_params), ("rag-4om", rag_params)]:
+    #    run_sweep(params, 
+    #              dataset_length = 100,
+    #              sweep_count = 1,
+    #              method = "grid",
+    #              dataset = "arxpr2_100",
+    #              name=name,
+    #              )
 
