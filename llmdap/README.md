@@ -16,7 +16,20 @@ Predicting the study_type field of 79 papers:
 |Keybert-based rerank using ontology | GPT 4o-mini      | 0.760    |
 |Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.797    |
 
+
+Predicting arxpr2 fields for the first 100 papers:
+| Retrieval method    | generation model | Accuracy |
+|:--------------------|:-----------------|:---------|
+|Full paper in context| GPT 4o-mini      | 0.526    |
+|Regular retrieval    | GPT 4o-mini      | 0.430    |
+|Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.718    |
+|Keybert-based rerank using allowed answers | best keyword     | 0.333    |
+
+
 (note that these tests are on a relative small test sample, on which they have been tuned, so more tests are required before concluding)
+
+
+
 
 
 ## How to run:
