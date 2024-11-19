@@ -641,7 +641,7 @@ class DirectKeywordSimilarityFiller(dspy.Module):
 
 
             # generate output
-            output = self.get_best_answer_for_field(context_shortener, field_type)
+            output = self.get_best_answer_for_field(context_shortener, fieldname, field_type)
 
             output_dict[fieldname] = output
 
@@ -662,16 +662,13 @@ class DirectKeywordSimilarityFiller(dspy.Module):
         torch.cuda.empty_cache()
         return output
 
-    def get_best_answer_for_field(self, context_shortener, field_type):
+    def get_best_answer_for_field(self, context_shortener, fieldname, field_type):
 
-        target_keywords = context_shortener.descriptions # strings to match (e.g. ontology node labels or allowed answers)
+        target_keywords = context_shortener.descriptions[fieldname] # strings to match (e.g. ontology node labels or allowed answers)
         target_keywords = [t.lower() for t in target_keywords] # to lower, to match the allowed answers
         if getattr(field_type, "__origin__", None) is typing.Literal:
             allowed_answers = field_type.__args__
 
-            #print(target_keywords)
-            #print(allowed_answers)
-            #print([ans in target_keywords for ans in allowed_answers])
 
             for ans in allowed_answers:
                 assert ans in target_keywords # if not all allowed answers are in the targets, it will not be possible to predict them (could still try predicting the others in certain cases i guess - e.g. ignoring "other", then predict other if best match is not good (future work)
@@ -684,7 +681,7 @@ class DirectKeywordSimilarityFiller(dspy.Module):
 
 
         # get similarities
-        similarities = context_shortener.get_similarity_matrices()
+        similarities = context_shortener.get_similarity_matrices(fieldname)
 
         # prep similarities:
         prepared_similarities = []

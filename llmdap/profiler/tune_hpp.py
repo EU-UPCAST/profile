@@ -47,123 +47,57 @@ dk_params = {
         "ff_model" :{"value" : "keybert"},
         "context_shortener" : {"value" : "keybert-literal"},
         "reduce_chunk_size" : {"values" : [
-            #500, 
-            #1000, 
-            2000, 
-            #5000
+            500, 
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
         "n_keywords" : {"value" : 8},
     }
 
-keybert_vs_rag= {
+openai_params = {
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"values" : [
-            #"keybert-both",
+            "full_paper",
+            ]},
+    }
+
+rag_params = {
+        "ff_model" :{"value" : "4om"},
+        "context_shortener" : {"values" : [
             "rag", 
             ]},
         "rag_chunk_size" : {"values" : [512,]},
-        "reduce_chunk_size" : {"values" : [
-            #500, 
-            #1000, 
-            2000, 
-            #5000
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
+        "rag_chunk_overlap" : {"value" : 64},
         "similarity_k" : {"values" : [3,]},
-        "n_keywords" : {"value" : 8},
     }
 
 keybert_params = {
         "context_shortener" : {"values" : [
-            #"keybert-label",
-            "keybert-description", 
             "keybert-literal", 
-            #"keybert-both"
             ]},
         "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
-            #250
             500, 
-            #1000, 
-            #2000, 
-            #5000
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
-            #10,
-            #12,
+            #4,
             14,
             #16
-            ]},#4,6,8,10]},#,2,3,]},
+            ]},
         "n_keywords" : {"values" : [
-            #5, 
             8
-            ]},#,12]},
-    }
-
-openai_parameters = {
-        "ff_model" :{"values" : [
-            "4om",
-            # add non-mini version
-            ]},
-        "context_shortener" : {"values" : ["full_paper"]},
-    }
-
-rag_parameters = {
-        #"sampler_beams" : {"values" : [2,3,4]},
-        "context_shortener" : {"values" : ["rag"]},
-        #"retriever_type" : {"values" : ["simple","fusion"]},
-        "rag_chunk_size" : {"values" : [
-            #128,
-            #256,
-            512,
-            #1024,
-            #2048,
-            #4096
-            ]},
-        "similarity_k" : {"values" : [
-            #1,
-            #2,
-            3,
-            5,
-            ]},
-        "mmr_param" : {"values" : [
-            #0.1,
-            #0.4,
-            0.7,
-            0.9,
-            1,
-            ]},
-        "rag_llm" : {"values" : [
-            #"biolm",
-            "llama3.1",
-            #"text-embedding-3-small",
-            #"text-embedding-3-large",
-            ]},
-        "ff_model" : {"values" : [
-            #"biolm",
-            "llama3.1I-8b-q4",
-            #3"4om",
             ]},
     }
 
-reduce_parameters = {
-        "sampler_beams" : {"values" : [2,4]},
-        "context_shortener" : {"values" : ["reduce"]},
-        "reduce_chunk_size" : {"values" : [5000, 10000,20000,30000]},
-        "reduce_temperature" : {"values" : [0.01, 0.15, 0.4, 0.9]},
-    }
 
-
-
-def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"):
+def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None):
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["dataset"] = {"value" : dataset}
     parameters = add_defaults(parameters)
     
     
     sweep_configuration = {
+        "name":f"{name}_{dataset}_{sweep_count}_{dataset_length}",
         "method": method, # random, grid (every config) or bayesian
         "metric": {"goal": "maximize", "name": "total_score"},
         "parameters": parameters,
@@ -177,16 +111,12 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 if __name__ == "__main__":
 
-    #run_sweep(dk_params, 
-    #          dataset_length = 10,
-    #          sweep_count = 4,
-    #          method = "grid",
-    #          dataset = "study_type",
-    #          )
-    run_sweep(dk_params, 
-              dataset_length = 100,
-              sweep_count = 1,
-              method = "grid",
-              dataset = "study_type",
-              )
+    for name, params in [("direct_kw", dk_params), ("4om", openai_params), ("kw-4om", keybert_params), ("rag-4om", rag_params)]:
+        run_sweep(params, 
+                  dataset_length = 100,
+                  sweep_count = 1,
+                  method = "grid",
+                  dataset = "arxpr2_100",
+                  name=name,
+                  )
 

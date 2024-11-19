@@ -232,17 +232,23 @@ class Keybert(ContextShortener):
         self.kw_model = kom.get_kw_model()
         self.emb_model = kom.get_embedding_model()
         
+
+        self.descriptions = {}
+        self.target_emb = {}
         if mode == "literal":
             fields = pydantic_form.__fields__
-            assert len(fields) == 1 # TODO allow more and other fields
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
-            self.descriptions = field_type.__args__
+                self.descriptions[fieldname] = field_type.__args__
+                self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
         else:
-            self.descriptions = kom.get_subontology(mode) # TODO allow more and other fields
-
-        self.target_emb = self.emb_model.encode(self.descriptions)
+            fields = pydantic_form.__fields__
+            assert len(fields) == 1 # TODO allow more and other fields
+            for fieldname in fields:
+                pass
+            self.descriptions[fieldname] = kom.get_subontology(mode)
+            self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
 
     def set_document(self, document):
         self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False, split_by_periods=False)
@@ -276,12 +282,13 @@ class Keybert(ContextShortener):
             self.indices_with_keywords.append(i)
 
     def __call__(self, **kwargs):
+        fieldname = kwargs["answer_field_name"]
 
         chunk_scores = []
         for kw_i, chunk_i in enumerate(self.indices_with_keywords): # keyword indices and chunk indices can be different
 
             similarity = kom.get_similarity_matrix(
-                    self.keyword_embeddingss[kw_i], self.target_emb
+                    self.keyword_embeddingss[kw_i], self.target_emb[fieldname]
                     )
 
             chunk_scores.append(
@@ -298,14 +305,14 @@ class Keybert(ContextShortener):
         chosen_chunks = [self.chunks[chunk_scores[i][1]] for i in range(min(len(self.chunks), self.top_k))]
         return "\n...\n".join(chosen_chunks)
 
-    def get_similarity_matrices(self):
+    def get_similarity_matrices(self, fieldname):
         """this function returns the similarity matrix per chunk - for usage with direct keywords-based classification (as opposed to for retrieval/reranking)"""
         similarities = []
 
         for kw_i, chunk_i in enumerate(self.indices_with_keywords): # keyword indices and chunk indices can be different
 
             similarity = kom.get_similarity_matrix(
-                    self.keyword_embeddingss[kw_i], self.target_emb
+                    self.keyword_embeddingss[kw_i], self.target_emb[fieldname]
                     )
             similarities.append((similarity, self.keyword_scoress[kw_i]))
         return similarities
@@ -317,22 +324,8 @@ class Keybert(ContextShortener):
         # Reduce ontology value dimension NOTE this can be done in many different ways!
         #similarity_per_kw = similarity.mean(dim=1)
         similarity_per_kw = similarity.max(dim=1).values #  can also get indices, to get max description
-
         # reduce to single score # NOTE this can also be changed.
         keyword_scores = torch.Tensor(keyword_scores)
         product = similarity_per_kw.inner(keyword_scores)
         return product
 
-
-
-if __name__=="__main__":
-    text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
-    kb = Keybert("dummy_mode", chunk_sizes = (100,0), keyphrase_range=(1,3))
-
-    kb.descriptions = ["melanoma", "cancer", "sample"] # to speed up testing
-    kb.target_emb = kb.emb_model.encode(kb.descriptions)
-
-    kb.set_document(text)
-    print(kb.keywordss)
-    print(kb.keyword_scoress)
-    print(kb())
