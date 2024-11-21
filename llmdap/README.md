@@ -12,7 +12,7 @@ I think once experiments are done, we should make another repo with just the rel
 Results on the forst 100 papers, with the arxpr2s_25 dataset (the most relevant one i think. 25 alloable labels, in shuffled order)
 | Retrieval method    | generation model | Accuracy   |
 |:--------------------|:-----------------|:-----------|
-|Full paper in context| GPT 4o-mini      |(not tested)|
+|Full paper in context| GPT 4o-mini      | 0.477      |
 |Regular retrieval    | GPT 4o-mini      |(not tested)|
 |Keybert-literal      | GPT 4o-mini      |(not tested)|
 |Keyword-literal      | GPT 4o-mini      | 0.665      |
