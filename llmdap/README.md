@@ -24,7 +24,8 @@ Predicting arxpr2_100* fields for the first 100 papers:
 |Regular retrieval    | GPT 4o-mini      | 0.430    |
 |Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.718    |
 |Keybert-based rerank using allowed answers | best keyword     | 0.333    |
-* this dataset has 100 allowabel answers, sorted in decreasing frequency (which is kind of cheating i guess)
+
+*this dataset has 100 allowabel answers, sorted in decreasing frequency (which is kind of cheating i guess)
 
 Shuffling literal worsen score for gpt:
 (keybert-literal with 4om)
@@ -32,6 +33,7 @@ Shuffling literal worsen score for gpt:
 |:-----------------|:---------|
 | arxpr2_400       | 0.692    |
 | arxpr2s_400      | 0.530    |
+
 In other words, when the list of 400 answers are sorted in decreasing frequency, gpt is not affected much by the long list
 
 
