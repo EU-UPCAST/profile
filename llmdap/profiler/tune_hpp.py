@@ -31,36 +31,44 @@ def sweep_run():
     
     args = wandb.config
 
+
     prepared_kwargs = main.load_modules(args, preloaded_dspy_model = dspy_model)
     args = args._items
     args.pop("_wandb")
     args.pop("dataset_length")
     load = args.pop("load")
     save = args.pop("save")
+
+    # use floats in argstring to load results from main
+    if args["maxsum_factor"]==1:
+        args["maxsum_factor"]= 1.0
+    if args["mmr_param"]==1:
+        args["mmr_param"]= 1.0
+
     args = args.items()
     argstring = str(sorted(args))
+    #load = False # REMOVE THIS!!
     score = main.fill_out_forms(**prepared_kwargs, argstring = argstring, load=load, save=save)
 
     wandb.log(score)
 
-dk_params = {
+dk_params = { # direct keyword
         "ff_model" :{"value" : "keybert"},
-        "context_shortener" : {"value" : "keybert-literal"},
+        "context_shortener" : {"value" : "keyword-literal"},
         "reduce_chunk_size" : {"values" : [
             500, 
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
-        "n_keywords" : {"value" : 8},
     }
 
-openai_params = {
+openai_params = { # best baseline
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"values" : [
             "full_paper",
             ]},
     }
 
-rag_params = {
+rag_params = { # baseline rag
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"values" : [
             "rag", 
@@ -70,7 +78,7 @@ rag_params = {
         "similarity_k" : {"values" : [3,]},
     }
 
-keybert_params = {
+keybert_params = { # best baseline
         "context_shortener" : {"values" : [
             "keybert-literal", 
             ]},
@@ -89,10 +97,56 @@ keybert_params = {
             ]},
     }
 
-
-maxsum_params = {
+keyword_llama_params = { # still tuning
         "context_shortener" : {"values" : [
+            "keyword-literal", 
+            ]},
+        "reduce_chunk_size" : {"values" : [
+            500, 
+            ]},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            2,
+            3,
+            4,
+            6,
+            9,
+            12,
+            16
+            ]},
+    }
+
+keyword_llama_params_2 = {
+        "context_shortener" : {"values" : [
+            #"keyword-literal", 
             "keybert-literal", 
+            ]},
+        "reduce_chunk_size" : {"values" : [
+            150,
+            200,
+            300,
+            400,
+            #500, 
+            #800,
+            #1200,
+            ]},
+        "reduce_chunk_overlap" : {"values" : [50, 100]},
+        "similarity_k" : {"values" : [
+            2,
+            3,
+            4,
+            #5,
+            #6,
+            #9,
+            #12,
+            #16
+            ]},
+    }
+kw_vs_kb_params= { # yes keyword has still been run with all these params
+        "context_shortener" : {"values" : [
+            "keybert-literal-1", 
+            "keybert-literal", 
+            #"keyword-literal", 
             ]},
         "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
@@ -100,26 +154,28 @@ maxsum_params = {
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
-            4,
-            #14,
+            #4,
+            14,
             #16
             ]},
         "n_keywords" : {"values" : [
             8
             ]},
-        "maxsum_factor" : {"values" : [
-            1, 1.1, 1.5
-            ]},
     }
 
 def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None):
     parameters["dataset_length"] = {"value" : dataset_length}
-    parameters["dataset"] = {"value" : dataset}
+    if type(dataset) is str:
+        parameters["dataset"] = {"value" : dataset}
+        name = f"{name}_{dataset}_{sweep_count}_{dataset_length}"
+    if type(dataset) is list:
+        parameters["dataset"] = {"values" : dataset}
+        name = f"{name}__{sweep_count}_{dataset_length}"
     parameters = add_defaults(parameters)
     
     
     sweep_configuration = {
-        "name":f"{name}_{dataset}_{sweep_count}_{dataset_length}",
+        "name": name,
         "method": method, # random, grid (every config) or bayesian
         "metric": {"goal": "maximize", "name": "total_score"},
         "parameters": parameters,
@@ -132,20 +188,21 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     #wandb.teardown()
 
 if __name__ == "__main__":
-    run_sweep(maxsum_params, 
+    run_sweep(kw_vs_kb_params, 
               dataset_length = 100,
-              sweep_count = 3,
+              sweep_count = 24,
               method = "grid",
-              dataset = "arxpr2_100",
-              name="maxsumtes1",
+              dataset="arxpr2s_25",#["arxpr2s_25", "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
+              name="embed_models",
               )
 
-    #for name, params in [("direct_kw", dk_params), ("4om", openai_params), ("kw-4om", keybert_params), ("rag-4om", rag_params)]:
-    #    run_sweep(params, 
+
+    #for p in [openai_params, keybert_params]: #
+    #for p in [rag_params]:
+    #    run_sweep(p, 
     #              dataset_length = 100,
     #              sweep_count = 1,
     #              method = "grid",
-    #              dataset = "arxpr2_100",
-    #              name=name,
+    #              dataset="arxpr2s_25",
+    #              name="2s25-4omresults",
     #              )
-

@@ -219,6 +219,8 @@ class Keybert(ContextShortener):
             mmr_param = 1,
             maxsum_factor = 1,
             keyphrase_range = (1,1),
+            comparison_mode = "keybert",
+            emb_model_v = 0
             ):
         self.n_keywords = n_keywords # number of keywords to extract from each chunk
         self.top_k = top_k # number of chunks to merge and return
@@ -228,10 +230,18 @@ class Keybert(ContextShortener):
         self.maxsum_factor = maxsum_factor
         self.keyphrase_range = keyphrase_range
         #self.mode = mode
+        self.comparison_mode = comparison_mode
 
         self.kw_model = kom.get_kw_model()
+
+        # define embedding model through these version numbers (dont want to handle the long names through args and main.py...
+        emb_model_id = {
+                "0" : 'all-MiniLM-L6-v2',
+                "1" : 'all-mpnet-base-v2',
+                }[emb_model_v]
+
         self.emb_model = kom.get_embedding_model()
-        
+
 
         self.descriptions = {}
         self.target_emb = {}
@@ -258,28 +268,46 @@ class Keybert(ContextShortener):
         self.keyword_scoress = []
         self.keyword_embeddingss = []
         self.indices_with_keywords = []
-        for (i, chunk) in enumerate(self.chunks):
-            keywords, scores = kom.get_keywords(
-                    chunk, 
-                    self.kw_model, 
-                    # kwargs
-                    keyphrase_ngram_range = self.keyphrase_range,
-                    top_n=self.n_keywords,
-                    use_maxsum = self.maxsum_factor>1,
-                    use_mmr = self.mmr_param<1,
-                    diversity = self.mmr_param,
-                    nr_candidates = int(self.n_keywords * self.maxsum_factor),
-                    )
+        if self.comparison_mode == "keybert":
+            for (i, chunk) in enumerate(self.chunks):
+                keywords, scores = kom.get_keywords(
+                        chunk, 
+                        self.kw_model, 
+                        # kwargs
+                        keyphrase_ngram_range = self.keyphrase_range,
+                        top_n=self.n_keywords,
+                        use_maxsum = self.maxsum_factor>1,
+                        use_mmr = self.mmr_param<1,
+                        diversity = self.mmr_param,
+                        nr_candidates = int(self.n_keywords * self.maxsum_factor),
+                        )
 
-            embs = self.emb_model.encode(keywords)
+                embs = self.emb_model.encode(keywords)
   
-            if len(keywords)==0: # short chunks may have no keyword. Note that this require som extra index handling
-                print(f"no keyword chunk: ***{chunk}***")
-                continue
-            self.keywordss.append(keywords)
-            self.keyword_scoress.append(scores)
-            self.keyword_embeddingss.append(embs)
-            self.indices_with_keywords.append(i)
+                if len(keywords)==0: # short chunks may have no keyword. Note that this require som extra index handling
+                    print(f"no keyword chunk: ***{chunk}***")
+                    continue
+                self.keywordss.append(keywords)
+                self.keyword_scoress.append(scores)
+                self.keyword_embeddingss.append(embs)
+                self.indices_with_keywords.append(i)
+
+        elif self.comparison_mode == "keyword":
+            # for each chunk, act as if there is a single kw, embed the chunk and give score 1 (can simplify if keybert is redundant)
+            for (i, chunk) in enumerate(self.chunks):
+
+                if len(chunk)==0: # not sure if this can happen or not
+                    continue
+
+                keywords, scores = [chunk], [1.0]
+                embs = self.emb_model.encode(keywords)
+  
+                self.keywordss.append(keywords)
+                self.keyword_scoress.append(scores)
+                self.keyword_embeddingss.append(embs)
+                self.indices_with_keywords.append(i)
+        else:
+            raise ValueError
 
     def __call__(self, **kwargs):
         fieldname = kwargs["answer_field_name"]

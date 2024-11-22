@@ -1,7 +1,7 @@
 dataset__args:
     dataset:
         default: "arxpr"
-        choices: ["ega","arxpr", "arxpr2_25", "arxpr2_50", "arxpr2_100", "arxpr2_200", "arxpr2_400", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
+        choices: ["ega","arxpr", "arxpr2_25", "arxpr2_50", "arxpr2_100", "arxpr2_200", "arxpr2_400", "arxpr2s_25", "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
     dataset_length:
         default: 1
         help: "number of papers to analyse"
@@ -53,7 +53,7 @@ form_filler__outlines__sampler__multinomial__args:
 context_shortener__args:
     context_shortener:
         default: "rag"
-        choices: ["full_paper", "rag","rerank", "reduce", "keybert-label","keybert-literal", "keybert-description", "keybert-both"]
+          #choices: ["full_paper", "rag","rerank", "reduce", "keybert-label","keybert-literal", "keybert-description", "keybert-both", "keyword-label","keyword-description", "keyword-both", "keyword-literal"]
 
 context_shortener__rag__args:
     retriever_type:

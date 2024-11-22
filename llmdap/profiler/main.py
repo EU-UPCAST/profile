@@ -275,10 +275,13 @@ def load_modules(args, preloaded_dspy_model = None):
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
     elif args.dataset[:6] == "arxpr2":
-        dataset_literal_length = args.dataset.split("2_")[1]
+        dataset_literal_length = args.dataset.split("_")[1]
         def loader(max_amount=10):
             return dataset_loader.load_arxpr_data(max_amount, version = "2_25") # loaded dataset always 25, only pydantic form depends on literal_length
-        pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
+        if args.dataset[:8] == "arxpr2s_":
+            pydantic_form = metadata_schemas.arxpr2s_schemas[dataset_literal_length]
+        else:
+            pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
     elif args.dataset == "study_type":
         loader = dataset_loader.load_study_type_data
         pydantic_form = metadata_schemas.study_type_schema 
@@ -343,11 +346,13 @@ def load_modules(args, preloaded_dspy_model = None):
                 )
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
-    elif args.context_shortener[:8] == "keybert-":
-        if not args.dataset[:7] in ["study_t", "arxpr2_"]: # keybert requires all fields are literals, or have ontology
+    elif args.context_shortener[:8] in ["keybert-", "keyword-"]:  # TODO clean up this argument situation
+        if not args.dataset[:7] in ["study_t", "arxpr2_", "arxpr2s"]: # keybert requires all fields are literals, or have ontology
             raise ValueError
+
+        cs_info = args.context_shortener.split("-")
         context_shortener = context_shortening.Keybert(
-                args.context_shortener.split("-")[1],
+                cs_info[1],
                 pydantic_form = pydantic_form,
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
@@ -355,6 +360,8 @@ def load_modules(args, preloaded_dspy_model = None):
                 mmr_param = args.mmr_param,
                 maxsum_factor = args.maxsum_factor,
                 keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff),
+                comparison_mode = cs_info[0],
+                emb_model_v = cs_info[2] if len(cs_info)>2 else 0,
                 )
     else:
         print(args.context_shortener)
@@ -369,7 +376,7 @@ def load_modules(args, preloaded_dspy_model = None):
                     listify_form = args.listed_output,
                     max_tokens = args.openai_ff_max_tokens,
                     verbose=False)#True)
-        elif args.context_shortener=="rag" or args.context_shortener[:8]=="keybert-":
+        elif args.context_shortener=="rag" or args.context_shortener[:8] in ["keybert-", "keyword-"]:
             form_filler = form_filling.OpenAISequentialFormFiller(
                     model_id=model_id,
                     pydantic_form = pydantic_form,

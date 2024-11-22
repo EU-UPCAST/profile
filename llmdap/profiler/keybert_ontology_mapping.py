@@ -50,8 +50,9 @@ if __name__ == "__main__":
     kw_model = get_kw_model()
     kws, scores = get_keywords(text, kw_model, top_n =2)
                                   #use_maxsum=True, nr_candidates=4)
-
     print(kws, scores) # cheese and cake
+    #kws, scores = get_keywords(text, kw_model, top_n =2, keyphrase_ngram_range=(2,2))
+    #print(kws, scores) #  cheese love and love cake
 
     emb_model = get_embedding_model()
     kw_emb = emb_model.encode(kws)
