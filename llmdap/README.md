@@ -13,7 +13,7 @@ Results on the forst 100 papers, with the arxpr2s_25 dataset (the most relevant 
 | Retrieval method    | generation model | Accuracy   | Comment |
 |:--------------------|:-----------------|:-----------|:--------|
 |Full paper in context| GPT 4o-mini      | 0.477      | Best baseline |
-|Regular retrieval    | GPT 4o-mini      |(not tested)| Baseline rag  |
+|Regular retrieval    | GPT 4o-mini      | 0.390      | Baseline rag  |
 |Keybert-literal      | GPT 4o-mini      | 0.703      | Best          |
 |Keyword-literal      | GPT 4o-mini      | 0.665      |               |
 |Keyword-literal      | best keyword     | 0.449      |               |
