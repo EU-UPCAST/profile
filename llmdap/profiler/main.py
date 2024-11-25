@@ -361,7 +361,7 @@ def load_modules(args, preloaded_dspy_model = None):
                 maxsum_factor = args.maxsum_factor,
                 keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff),
                 comparison_mode = cs_info[0],
-                emb_model_v = cs_info[2] if len(cs_info)>2 else 0,
+                emb_model_v = cs_info[2] if len(cs_info)>2 else "0",
                 )
     else:
         print(args.context_shortener)

@@ -70,17 +70,23 @@ openai_params = { # best baseline
 
 rag_params = { # baseline rag
         "ff_model" :{"value" : "4om"},
+        "rag_llm:" :{"values": [
+            "Losspost/stella_en_1.5b_v5",
+            "all-minilm:l6-v2",
+            #"llama3.1",
+            ]},
         "context_shortener" : {"values" : [
             "rag", 
             ]},
-        "rag_chunk_size" : {"values" : [512,]},
-        "rag_chunk_overlap" : {"value" : 64},
-        "similarity_k" : {"values" : [3,]},
+        "rag_chunk_size" : {"values" : [500,]},
+        "rag_chunk_overlap" : {"value" : 100},
+        #"similarity_k" : {"values" : [14,15,16,17,18,19,20]},
+        "similarity_k" : {"values" : [16]},
     }
 
 keybert_params = { # best baseline
         "context_shortener" : {"values" : [
-            "keybert-literal", 
+            "keybert-literal-2", 
             ]},
         "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
@@ -88,9 +94,11 @@ keybert_params = { # best baseline
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
-            #4,
             14,
-            #16
+            15,
+            16,
+            17,
+            18,
             ]},
         "n_keywords" : {"values" : [
             8
@@ -122,19 +130,19 @@ keyword_llama_params_2 = {
             "keybert-literal", 
             ]},
         "reduce_chunk_size" : {"values" : [
-            150,
+            #150,
             200,
-            300,
-            400,
+            #300,
+            #400,
             #500, 
             #800,
             #1200,
             ]},
-        "reduce_chunk_overlap" : {"values" : [50, 100]},
+        "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
-            2,
+            #2,
             3,
-            4,
+            #4,
             #5,
             #6,
             #9,
@@ -144,9 +152,10 @@ keyword_llama_params_2 = {
     }
 kw_vs_kb_params= { # yes keyword has still been run with all these params
         "context_shortener" : {"values" : [
-            "keybert-literal-1", 
+            "keybert-literal-4", 
+            "keybert-literal-3", 
             "keybert-literal", 
-            #"keyword-literal", 
+            "keyword-literal", 
             ]},
         "ff_model" :{"value" : "4om"},
         "reduce_chunk_size" : {"values" : [
@@ -188,13 +197,41 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     #wandb.teardown()
 
 if __name__ == "__main__":
-    run_sweep(kw_vs_kb_params, 
-              dataset_length = 100,
-              sweep_count = 24,
+    #run_sweep(rag_params, 
+    #          dataset_length = 100,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          name="rag_embeddings",
+    #          )
+    #run_sweep(kw_vs_kb_params, 
+    #          dataset_length = 100,
+    #          sweep_count = 4,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          name="keybert_embeddings",
+    #          )
+    run_sweep(keyword_llama_params_2, 
+              dataset_length = 500,
+              sweep_count = 5,
               method = "grid",
-              dataset="arxpr2s_25",#["arxpr2s_25", "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
-              name="embed_models",
+              dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
+              name="tuned_llama_500papers",
               )
+    run_sweep(keyword_llama_params_2, 
+              dataset_length = 1000,
+              sweep_count = 5,
+              method = "grid",
+              dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
+              name="tuned_llama_1kpapers",
+              )
+    #run_sweep(keybert_params, 
+    #          dataset_length = 100,
+    #          sweep_count = 5,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
+    #          name="ragtuneK",#"tuned_llama_25->400",
+    #          )
 
 
     #for p in [openai_params, keybert_params]: #

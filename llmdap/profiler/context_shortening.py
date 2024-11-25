@@ -232,15 +232,16 @@ class Keybert(ContextShortener):
         #self.mode = mode
         self.comparison_mode = comparison_mode
 
-        self.kw_model = kom.get_kw_model()
 
         # define embedding model through these version numbers (dont want to handle the long names through args and main.py...
         emb_model_id = {
                 "0" : 'all-MiniLM-L6-v2',
-                "1" : 'all-mpnet-base-v2',
+                "3" : 'all-mpnet-base-v2',
+                "4" : 'dunzhang/stella_en_1.5B_v5',
                 }[emb_model_v]
 
-        self.emb_model = kom.get_embedding_model()
+        self.emb_model = kom.get_embedding_model(emb_model_id)
+        self.kw_model = kom.get_kw_model(self.emb_model)
 
 
         self.descriptions = {}
