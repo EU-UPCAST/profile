@@ -80,7 +80,7 @@ def save_form(key, argstring, form_dict):
 
 
 @weave.op()
-def fill_out_forms(documents, context_shortener, form_filler, labels=None, evaluation_fnc=None, remove_fields = lambda x:[], argstring="", save=True, load = True):
+def fill_out_forms(documents, context_shortener, form_filler, labels=None, evaluation_fnc=None, remove_fields = lambda x:[], argstring="", save=True, load = True, fields_length = 0):
 
     all_scores = {}
     for field in form_filler.pydantic_form.__fields__:
@@ -94,14 +94,34 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
         paper_text = documents[key]
         if labels:
             paper_labels = labels[key]
+            if "arxpr2" in argstring:
+                paper_labels.pop("sex_2",None) # TODO remove this from the labels file instead of here
+                paper_labels.pop("adjusted_type_24",None) # TODO remove this from the labels file instead of here
+
+
+            if fields_length:
+                # get equal amount of predictions for each label
+                # by removing labels for fields with enough predictions already
+                skipped_fields = 0
+                for field in paper_labels:
+                    if len(all_scores[field]) >= fields_length:
+                        #if len(paper_labels[field]):
+                        #    print("--- skipping field with enough preidictions:", field)
+                        paper_labels[field] = []
+                        skipped_fields += 1
+                if skipped_fields >= len(all_scores): # all fields have the required number of predictions
+                    print("---------Enough predictions made")
+                    break
+
             if len(paper_labels) == len(remove_fields(paper_labels)):
-                print("!!! No usable labels, skippping paper")
+                #print("!!! No usable labels, skippping paper")
                 continue
-            if "arxpr2_" in argstring:
+            if "arxpr2" in argstring:
                 # skip the common ones just to avoid having a very skewed score. TODO: solve this problem in a better way
                 if set(paper_labels.keys())-set(remove_fields(paper_labels)) <= {"assay_by_molecule_14", "study_type_18"}:
                     print("!!! only the common labels, skippping paper")
                     continue
+
 
         filled_form = None
 
@@ -147,6 +167,10 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
                 all_scores[field].append(scores[field])
             all_times.append(time.time()-start_time)
 
+            for fn in all_scores:
+                print(fn, len(all_scores[fn]), end= ";")
+            print("")
+
 
     if labels:
         #print("________printing final scores:")
@@ -175,8 +199,9 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
                 final_similarity.extend(scores)
                 print(field, " -- similarity ")
             #print(field_properties["type"], "enum" in field_properties, field_properties)
-        print(final_score)
-        print(np.mean(final_score))
+        print("all scores:", final_score)
+        print("length:", len(final_score))
+        print("mean", np.mean(final_score))
         
         info_to_log = means_by_field
         info_to_log["final_scores"] = final_score
@@ -205,7 +230,7 @@ def printform(filled_form):
     pprint.pprint(fields, width=170)
 
 @weave.op() # log args
-def load_modules(args, preloaded_dspy_model = None):
+def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     """
     prepare arguments, then call fill_out_forms 
     preloaded_dspy_model can be inputted to avoid loading it in memory several times
@@ -302,7 +327,10 @@ def load_modules(args, preloaded_dspy_model = None):
         pydantic_form = metadata_schemas.arxpr_schema 
     else:
         raise ValueError
-    all_documents, all_labels = loader(args.dataset_length)
+    if preloaded_dataset is None:
+        all_documents, all_labels = loader(args.dataset_length)
+    else:
+        all_documents, all_labels = preloaded_dataset
 
 
     # set context_shortener
@@ -452,8 +480,9 @@ if __name__ == "__main__":
     args = args.__dict__
     load = args.pop("load")
     save = args.pop("save")
-    save = args.pop("dataset_length")
+    args.pop("dataset_length")
+    fields_length = args.pop("fields_length")
     argstring = str(sorted(args.items()))
-    fill_out_forms(**prepared_kwargs, load = load, save = save, argstring = argstring)
+    fill_out_forms(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length)
 
 

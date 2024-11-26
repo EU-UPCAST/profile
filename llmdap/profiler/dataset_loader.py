@@ -177,6 +177,7 @@ def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
                 raise ValueError
 
             i+=1
+            #print(f"loading, {i}/{max_amount}")
             if i>= max_amount:
                 break
         except FileNotFoundError:
