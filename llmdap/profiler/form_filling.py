@@ -1,5 +1,6 @@
 import torch
 from pydantic import constr
+from pydantic_core._pydantic_core import ValidationError as pydantic_ValidationError
 import pydantic
 import typing
 import dspy
@@ -8,6 +9,7 @@ import json
 import copy
 import pprint
 import numpy as np
+from difflib import SequenceMatcher
 
 from dspy_x_outlines import make_dspy_generator, make_constrained_generator
 from dspy_x_openai import GPT3
@@ -295,7 +297,37 @@ class SequentialFormFiller(dspy.Module):
             output = pydantic_form(**output_dict)
         else:
             # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
-            output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+            try:
+                output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+            except pydantic_ValidationError: # outlines seem to allow non-allowable strings in rare occasions. Workaround: just choose closest allowable answer
+
+                fields = pydantic_form.__fields__
+                output_dict = {name : val.__str__() for name, val in output_dict.items()}
+                for name, predicted_string in output_dict.items():
+
+                    field = fields[name]
+                    field_type = field.annotation
+                    if typing.get_origin(field_type) == typing.Literal: # i have only seen this problem in Literal fields
+                        allowed_answers = field_type.__args__
+                        if not predicted_string in allowed_answers: # only alter the field(s) with the problem
+                            
+                            best_similarity  = -1.0
+                            best_ans = None
+                            for ans in allowed_answers:
+                                similarity = SequenceMatcher(None, ans, predicted_string).ratio()
+                                if similarity > best_similarity:
+                                    best_similarity = similarity
+                                    best_ans = ans
+
+                            output_dict[name] = best_ans
+                            
+                            print("!!!!! Failed to generate allowable answer. Finding closest allowable answer instead")
+                            print("Predicted answer:", predicted_string, "while closest match is", best_ans)
+                            # log this 
+                            with open("output_log.txt", "a") as file:
+                                file.write(f"\nfound closest match: {predicted_string} -> {best_ans}\n")
+                output = pydantic_form(**output_dict)
+
         torch.cuda.empty_cache()
         return output
 

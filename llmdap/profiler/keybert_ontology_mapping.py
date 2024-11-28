@@ -30,13 +30,13 @@ def get_subontology(
     return ontology_descriptions
 
 
-def get_kw_model(): return KeyBERT()
+def get_kw_model(model=None): return KeyBERT(model)
 def get_keywords(text, kw_model, **kwargs): 
     keywords_and_scores = kw_model.extract_keywords(text, **kwargs)
     keywords = [x[0] for x in keywords_and_scores]
     scores = [x[1] for x in keywords_and_scores]
     return keywords, scores
-def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id)
+def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id, device = "cuda:1")
 def get_similarity_matrix(kw_embeddings, target_embeddings):  return util.cos_sim(kw_embeddings, target_embeddings)
 
 
@@ -50,8 +50,9 @@ if __name__ == "__main__":
     kw_model = get_kw_model()
     kws, scores = get_keywords(text, kw_model, top_n =2)
                                   #use_maxsum=True, nr_candidates=4)
-
     print(kws, scores) # cheese and cake
+    #kws, scores = get_keywords(text, kw_model, top_n =2, keyphrase_ngram_range=(2,2))
+    #print(kws, scores) #  cheese love and love cake
 
     emb_model = get_embedding_model()
     kw_emb = emb_model.encode(kws)
