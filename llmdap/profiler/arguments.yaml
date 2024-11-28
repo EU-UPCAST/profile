@@ -8,6 +8,9 @@ dataset__args:
     fields_length:
         default: 0
         help: "number of papers to analyse per field - once a feald has reached this many predictions, no more predictions are made in this field (to get even results). If 0, this restriction is removed"
+    mode:
+      default: "train"
+      choices: ["train", "test"]
     remove_fields:
         default: "default"
         choices: ["default", "None", "empty", "non-single"]

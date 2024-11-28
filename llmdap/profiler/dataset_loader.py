@@ -92,21 +92,23 @@ def load_ega_data(max_amount = 10):
     paper_texts, labels = load_paper_text(labels, max_amount, data_folder)
     return paper_texts, labels
 
-def load_arxpr_data(max_amount = 10, version = ""):
+def load_arxpr_data(max_amount = 10, version = "", mode = "train"):
     """ mode : "single" or "elements" """
     data_folder = "/mnt/data/upcast/data/"
 
-    with open(data_folder + f"arxpr{version}_metadataset_train.json") as file:
-        train_labels = json.load(file)
-    #with open(data_folder + "arxpr_metadataset_holdout.json") as file:
-    #    holdout_labels = json.load(file)
+    if mode == "train":
+        with open(data_folder + f"arxpr{version}_metadataset_train.json") as file:
+            labels = json.load(file)
+    elif mode == "test":
+        with open(data_folder + f"arxpr{version}_metadataset_holdout.json") as file:
+            labels = json.load(file)
 
     ## count fields:
-    #items = list(train_labels.items())
+    #items = list(labels.items())
     #ones = {field:0 for field in items[0][1]}
     #anys = {field:0 for field in items[0][1]}
 
-    #for i in range(min(len(train_labels), max_amount)):
+    #for i in range(min(len(labels), max_amount)):
     #    for field in items[i][1]:
     #        l = len(items[i][1][field])
     #        if l>0:
@@ -121,10 +123,9 @@ def load_arxpr_data(max_amount = 10, version = ""):
     #quit()
 
 
-    train_paper_texts, train_labels = load_paper_text(train_labels, max_amount, data_folder)
-    ###holdout_paper_texts, holdout_labels = load_paper_text(holdout_labels, max_amount)
+    paper_texts, labels = load_paper_text(labels, max_amount, data_folder)
 
-    return train_paper_texts, train_labels
+    return paper_texts, labels
 
 
 def load_study_type_data(max_amount = 10):

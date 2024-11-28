@@ -6,8 +6,9 @@ import yaml
 import main
 
 
-model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
-dspy_model = dspy.HFModel(model = model_id)
+#model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
+#dspy_model = dspy.HFModel(model = model_id)
+dspy_model = None
 
 PRELOADED_DATASET = None
 
@@ -38,6 +39,7 @@ def sweep_run():
     args = args._items
     args.pop("_wandb")
     args.pop("dataset_length")
+    mode = args.pop("mode")
     load = args.pop("load")
     save = args.pop("save")
     fields_length = args.pop("fields_length")
@@ -53,140 +55,98 @@ def sweep_run():
     args = args.items()
     argstring = str(sorted(args))
     #load = False # REMOVE THIS!!
-    score = main.fill_out_forms(**prepared_kwargs, argstring = argstring, load=load, save=save, fields_length=fields_length)
+    score = main.fill_out_forms(**prepared_kwargs, argstring = argstring, load=load, save=save, fields_length=fields_length, mode=mode)
 
     wandb.log(score)
 
 dk_params = { # direct keyword
         "ff_model" :{"value" : "keybert"},
         "context_shortener" : {"value" : "keyword-literal"},
-        "reduce_chunk_size" : {"values" : [
-            500, 
-            ]},
+        "reduce_chunk_size" : {"value" : 500},
         "reduce_chunk_overlap" : {"value" : 100},
     }
 
 openai_params = { # best baseline
         "ff_model" :{"value" : "4om"},
-        "context_shortener" : {"values" : [
-            "full_paper",
-            ]},
+        "context_shortener" : {"value" :"full_paper"},
     }
 
 rag_params = { # baseline rag
         "ff_model" :{"value" : "4om"},
-        "rag_llm:" :{"values": [
+        "rag_llm" :{"values": [
+            #"llama3.1",
             #"Losspost/stella_en_1.5b_v5",
             "all-minilm:l6-v2",
-            #"llama3.1",
             ]},
         "context_shortener" : {"values" : [
             "rag", 
             ]},
-        "rag_chunk_size" : {"values" : [500,]},
-        "rag_chunk_overlap" : {"value" : 100},
-        #"similarity_k" : {"values" : [14,15,16,17,18,19,20]},
-        "similarity_k" : {"values" : [10, 15]},
-    }
-
-keybert_params = { # best baseline
-        "context_shortener" : {"values" : [
-            "keybert-literal", 
-            ]},
-        "ff_model" :{"value" : "4om"},
-        "reduce_chunk_size" : {"values" : [
-            500, 
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
+        "rag_chunk_size" : {"values" : [
+            #100,
+            700, 850, 1000]},
+        #"rag_chunk_size" : {"values" : [500]},
+        "rag_chunk_overlap" : {"value" : 100}, # ?!?!?
         "similarity_k" : {"values" : [
-            12,
-            13,
-            14,
-            15,
-            16,
-            #17,
-            #18,
-            ]},
-        "n_keywords" : {"values" : [
-            8
-            ]},
+            #10, 
+            17]},
     }
 
-keyword_llama_params = { # still tuning
+
+keyword_llama_params = {
         "context_shortener" : {"values" : [
             "keyword-literal", 
-            ]},
-        "reduce_chunk_size" : {"values" : [
-            500, 
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            2,
-            3,
-            4,
-            6,
-            9,
-            12,
-            16
-            ]},
-    }
-
-keyword_llama_params_2 = {
-        "context_shortener" : {"values" : [
-            #"keyword-literal", 
             "keybert-literal", 
             ]},
         "reduce_chunk_size" : {"values" : [
             #150,
-            200,
-            #300,
-            #400,
+            #200,
+            300,
             #500, 
-            #800,
-            #1200,
             ]},
         "reduce_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
             #2,
-            3,
-            #4,
+            #3,
+            4,
             #5,
-            #6,
-            #9,
-            #12,
-            #16
-            ]},
-    }
-kw_vs_kb_params= { # yes keyword has still been run with all these params
-        "context_shortener" : {"values" : [
-            #"keybert-literal-4", 
-            #"keybert-literal-3", 
-            #"keybert-literal", 
-            "keyword-literal", 
-            ]},
-        "ff_model" :{"value" : "4om"},
-        "reduce_chunk_size" : {"values" : [
-            500, 
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            9,
-            11,
-            8,
-            12,
-            10,
-            14,
-            15,
-            #16
-            ]},
-        "n_keywords" : {"values" : [
-            8
             ]},
     }
 
-def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None, fields_length = 0):
+rag_llama_params = { # TODO tune this.
+        "rag_llm" :{"values": [
+            #"Losspost/stella_en_1.5b_v5",
+            "all-minilm:l6-v2",
+            ]},
+        "rag_chunk_size" : {"values" : [
+            #150,
+            #200,
+            #300, # more is clearly better
+            500,  
+            ]},
+        "rag_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            #2,
+            #3,
+            #4, # more is clearly better 
+            5,
+            ]},
+    }
+kw_test = {
+        "context_shortener" : {"values" :[
+            "keyword-literal", # best overall (on train 50)
+            "keybert-literal", # best on anything but hardware (on train 50)
+            ]},
+        "ff_model" :{"value" : "4om"},
+        "reduce_chunk_size" : {"value" : 500},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"value" : 10},
+    }
+
+
+def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None, fields_length = 0, mode = "train"):
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
+    parameters["mode"] = {"value" : mode}
     if type(dataset) is str:
         parameters["dataset"] = {"value" : dataset}
         name = f"{name}_{dataset}_{sweep_count}_{dataset_length}"
@@ -209,53 +169,84 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     wandb.agent(sweep_id, function=sweep_run, count=sweep_count)
     #wandb.teardown()
 
-if __name__ == "__main__":
-    #run_sweep(dk_params, 
-    #          dataset_length = 1000,
-    #          fields_length = 30,
-    #          sweep_count = 1,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],
-    #          name="new_dk",
-    #          )
-    #run_sweep(rag_params, 
-    #          dataset_length = 1000,
-    #          fields_length = 30,
-    #          sweep_count = 2,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],
-    #          name="rag_tune",
-    #          )
-    #run_sweep(keybert_params, 
-    #          dataset_length = 1000,
-    #          fields_length = 30,
-    #          sweep_count = 5,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],
-    #          name="kb_tune",
-    #          )
-    run_sweep(kw_vs_kb_params, 
-              dataset_length = 725,
-              fields_length = 50,
-              sweep_count = 6,
+def run_tests():
+    dl, fl = 700, 50
+    run_sweep(openai_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
               method = "grid",
               dataset=["arxpr2s_25"],
-              name="keybert_or_keyword",
+              mode = "test",
+              name="openai_test",
               )
-    #run_sweep(keyword_llama_params_2, 
-    #          dataset_length = 500,
-    #          sweep_count = 5,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
-    #          name="tuned_llama_500papers",
-    #          )
-    #run_sweep(keyword_llama_params_2, 
-    #          dataset_length = 1000,
+    run_sweep(dk_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="dk_test",
+              )
+    run_sweep(kw_test, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="kw_test",
+              )
+    run_sweep(keyword_llama_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="kw_llama_test",
+              )
+    quit()
+    run_sweep(rag_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="rag_test",
+              )
+
+if __name__ == "__main__":
+    #run_tests()
+    #quit()
+
+    #run_sweep(rag_llama_params, 
+    #          dataset_length = 300,
     #          fields_length = 30,
-    #          sweep_count = 1,
+    #          sweep_count = 16,
+    #          method = "random",
+    #          dataset=["arxpr2s_25"],
+    #          name="rag_llama_tune",
+    #          )
+    #quit()
+    run_sweep(rag_params, 
+              dataset_length = 300,
+              fields_length = 30,
+              sweep_count = 3,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              name="rag_retune",
+              )
+    quit()
+    #run_sweep(dk_params, 
+    #          dataset_length = 600,
+    #          fields_length = 30,
+    #          sweep_count = 6,
     #          method = "grid",
-    #          dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
-    #          name="tuned_llama_1kpapers",
+    #          dataset=["arxpr2s_25"],
+    #          name="dk_return",
     #          )
     #run_sweep(keybert_params, 
     #          dataset_length = 100,

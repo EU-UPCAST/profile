@@ -77,10 +77,24 @@ def save_form(key, argstring, form_dict):
         json.dump(data, f)
 
 
+def save_score(argstring, scores):
+    if not argstring: # something wrong
+        raise ValueError
+    try:
+        with open("all_results/scores.json") as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        data= {}
+    data[argstring] = scores
+    os.makedirs("all_results", exist_ok = True)
+    with open("all_results/scores.json", "w") as f:
+        json.dump(data, f)
+
+
 
 
 @weave.op()
-def fill_out_forms(documents, context_shortener, form_filler, labels=None, evaluation_fnc=None, remove_fields = lambda x:[], argstring="", save=True, load = True, fields_length = 0):
+def fill_out_forms(documents, context_shortener, form_filler, labels=None, evaluation_fnc=None, remove_fields = lambda x:[], argstring="", save=True, load = True, fields_length = 0, mode = "train"):
 
     all_scores = {}
     for field in form_filler.pydantic_form.__fields__:
@@ -128,8 +142,24 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
         if load:
             filled_form = load_form(key, argstring, form_filler.pydantic_form)
 
+            if not (filled_form is None or filled_form == "skipped"):
+                # check all fields with labels have been filled
+                field_missing = False 
+                for field in filled_form.__fields__:
+                    label = paper_labels[field]
+                    # each paper only have labels for a subset of the fields.
+                    # we only calculate score for these
+                    if len(label):
+                        pred = getattr(filled_form, field)
+                        if pred is None:
+                            field_missing = True
+                            print("misssing field: ", field)
+                if field_missing:
+                    print("##################!!!!!!!!!!!!!! unloading document due to missing field(s)!!")
+                    filled_form = None # un-load
 
-        if filled_form is None:
+
+        if filled_form is None or filled_form == "skipped":
     
             print("--------- setting document")
             context_shortener.set_document(paper_text)
@@ -173,6 +203,8 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
 
 
     if labels:
+        if mode == "test":
+            save_score(argstring, all_scores)
         #print("________printing final scores:")
         #pprint.pprint(all_scores)
         means_by_field = {}
@@ -267,7 +299,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             else:
                 model_id = args.ff_model
             try:
-                dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:3")
+                dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2")
             except RuntimeError:
                 dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:0")
         else:
@@ -296,17 +328,19 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
 
 
     # load data
+    loader_kwargs = {"max_amount": args.dataset_length}
     if args.dataset == "arxpr":
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
     elif args.dataset[:6] == "arxpr2":
         dataset_literal_length = args.dataset.split("_")[1]
-        def loader(max_amount=10):
-            return dataset_loader.load_arxpr_data(max_amount, version = "2_25") # loaded dataset always 25, only pydantic form depends on literal_length
+        loader_kwargs["version"] = "2_25" # loaded dataset always 25, only pydantic form depends on literal_length
         if args.dataset[:8] == "arxpr2s_":
             pydantic_form = metadata_schemas.arxpr2s_schemas[dataset_literal_length]
         else:
             pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
+        loader_kwargs["mode"] = args.mode
+        loader = dataset_loader.load_arxpr_data
     elif args.dataset == "study_type":
         loader = dataset_loader.load_study_type_data
         pydantic_form = metadata_schemas.study_type_schema 
@@ -328,7 +362,9 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     else:
         raise ValueError
     if preloaded_dataset is None:
-        all_documents, all_labels = loader(args.dataset_length)
+
+        #all_documents, all_labels = loader(args.dataset_length)
+        all_documents, all_labels = loader(**loader_kwargs)
     else:
         all_documents, all_labels = preloaded_dataset
 
@@ -346,7 +382,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             chat_model = args.rag_llm
             embed_model = args.rag_llm
         else:
-            raise NotImplementedError
+            chat_model = args.rag_llm
+            embed_model = args.rag_llm
         context_shortener = context_shortening.RAGShortener(
                 chat_model,
                 embed_model,
@@ -481,8 +518,7 @@ if __name__ == "__main__":
     load = args.pop("load")
     save = args.pop("save")
     args.pop("dataset_length")
+    mode = args.pop("mode")
     fields_length = args.pop("fields_length")
     argstring = str(sorted(args.items()))
-    fill_out_forms(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length)
-
-
+    fill_out_forms(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode)
