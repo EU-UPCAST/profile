@@ -1,3 +1,9 @@
+
+
+
+
+
+
 # UPCAST profiling
 
 This is the upcast profiling tool, that aims to profile biomedical datasets based on the papers/documents presenting the datasets.
@@ -6,9 +12,25 @@ NOTE: Due to the experimental nature of the current stage of the project (i.e. t
 I think once experiments are done, we should make another repo with just the relevant stuff to open-source.
 
 
-## Some preliminary results:
+### test results
+based on 100 values per field.
+|                 |   hardware_4 |   organism_part_5 |   experimental_designs_10 |   assay_by_molecule_14 |   study_type_18 |   experimental_factors_20 |    total |
+|:----------------|-------------:|------------------:|--------------------------:|-----------------------:|----------------:|--------------------------:|---------:|
+| keyword_gpt     |         0.64 |              0.71 |                      0.3  |                   0.84 |            0.69 |                      0.22 | 0.566667 |
+| keybert_gpt     |         0.52 |              0.7  |                      0.3  |                   0.87 |            0.75 |                      0.17 | 0.551667 |
+| rag_gpt_17      |         0.53 |              0.68 |                      0.17 |                   0.61 |            0.53 |                      0.32 | 0.473333 |
+| fullpaper_gpt   |         0.5  |              0.67 |                      0.02 |                   0.85 |            0.35 |                      0.17 | 0.426667 |
+| rag_gpt_10      |         0.36 |              0.61 |                      0.15 |                   0.54 |            0.29 |                      0.31 | 0.376667 |
+| keyword_keyword |         0.09 |              0.44 |                      0.55 |                   0.75 |            0.17 |                      0.13 | 0.355    |
+| keybert_keyword |         0.01 |              0.42 |                      0.39 |                   0.77 |            0.21 |                      0.1  | 0.316667 |
+| keybert_llama   |         0.05 |              0.51 |                      0.01 |                   0.56 |            0.61 |                      0.07 | 0.301667 |
+| keyword_llama   |         0.07 |              0.51 |                      0.01 |                   0.56 |            0.43 |                      0.06 | 0.273333 |
+| rag_llama       |         0.02 |              0.29 |                      0    |                   0.38 |            0.25 |                      0.05 | 0.165    |
 
-### "main" results
+
+
+
+### old results
 Results on the forst 100 papers, with the arxpr2s_25 dataset (the most relevant one i think. 25 alloable labels, in shuffled order)
 | Retrieval method    | generation model | Accuracy   | Comment |
 |:--------------------|:-----------------|:-----------|:--------|
@@ -21,7 +43,6 @@ Results on the forst 100 papers, with the arxpr2s_25 dataset (the most relevant 
 |Keybert-literal      |llama(still tuning)| 0.555     |Best open model|
 
 
-### other results
 Predicting the study_type field of 79 papers:
 
 | Retrieval method    | generation model | Accuracy |
