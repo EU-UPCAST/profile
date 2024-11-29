@@ -82,13 +82,29 @@ rag_params = { # baseline rag
             "rag", 
             ]},
         "rag_chunk_size" : {"values" : [
-            #100,
-            700, 850, 1000]},
-        #"rag_chunk_size" : {"values" : [500]},
-        "rag_chunk_overlap" : {"value" : 100}, # ?!?!?
+            850
+            ]},
+        "rag_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
             #10, 
             17]},
+    }
+rag_params_2 = { # baseline rag with comparable context
+        "ff_model" :{"value" : "4om"},
+        "rag_llm" :{"values": [
+            #"llama3.1",
+            #"Losspost/stella_en_1.5b_v5",
+            "all-minilm:l6-v2",
+            ]},
+        "context_shortener" : {"values" : [
+            "rag", 
+            ]},
+        "rag_chunk_size" : {"values" : [
+            500
+            ]},
+        "rag_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            10]},
     }
 
 
@@ -122,6 +138,9 @@ rag_llama_params = { # TODO tune this.
             #200,
             #300, # more is clearly better
             500,  
+            #700,  
+            #850,
+            #1000,
             ]},
         "rag_chunk_overlap" : {"value" : 100},
         "similarity_k" : {"values" : [
@@ -129,6 +148,9 @@ rag_llama_params = { # TODO tune this.
             #3,
             #4, # more is clearly better 
             5,
+            #6,
+            #7,
+            #8,
             ]},
     }
 kw_test = {
@@ -170,7 +192,7 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
     #wandb.teardown()
 
 def run_tests():
-    dl, fl = 700, 50
+    dl, fl = 1500, 100
     run_sweep(openai_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -180,6 +202,44 @@ def run_tests():
               mode = "test",
               name="openai_test",
               )
+    quit()
+    run_sweep(keyword_llama_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="kw_llama_test",
+              )
+    run_sweep(rag_llama_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="rag_llama_test",
+              )
+    run_sweep(rag_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="rag_test",
+              )
+    run_sweep(rag_params_2, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
+              method= "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="rag_test",
+              )
+
     run_sweep(dk_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -198,48 +258,28 @@ def run_tests():
               mode = "test",
               name="kw_test",
               )
-    run_sweep(keyword_llama_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="kw_llama_test",
-              )
-    quit()
-    run_sweep(rag_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="rag_test",
-              )
-
 if __name__ == "__main__":
-    #run_tests()
-    #quit()
+    run_tests()
+    quit()
 
-    #run_sweep(rag_llama_params, 
-    #          dataset_length = 300,
-    #          fields_length = 30,
-    #          sweep_count = 16,
-    #          method = "random",
-    #          dataset=["arxpr2s_25"],
-    #          name="rag_llama_tune",
-    #          )
-    #quit()
-    run_sweep(rag_params, 
+    run_sweep(rag_llama_params, 
               dataset_length = 300,
               fields_length = 30,
-              sweep_count = 3,
+              sweep_count = 4,
               method = "grid",
               dataset=["arxpr2s_25"],
-              name="rag_retune",
+              name="rag_llama_tune_cs",
               )
-    quit()
+    #quit()
+    #run_sweep(rag_params, 
+    #          dataset_length = 300,
+    #          fields_length = 30,
+    #          sweep_count = 3,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          name="rag_retune",
+    #          )
+    #quit()
     #run_sweep(dk_params, 
     #          dataset_length = 600,
     #          fields_length = 30,

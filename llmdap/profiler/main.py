@@ -12,6 +12,7 @@ import argparse
 import time
 import json
 import os
+import openai
 
 import dataset_loader
 import metadata_schemas 
@@ -24,7 +25,6 @@ nltk.download('averaged_perceptron_tagger_eng')
 
 
 def set_openai_api_key():
-    import openai
     from openai_key import API_KEY
     openai.api_key = API_KEY
 
@@ -155,7 +155,7 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
                             field_missing = True
                             print("misssing field: ", field)
                 if field_missing:
-                    print("##################!!!!!!!!!!!!!! unloading document due to missing field(s)!!")
+                    print("!! unloading document due to missing field(s)!!")
                     filled_form = None # un-load
 
 
@@ -182,6 +182,21 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
                 skips += 1
                 save_form(key, argstring, "skipped")
                 continue
+            except openai.BadRequestError as m:
+                print("!! BAD REQUEST ERROR!!")
+                print(m)
+                print("skipping paper and filling zeros in score")
+                # evaluate
+                if labels:
+                    for field in list(set(paper_labels.keys())-set(remove_fields(paper_labels))):
+                        print("zeroing field:", field)
+                        all_scores[field].append(0)
+                    all_times.append(time.time()-start_time)
+                    continue
+
+
+
+
         elif filled_form == "skipped":
             skips += 1
             continue
@@ -197,8 +212,9 @@ def fill_out_forms(documents, context_shortener, form_filler, labels=None, evalu
                 all_scores[field].append(scores[field])
             all_times.append(time.time()-start_time)
 
+            #print number of scores in each field
             for fn in all_scores:
-                print(fn, len(all_scores[fn]), end= ";")
+                print(fn, len(all_scores[fn]), end= "; ")
             print("")
 
 
