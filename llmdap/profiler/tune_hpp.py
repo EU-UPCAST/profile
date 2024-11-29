@@ -61,7 +61,10 @@ def sweep_run():
 
 dk_params = { # direct keyword
         "ff_model" :{"value" : "keybert"},
-        "context_shortener" : {"value" : "keyword-literal"},
+        "context_shortener" : {"values" : [
+            "keyword-literal", 
+            "keybert-literal", 
+            ]},
         "reduce_chunk_size" : {"value" : 500},
         "reduce_chunk_overlap" : {"value" : 100},
     }
@@ -193,6 +196,16 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 def run_tests():
     dl, fl = 1500, 100
+    run_sweep(dk_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="dk_test",
+              )
+    quit()
     run_sweep(openai_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -202,7 +215,6 @@ def run_tests():
               mode = "test",
               name="openai_test",
               )
-    quit()
     run_sweep(keyword_llama_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -240,15 +252,6 @@ def run_tests():
               name="rag_test",
               )
 
-    run_sweep(dk_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="dk_test",
-              )
     run_sweep(kw_test, 
               dataset_length = dl,
               fields_length = fl,
