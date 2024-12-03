@@ -414,8 +414,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 embed_model,
                 pydantic_form,
                 retriever_type = args.retriever_type,
-                chunk_size = args.rag_chunk_size,
-                chunk_overlap = args.rag_chunk_overlap,
+                chunk_size = args.chunk_size,
+                chunk_overlap = args.chunk_overlap,
                 similarity_k = args.similarity_k,
                 mmr_param = args.mmr_param,
                 )
@@ -430,8 +430,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 hf_model,
                 hf_tokenizer,
                 temperature = args.reduce_temperature,
-                chunk_size = args.reduce_chunk_size,
-                chunk_overlap = args.reduce_chunk_overlap,
+                chunk_size = args.chunk_size,
+                chunk_overlap = args.chunk_overlap,
                 max_tokens = args.reduce_max_tokens,
                 )
     elif args.context_shortener == "full_paper":
@@ -446,7 +446,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 pydantic_form = pydantic_form,
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
-                chunk_sizes = (args.reduce_chunk_size, args.reduce_chunk_overlap),
+                chunk_sizes = (args.chunk_size, args.chunk_overlap),
                 mmr_param = args.mmr_param,
                 maxsum_factor = args.maxsum_factor,
                 keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff),

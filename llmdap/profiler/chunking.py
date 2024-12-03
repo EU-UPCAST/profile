@@ -1,6 +1,6 @@
 from llama_index.core.schema import TextNode
 
-def _pseudo_markdown_splitter(text: str, chunk_size, chunk_overlap, markdown_headers=[], exclude_headers=[], split_by_periods=False, verbose=True):
+def _pseudo_markdown_splitter(text: str, chunk_size, chunk_overlap, markdown_headers=[], exclude_headers=[], verbose=True):
     """
     Borrowing the LangChain markdown splitter to spot header str in lieu of #, ##, ###, etc. 
     Keeps the md-formated header in medatdata dict if found, else nothing.
@@ -14,9 +14,6 @@ def _pseudo_markdown_splitter(text: str, chunk_size, chunk_overlap, markdown_hea
             A list of tuples of the form (header, metadata_key) where header is a str that
             will be used to split the text and metadata_key is the key in the metadata dict
             that will be used to store ONLY markdown-formatted header.
-
-        split_by_periods : bool
-            wether to split each sentence after splitting on markdown_headers. This avoids splitting in the middle of sentences in most cases. However, merging into chunks after can happen across sections from the markdown split, so its only recomended for very short chunk sizes. 
 
     Returns:
         splits: list
@@ -50,18 +47,10 @@ def _pseudo_markdown_splitter(text: str, chunk_size, chunk_overlap, markdown_hea
     md_filtered_splits = [doc for doc in md_header_splits if doc not in toss]    
 
     # chunk
-    if split_by_periods:
-        text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap, 
-                separators=["(?<=\.)."], # regex for "match whatever comes after a period. This ensures the period/comma is in the chunk before the split, not the one after.
-                is_separator_regex=True,
-                )
-    else:
-        text_splitter = RecursiveCharacterTextSplitter(
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap, 
-                )
+    text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap, 
+            )
 
     splits = text_splitter.split_documents(md_filtered_splits)
 
@@ -148,11 +137,11 @@ def _split_non_md_headers(doc_lc, headers=[]):
 
     return cleaned_docs
 
-def chunk_by_headeres_and_clean(document, chunk_size, chunk_overlap, verbose, split_by_periods=False):
+def chunk_by_headeres_and_clean(document, chunk_size, chunk_overlap, verbose):
     """chunk a document using the headers, and remove titles and irrelevant sections
     """
     nodes = []
-    splits = _pseudo_markdown_splitter(document, chunk_size, chunk_overlap, split_by_periods=split_by_periods ,verbose=verbose)
+    splits = _pseudo_markdown_splitter(document, chunk_size, chunk_overlap, verbose=verbose)
 
     for doc in splits:
         split = _split_non_md_headers(doc)  # headers currently defined within the function

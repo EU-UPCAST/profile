@@ -293,7 +293,7 @@ class Keybert(ContextShortener):
             self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
 
     def set_document(self, document):
-        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False, split_by_periods=False)
+        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False)
         self.chunks = [chunk.text for chunk in self.chunks]
 
         self.keywordss = []
