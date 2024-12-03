@@ -291,7 +291,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
 
     # load llm
     model_is_openai = False
-    direct_keybert = False
+    use_best_choice_generator = False
     if args.ff_model == "4om": # openai model
         model_id = "gpt-4o-mini"
         model_is_openai = True
@@ -300,8 +300,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
         model_id = "gpt-4o"
         model_is_openai = True
         set_openai_api_key()
-    elif args.ff_model == "keybert":
-        direct_keybert = True
+    elif args.ff_model == "best_choice":
+        use_best_choice_generator = True
     elif args.ff_model == "None": # do not load any model (used for retrieval evaluation)
         model_id = ""
         model_is_openai = True
@@ -352,19 +352,17 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     if args.dataset == "arxpr":
         loader = dataset_loader.load_arxpr_data
         pydantic_form = metadata_schemas.arxpr_schema 
-    elif args.dataset[:6] == "arxpr2":
-        dataset_literal_length = args.dataset.split("_")[1]
+    elif args.dataset == "arxpr2":
         loader_kwargs["version"] = "2_25" # loaded dataset always 25, only pydantic form depends on literal_length and shuffling
-        if len(args.dataset[:9].split(":")) == 2: # shuffled by seed
-            seed = args.dataset[:9].split(":")[1]
-            seed = int(seed)
-            pydantic_form = metadata_schemas.arxpr2s_schemas_by_seed[seed][dataset_literal_length]
-        elif args.dataset[:8] == "arxpr2s_": # standard shuffled version
-            pydantic_form = metadata_schemas.arxpr2s_schemas[dataset_literal_length]
+        if args.dataset_shuffle == "s":
+            #raise NotImplementedError #TODO fix
+            #pydantic_form = metadata_schemas.arxpr2s_schemas_by_seed[seed][args.dataset_literal_length]
+            pydantic_form = metadata_schemas.arxpr2s_schemas[str(args.dataset_literal_length)] # TODO shuffle
         else: #unshuffled version
+            raise NotImplementedError
             assert args.dataset[:7] == "arxpr2_"
-            pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
-        loader_kwargs["mode"] = args.mode
+            pydantic_form = metadata_schemas.arxpr2_schemas[args.dataset_literal_length]
+        loader_kwargs["mode"] = args.mode #train or test
         loader = dataset_loader.load_arxpr_data
     elif args.dataset == "study_type":
         loader = dataset_loader.load_study_type_data
@@ -396,22 +394,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
 
     # set context_shortener
     if args.context_shortener == "rag":
-        ## set RAG options
-        if args.rag_llm == "llama3.1":
-            chat_model = "llama3.1:8b"
-            embed_model = "llama3.1:8b"
-        elif args.rag_llm == "biolm":
-            chat_model = "koesn/llama3-openbiollm-8b"
-            embed_model = "koesn/llama3-openbiollm-8b"
-        elif args.rag_llm in ["text-embedding-3-small", "text-embedding-3-large"]:
-            chat_model = args.rag_llm
-            embed_model = args.rag_llm
-        else:
-            chat_model = args.rag_llm
-            embed_model = args.rag_llm
-        context_shortener = context_shortening.RAGShortener(
-                chat_model,
-                embed_model,
+        ontext_shortener = context_shortening.RAGShortener(
+                args.embedding_model,
                 pydantic_form,
                 retriever_type = args.retriever_type,
                 chunk_size = args.chunk_size,
@@ -436,22 +420,23 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 )
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
-    elif args.context_shortener[:8] in ["keybert-", "keyword-"]:  # TODO clean up this argument situation
-        if not args.dataset[:7] in ["study_t", "arxpr2_", "arxpr2s"]: # keybert requires all fields are literals, or have ontology
+    elif args.context_shortener == "retrieval":
+        if not args.dataset in ["study_type", "arxpr2"]:# keybert-based retrieval implementation requires all fields are literals, or have ontology, for now # TODO update so description retrieval is viable
             raise ValueError
 
-        cs_info = args.context_shortener.split("-")
-        context_shortener = context_shortening.Keybert(
-                cs_info[1],
-                pydantic_form = pydantic_form,
+        context_shortener = context_shortening.Retrieval(
+                chunk_info_to_compare = args.chunk_info_to_compare,
+                field_info_to_compare = args.field_info_to_compare,
+                include_choice_every = args.include_choice_every,
+                embedding_model_id = args.embedding_model,
+                pydantic_form = pydantic_form, # TODO change this with the shuffling
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
-                chunk_sizes = (args.chunk_size, args.chunk_overlap),
+                chunk_size = args.chunk_size,
+                chunk_overlap = args.chunk_overlap,
                 mmr_param = args.mmr_param,
                 maxsum_factor = args.maxsum_factor,
                 keyphrase_range = (args.keyphrase_min, args.keyphrase_min + args.keyphrase_range_diff),
-                comparison_mode = cs_info[0],
-                emb_model_v = cs_info[2] if len(cs_info)>2 else "0",
                 )
     else:
         print(args.context_shortener)
@@ -466,7 +451,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                     listify_form = args.listed_output,
                     max_tokens = args.openai_ff_max_tokens,
                     verbose=False)#True)
-        elif args.context_shortener=="rag" or args.context_shortener[:8] in ["keybert-", "keyword-"]:
+        elif args.context_shortener in ["rag", "retrieval"]:
             form_filler = form_filling.OpenAISequentialFormFiller(
                     model_id=model_id,
                     pydantic_form = pydantic_form,
@@ -475,7 +460,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                     verbose=False)
         else:
             raise NotImplementedError
-    elif direct_keybert:
+    elif use_best_choice_generator:
         form_filler = form_filling.DirectKeywordSimilarityFiller(
                 pydantic_form=pydantic_form,
                 listify_form=args.listed_output,

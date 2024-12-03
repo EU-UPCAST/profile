@@ -72,7 +72,6 @@ class VectorStoreSimple():
 
 class VectorStoreWeave(weave.Model):
     document: str
-    chat_model: str
     embed_model: str
     chunk_size: int = 2048
     chunk_overlap: int = 128
@@ -103,12 +102,10 @@ class VectorStoreWeave(weave.Model):
 
 
     def _set_lm_models(self):
-        if self.chat_model in ["text-embedding-3-small", "text-embedding-3-large"]:
+        if self.embed_model in ["text-embedding-3-small", "text-embedding-3-large"]:
             set_openai_api_key()
-            #Settings.llm = OpenAI(model=self.chat_model) # TODO remove this
-            Settings.embed_model = OpenAIEmbedding(model=self.chat_model)
+            Settings.embed_model = OpenAIEmbedding(model=self.embed_model)
         else:
-            #Settings.llm = Ollama(model=self.chat_model) # TODO remove this
             Settings.embed_model = OllamaEmbedding(model_name=self.embed_model)
 
 

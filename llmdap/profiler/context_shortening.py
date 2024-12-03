@@ -210,80 +210,73 @@ class Rerank(ContextShortener):
         return q
 
 
-class Keybert(ContextShortener):
-    def __init__(self, mode, 
+class Retrieval(ContextShortener):
+    def __init__(self, 
+            *, # force keyword arguments since there are so many
+            chunk_info_to_compare,
+            field_info_to_compare,
+            include_choice_every,
+            embedding_model_id,
             pydantic_form,
-            n_keywords = 5, 
-            top_k=3, 
-            chunk_sizes = (5000,500),
+            n_keywords, 
+            top_k, 
+            chunk_size,
+            chunk_overlap,
             mmr_param = 1,
             maxsum_factor = 1,
             keyphrase_range = (1,1),
-            comparison_mode = "keybert",
-            emb_model_v = 0
             ):
+        self.chunk_info_to_compare = chunk_info_to_compare
+        self.field_info_to_compare = field_info_to_compare
+        self.include_choice_every = include_choice_every
+        self.embedding_model_id = embedding_model_id
+        self.pydantic_form = pydantic_form
         self.n_keywords = n_keywords # number of keywords to extract from each chunk
         self.top_k = top_k # number of chunks to merge and return
-        self.chunk_sizes = chunk_sizes
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
         assert mmr_param == 1 or maxsum_factor == 1
         self.mmr_param = mmr_param
         self.maxsum_factor = maxsum_factor
         self.keyphrase_range = keyphrase_range
-        #self.mode = mode
-        self.comparison_mode = comparison_mode
 
 
         # define embedding model through these version numbers (dont want to handle the long names through args and main.py...
-        emb_model_id = {
-                "0" : 'all-MiniLM-L6-v2',
-                "3" : 'all-mpnet-base-v2',
-                "4" : 'dunzhang/stella_en_1.5B_v5',
-                "5" : "aaditya/Llama3-OpenBioLLM-8B",
-                }[emb_model_v]
-
-        self.emb_model = kom.get_embedding_model(emb_model_id)
+        self.emb_model = kom.get_embedding_model(embedding_model_id)
         self.kw_model = kom.get_kw_model(self.emb_model)
 
 
         self.descriptions = {}
         self.target_emb = {}
-        mode_info = mode.split(":")
-        mode = mode_info[0]
-        if len(mode_info) == 1:
-            literal_skip_number = 1
-        elif len(mode_info) == 2:
-            literal_skip_number = int(mode_info[1])
-        else:
-            raise ValueError
 
-
-        if mode == "literal":
+        if field_info_to_compare == "choices":
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
                 literal_values = field_type.__args__
-                field_literal_skip_number = min(literal_skip_number, len(literal_values))
+                field_literal_skip_number = min(include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
                 self.descriptions[fieldname] = literal_values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
-        elif mode == "list": # literal but listed
+        elif field_info_to_compare == "choice-list": # choices but in a list, single string
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
                 literal_values = field_type.__args__
-                field_literal_skip_number = min(literal_skip_number, len(literal_values))
+                field_literal_skip_number = min(include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
                 self.descriptions[fieldname] = [str(literal_values)] # make list of length one,  with a string of the whole list of values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
-        elif mode == "fielddescription": #field description (should be same as rag setup)
+        elif field_info_to_compare == "description": #field description (should be same as rag setup)
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 self.descriptions[fieldname] = fields[fieldname].description
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
 
-        else: # from ontology
+        elif field_info_to_compare.startswith("onto-"): # from ontology
+            mode = field_info_to_compare[5:]
             assert mode in ["label", "description", "both"]
             fields = pydantic_form.__fields__
             assert len(fields) == 1 # TODO allow more and other fields
@@ -291,16 +284,19 @@ class Keybert(ContextShortener):
                 pass
             self.descriptions[fieldname] = kom.get_subontology(mode)
             self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
+        else:
+            print(field_info_to_compare)
+            raise ValueError
 
     def set_document(self, document):
-        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_sizes[0], chunk_overlap = self.chunk_sizes[1], verbose=False)
+        self.chunks = chunk_by_headeres_and_clean(document, chunk_size = self.chunk_size, chunk_overlap = self.chunk_overlap, verbose=False)
         self.chunks = [chunk.text for chunk in self.chunks]
 
         self.keywordss = []
         self.keyword_scoress = []
         self.keyword_embeddingss = []
         self.indices_with_keywords = []
-        if self.comparison_mode == "keybert":
+        if self.chunk_info_to_compare == "keybert":
             for (i, chunk) in enumerate(self.chunks):
                 keywords, scores = kom.get_keywords(
                         chunk, 
@@ -324,7 +320,7 @@ class Keybert(ContextShortener):
                 self.keyword_embeddingss.append(embs)
                 self.indices_with_keywords.append(i)
 
-        elif self.comparison_mode == "keyword":
+        elif self.chunk_info_to_compare == "direct":
             # for each chunk, act as if there is a single kw, embed the chunk and give score 1 (can simplify if keybert is redundant)
             for (i, chunk) in enumerate(self.chunks):
 

@@ -1,7 +1,13 @@
 dataset__args:
     dataset:
         default: "arxpr"
-        help: 'either one of ["ega","nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"], or "arxpr","arxpr2_{n}"  "arxpr2s_{n}", "arxpr_2s:{x}_{n}" where s means shufling, x is optional seed, (1 to 5) (11 is default), and n is number of allowable answers, among 25,50,100,200,400.'
+        help: 'one of ["ega","nhrf", "nhrf2", "nhrf3", "simple_test", "study_type", "arxpr","arxpr2"]'
+    dataset_literal_length:
+        default: 25
+        help:  'number of allowable answers, among 25,50,100,200,400.'
+    dataset_shuffle:
+        default: "s"
+        help: "shuffling parameter, currently not used"
     dataset_length:
         default: 1
         help: "number of papers to analyse"
@@ -58,8 +64,9 @@ form_filler__outlines__sampler__multinomial__args:
 
 context_shortener__args:
     context_shortener:
-        default: "rag"
-          #choices: ["full_paper", "rag","rerank", "reduce", "keybert-label","keybert-literal", "keybert-description", "keybert-both", "keyword-label","keyword-description", "keyword-both", "keyword-literal"]
+        default: "retrieval"
+        choices: ["full_paper", "rag","rerank", "reduce", "retrieval"]
+        help: "retrieval refers to the ''inhouse'' retrieval based on the keybert implementation, wheras rag refers to the implementation in RAG.py"
     chunk_size: 
         default: 500
         help: "number of characters in each chunk (the number is a maximum, shorter chunks are made to get the splits in sensible places). This is used for most retrieval methods."
@@ -69,13 +76,27 @@ context_shortener__args:
         default: 1
     mmr_param:
         default: 1.0
+    embedding_model: 
+        default: 'all-MiniLM-L6-v2'
+        help: 'embedding model for retrieval. For "retrieval", should be huggingface firendly format, for "rag" should be ollama. Default is "all-MiniLM-L6-v2", some ollama options are "all-minilm:l6-v2","llama3.1:8b"'
 
 context_shortener__rag__args:
     retriever_type:
         default: "simple"
         choices: ["simple", "fusion", "metadata"]
-    rag_llm: 
-        default: "llama3.1"
+
+context_shortener__retrieval__args:
+    chunk_info_to_compare: #direct vs keybert
+        default: "direct"
+        choices: ["direct","keybert"]
+        help: "what to compare the field info to, in retrieval. direct (chunk) or keybert (i.e. keywords from keybert)"
+    field_info_to_compare: 
+        choices: ["description", "choices", "choice-list", "onto-label", "onto-description", "onto-both"]
+        default: "description"
+        help: "what to compare the chunk info against. Field description, choices in form of list, or individual choices, or ontology information"
+    include_choice_every: 
+        default: 1
+        help: "if larger than one, only every n'†h choice is included for comparison to the chunk info"
 
 context_shortener__keybert__args:
     n_keywords: 

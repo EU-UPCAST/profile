@@ -59,180 +59,188 @@ def sweep_run():
 
     wandb.log(score)
 
-dk_params = { # direct keyword
-        "ff_model" :{"value" : "keybert"},
-        "context_shortener" : {"values" : [
-            "keyword-literal-5", 
-            "keybert-literal-5", 
-            #"keyword-literal", 
-            #"keybert-literal", 
+best_choice_params = {
+        "ff_model" :{"value" : "best_choice"},
+        "context_shortener" :{"value" : "retrieval"},
+        "chunk_info_to_compare" : {"values": [
+            "direct",
+            #"keybert",
             ]},
-        "reduce_chunk_size" : {"value" : 500},
-        "reduce_chunk_overlap" : {"value" : 100},
+        "field_info_to_compare": {"value":"choices"},
     }
 
-openai_params = { # best baseline
+fullpaper_params = { # best baseline
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"value" :"full_paper"},
     }
 
-rag_params = { # baseline rag
+sota_params = {
         "ff_model" :{"value" : "4om"},
-        "rag_llm" :{"values": [
-            #"llama3.1",
-            #"Losspost/stella_en_1.5b_v5",
-            "all-minilm:l6-v2",
-            #"koesn/llama3-openbiollm-8b",
+        "field_info_to_compare " : {"values":[
+            "choice-list",
+            "description",
+            #"choices",
             ]},
-        "context_shortener" : {"values" : [
-            "rag", 
-            ]},
-        "rag_chunk_size" : {"values" : [
-            850
-            ]},
-        "rag_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            #10, 
-            17]},
-    }
-rag_params_2 = { # baseline rag with comparable context
-        "ff_model" :{"value" : "4om"},
-        "rag_llm" :{"values": [
-            #"llama3.1",
-            #"Losspost/stella_en_1.5b_v5",
-            "all-minilm:l6-v2",
-            ]},
-        "context_shortener" : {"values" : [
-            "rag", 
-            ]},
-        "rag_chunk_size" : {"values" : [
-            500
-            ]},
-        "rag_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            10]},
-    }
-shorter_literal_test = {
-        "context_shortener" : {"values" : [
-            #"keyword-list:12", # last iteration of 2 values (in 25) # probably to random w.r.t. shuffeling
-            #"keyword-list:8", # last iteration of 3 values (in 25) # probably to random w.r.t. shuffeling
-            #"keyword-list:5", # 5 values
-            #"keyword-list:3", # 8 values
-            #"keyword-list:2", # 12 values
-            #"keyword-list",
-            #"keyword-literal:5",
-            "keyword-literal:3",
-            #"keyword-literal:2",
-            #"keyword-literal",
-            #"keyword-fielddescription", 
-            ]},
-        "ff_model" :{"value" : "4om"},
-        "reduce_chunk_size" : {"value" : 500},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"value" : 10},
-    }
-kw_test = {
-        "context_shortener" : {"values" :[
-            "keyword-literal", # best overall (on train 50)
-            #"keybert-literal", # best on anything but hardware (on train 50)
-            ]},
-        "ff_model" :{"value" : "4om"},
-        "reduce_chunk_size" : {"value" : 500},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"value" : 10},
-    }
+        "similarity_k" : {"values": [10]},
+        }
 
-keyword_open_params = {
-        "ff_model" :{"values" : [
-            ##"ministral_gguf",
-            #"mistralai/Ministral-8B-Instruct-2410",
-            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
-            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
-            "TheBloke/Mistral-7B-v0.1-GPTQ",
-            ]},
-        "context_shortener" : {"values" : [
-            "keyword-literal", 
-            ]},
-        "reduce_chunk_size" : {"values" : [
-            #150,
-            #200,
-            300,
-            #500, 
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            #2,
-            #3,
-            4,
-            #5,
-            ]},
-    }
-rag_open_params = {
-        "ff_model" :{"values" : [
-            ##"ministral_gguf",
-            #"mistralai/Ministral-8B-Instruct-2410",
-            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
-            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
-            "TheBloke/Mistral-7B-v0.1-GPTQ",
-            ]},
-        "rag_llm" :{"values": [
-            #"Losspost/stella_en_1.5b_v5",
-            "all-minilm:l6-v2",
-            ]},
-        "rag_chunk_size" : {"values" : [
-            500,  
-            ]},
-        "rag_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            5,
-            ]},
-    }
 
-keyword_llama_params = {
-        "context_shortener" : {"values" : [
-            "keyword-literal", 
-            "keybert-literal", 
-            ]},
-        "reduce_chunk_size" : {"values" : [
-            #150,
-            #200,
-            300,
-            #500, 
-            ]},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            #2,
-            #3,
-            4,
-            #5,
-            ]},
-    }
 
-rag_llama_params = {
-        "rag_llm" :{"values": [
-            #"Losspost/stella_en_1.5b_v5",
-            "all-minilm:l6-v2",
-            ]},
-        "rag_chunk_size" : {"values" : [
-            #150,
-            #200,
-            #300, # more is clearly better
-            500,  
-            #700,  
-            #850,
-            #1000,
-            ]},
-        "rag_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            #2,
-            #3,
-            #4, # more is clearly better 
-            5,
-            #6,
-            #7,
-            #8,
-            ]},
-    }
+
+
+
+# TODO cleanup
+#rag_params = { # baseline rag
+#        "ff_model" :{"value" : "4om"},
+#        "embedding_model" :{"values": [
+#            #"llama3.1",
+#            #"Losspost/stella_en_1.5b_v5",
+#            "all-minilm:l6-v2",
+#            #"koesn/llama3-openbiollm-8b",
+#            ]},
+#        "context_shortener" : {"values" : [
+#            "rag", 
+#            ]},
+#        "chunk_size" : {"values" : [
+#            850
+#            ]},
+#        "similarity_k" : {"values" : [
+#            #10, 
+#            17]},
+#    }
+#rag_params_2 = { # baseline rag with comparable context
+#        "ff_model" :{"value" : "4om"},
+#        "embedding_model" :{"values": [
+#            #"llama3.1",
+#            #"Losspost/stella_en_1.5b_v5",
+#            "all-minilm:l6-v2",
+#            ]},
+#        "context_shortener" : {"values" : [
+#            "rag", 
+#            ]},
+#        "similarity_k" : {"value" : 10},
+#    }
+#shorter_literal_test = {
+#        "context_shortener" : {"values" : [
+#            #"keyword-list:12", # last iteration of 2 values (in 25) # probably to random w.r.t. shuffeling
+#            #"keyword-list:8", # last iteration of 3 values (in 25) # probably to random w.r.t. shuffeling
+#            #"keyword-list:5", # 5 values
+#            #"keyword-list:3", # 8 values
+#            #"keyword-list:2", # 12 values
+#            #"keyword-list",
+#            #"keyword-literal:5",
+#            "keyword-literal:3",
+#            #"keyword-literal:2",
+#            #"keyword-literal",
+#            #"keyword-fielddescription", 
+#            ]},
+#        "ff_model" :{"value" : "4om"},
+#        "chunk_size" : {"value" : 500},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"value" : 10},
+#    }
+#kw_test = {
+#        "context_shortener" : {"values" :[
+#            "keyword-literal", # best overall (on train 50)
+#            #"keybert-literal", # best on anything but hardware (on train 50)
+#            ]},
+#        "ff_model" :{"value" : "4om"},
+#        "chunk_size" : {"value" : 500},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"value" : 10},
+#    }
+#
+#keyword_open_params = {
+#        "ff_model" :{"values" : [
+#            ##"ministral_gguf",
+#            #"mistralai/Ministral-8B-Instruct-2410",
+#            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
+#            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
+#            "TheBloke/Mistral-7B-v0.1-GPTQ",
+#            ]},
+#        "context_shortener" : {"values" : [
+#            "keyword-literal", 
+#            ]},
+#        "chunk_size" : {"values" : [
+#            #150,
+#            #200,
+#            300,
+#            #500, 
+#            ]},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"values" : [
+#            #2,
+#            #3,
+#            4,
+#            #5,
+#            ]},
+#    }
+#rag_open_params = {
+#        "ff_model" :{"values" : [
+#            ##"ministral_gguf",
+#            #"mistralai/Ministral-8B-Instruct-2410",
+#            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
+#            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
+#            "TheBloke/Mistral-7B-v0.1-GPTQ",
+#            ]},
+#        "embedding_model" :{"values": [
+#            #"Losspost/stella_en_1.5b_v5",
+#            "all-minilm:l6-v2",
+#            ]},
+#        "chunk_size" : {"values" : [
+#            500,  
+#            ]},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"values" : [
+#            5,
+#            ]},
+#    }
+#
+#keyword_llama_params = {
+#        "context_shortener" : {"values" : [
+#            "keyword-literal", 
+#            "keybert-literal", 
+#            ]},
+#        "chunk_size" : {"values" : [
+#            #150,
+#            #200,
+#            300,
+#            #500, 
+#            ]},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"values" : [
+#            #2,
+#            #3,
+#            4,
+#            #5,
+#            ]},
+#    }
+#
+#rag_llama_params = {
+#        "embedding_model" :{"values": [
+#            #"Losspost/stella_en_1.5b_v5",
+#            "all-minilm:l6-v2",
+#            ]},
+#        "chunk_size" : {"values" : [
+#            #150,
+#            #200,
+#            #300, # more is clearly better
+#            500,  
+#            #700,  
+#            #850,
+#            #1000,
+#            ]},
+#        "chunk_overlap" : {"value" : 100},
+#        "similarity_k" : {"values" : [
+#            #2,
+#            #3,
+#            #4, # more is clearly better 
+#            5,
+#            #6,
+#            #7,
+#            #8,
+#            ]},
+#    }
 
 
 def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr", name = None, fields_length = 0, mode = "train"):
@@ -263,101 +271,110 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 def run_tests():
     dl, fl = 1500, 100
-    run_sweep(new_rag_params_2, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="newrag_rag_test",
-              )
-    quit()
-    run_sweep(rag_open_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="mstral_rag_test",
-              )
-    run_sweep(keyword_open_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="mstral_test",
-              )
-    run_sweep(dk_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="dk_test",
-              )
-    run_sweep(openai_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="openai_test",
-              )
-    run_sweep(keyword_llama_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="kw_llama_test",
-              )
-    run_sweep(rag_llama_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="rag_llama_test",
-              )
-    run_sweep(rag_params, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="rag_test",
-              )
-    run_sweep(rag_params_2, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 1,
-              method= "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="rag_test",
-              )
+    #run_sweep(new_rag_params_2, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="newrag_rag_test",
+    #          )
+    #quit()
+    #run_sweep(rag_open_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="mstral_rag_test",
+    #          )
+    #run_sweep(keyword_open_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="mstral_test",
+    #          )
+    #run_sweep(dk_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="dk_test",
+    #          )
+    #run_sweep(openai_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="openai_test",
+    #          )
+    #run_sweep(keyword_llama_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="kw_llama_test",
+    #          )
+    #run_sweep(rag_llama_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="rag_llama_test",
+    #          )
+    #run_sweep(rag_params, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="rag_test",
+    #          )
+    #run_sweep(rag_params_2, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          method= "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="rag_test",
+    #          )
 
-    run_sweep(kw_test, 
-              dataset_length = dl,
-              fields_length = fl,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              mode = "test",
-              name="kw_test",
-              )
+    #run_sweep(kw_test, 
+    #          dataset_length = dl,
+    #          fields_length = fl,
+    #          sweep_count = 2,
+    #          method = "grid",
+    #          dataset=["arxpr2s_25"],
+    #          mode = "test",
+    #          name="kw_test",
+    #          )
 if __name__ == "__main__":
     #run_tests()
     #quit()
+    run_sweep(sota_params, 
+              dataset_length = 6,
+              fields_length = 2,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2"],
+              name="newpipelinetest",
+              )
+    quit()
     run_sweep(shorter_literal_test, 
               dataset_length = 300,
               fields_length = 30,

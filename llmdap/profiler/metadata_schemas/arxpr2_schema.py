@@ -105,14 +105,12 @@ for i, length in enumerate(lengths):
 # redo several times to check variance across seeds
 
 lengths = [25,50,100,200,400]
-classes = {}
 shuffled_classes_by_seed = {}
 for seed in range(1,5):
     random.seed(seed)
     shuffled_classes_by_seed[seed] = {}
     for i, length in enumerate(lengths):
     
-        fields = {}
         shuffled_fields = {}
         for field_name in values:
     
@@ -121,17 +119,13 @@ for seed in range(1,5):
             for j in range(i+1):
                 values_to_include = [*values_to_include, *values[field_name][f"_{lengths[j]}"]]
     
-            field_type = Literal[tuple(values_to_include)] # make Literal dynamically by converting to tuple
-    
             # shuffle the values
             random.shuffle(values_to_include)
             shuffled_field_type = Literal[tuple(values_to_include)]
     
             field = Field(description = description)
-            fields[field_name] = (field_type, field)
             shuffled_fields[field_name] = (shuffled_field_type, field)
     
-        classes[str(length)] = create_model(f'arxpr2_{length}', **fields)
         shuffled_classes_by_seed[seed][str(length)] = create_model(f'arxpr2_{length}', **shuffled_fields)
 if __name__ == "__main__":
     import pprint
