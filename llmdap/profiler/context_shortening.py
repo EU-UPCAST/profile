@@ -247,19 +247,35 @@ class Keybert(ContextShortener):
 
         self.descriptions = {}
         self.target_emb = {}
+        mode_info = mode.split(":")
+        mode = mode_info[0]
+        if len(mode_info) == 1:
+            literal_skip_number = 1
+        elif len(mode_info) == 2:
+            literal_skip_number = int(mode_info[1])
+        else:
+            raise ValueError
+
+
         if mode == "literal":
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
-                self.descriptions[fieldname] = field_type.__args__
+                literal_values = field_type.__args__
+                field_literal_skip_number = min(literal_skip_number, len(literal_values))
+                literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
+                self.descriptions[fieldname] = literal_values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
         elif mode == "list": # literal but listed
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
-                self.descriptions[fieldname] = [str(field_type.__args__)]
+                literal_values = field_type.__args__
+                field_literal_skip_number = min(literal_skip_number, len(literal_values))
+                literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
+                self.descriptions[fieldname] = [str(literal_values)] # make list of length one,  with a string of the whole list of values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
         elif mode == "fielddescription": #field description (should be same as rag setup)
             fields = pydantic_form.__fields__

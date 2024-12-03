@@ -112,18 +112,34 @@ rag_params_2 = { # baseline rag with comparable context
         "similarity_k" : {"values" : [
             10]},
     }
-new_rag_params_2 = {
-        "ff_model" :{"value" : "4om"},
+shorter_literal_test = {
         "context_shortener" : {"values" : [
-            "keyword-list",
-            "keyword-fielddescription", 
+            #"keyword-list:12", # last iteration of 2 values (in 25) # probably to random w.r.t. shuffeling
+            #"keyword-list:8", # last iteration of 3 values (in 25) # probably to random w.r.t. shuffeling
+            #"keyword-list:5", # 5 values
+            #"keyword-list:3", # 8 values
+            #"keyword-list:2", # 12 values
+            #"keyword-list",
+            #"keyword-literal:5",
+            "keyword-literal:3",
+            #"keyword-literal:2",
+            #"keyword-literal",
+            #"keyword-fielddescription", 
             ]},
-        "reduce_chunk_size" : {"values" : [
-            500
-            ]},
+        "ff_model" :{"value" : "4om"},
+        "reduce_chunk_size" : {"value" : 500},
         "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"values" : [
-            10]},
+        "similarity_k" : {"value" : 10},
+    }
+kw_test = {
+        "context_shortener" : {"values" :[
+            "keyword-literal", # best overall (on train 50)
+            #"keybert-literal", # best on anything but hardware (on train 50)
+            ]},
+        "ff_model" :{"value" : "4om"},
+        "reduce_chunk_size" : {"value" : 500},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"value" : 10},
     }
 
 keyword_open_params = {
@@ -216,16 +232,6 @@ rag_llama_params = {
             #7,
             #8,
             ]},
-    }
-kw_test = {
-        "context_shortener" : {"values" :[
-            "keyword-literal", # best overall (on train 50)
-            "keybert-literal", # best on anything but hardware (on train 50)
-            ]},
-        "ff_model" :{"value" : "4om"},
-        "reduce_chunk_size" : {"value" : 500},
-        "reduce_chunk_overlap" : {"value" : 100},
-        "similarity_k" : {"value" : 10},
     }
 
 
@@ -352,22 +358,32 @@ def run_tests():
 if __name__ == "__main__":
     #run_tests()
     #quit()
+    run_sweep(shorter_literal_test, 
+              dataset_length = 300,
+              fields_length = 30,
+              sweep_count = 5,
+              method = "grid",
+              dataset=["arxpr2s:1_25", "arxpr2s:2_25", "arxpr2s:3_25", "arxpr2s:4_25", "arxpr2s_25"],
+              name="reshufled_lit5_kw",
+              )
+    quit()
 
     run_sweep(kw_test, 
               dataset_length = 300,
               fields_length = 30,
-              sweep_count = 2,
+              sweep_count = 5,
               method = "grid",
-              dataset=["arxpr2s_25"],
-              name="newrags",
+              dataset=["arxpr2s:1_25", "arxpr2s:2_25", "arxpr2s:3_25", "arxpr2s:4_25", "arxpr2s_25"],
+              name="reshufled_kw",
               )
-    run_sweep(rag_params_2, 
+    quit()
+    run_sweep(shorter_literal_test, 
               dataset_length = 300,
               fields_length = 30,
-              sweep_count = 3,
+              sweep_count = 8,
               method = "grid",
               dataset=["arxpr2s_25"],
-              name="rag_retune",
+              name="shorterliteral",
               )
     quit()
     run_sweep(new_rag_params_2, 

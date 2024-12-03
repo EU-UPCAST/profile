@@ -6,3 +6,4 @@ from .arxpr_schema import Study_type_metadata_form as study_type_schema
 from .arxpr_schema import Metadata_form as arxpr_schema
 from .arxpr2_schema import classes as arxpr2_schemas
 from .arxpr2_schema import shuffled_classes as arxpr2s_schemas
+from .arxpr2_schema import shuffled_classes_by_seed as arxpr2s_schemas_by_seed

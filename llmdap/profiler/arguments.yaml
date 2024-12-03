@@ -1,7 +1,8 @@
 dataset__args:
     dataset:
         default: "arxpr"
-        choices: ["ega","arxpr", "arxpr2_25", "arxpr2_50", "arxpr2_100", "arxpr2_200", "arxpr2_400", "arxpr2s_25", "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
+          #choices: ["ega","arxpr", "arxpr2_25", "arxpr2_50", "arxpr2_100", "arxpr2_200", "arxpr2_400", "arxpr2s_25", "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400", "nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"]
+        help: 'either one of ["ega","nhrf", "nhrf2", "nhrf3", "simple_test", "study_type"], or "arxpr","arxpr2_{n}"  "arxpr2s_{n}", "arxpr_2s:{x}_{n}" where s means shufling, x is optional seed, (1 to 5) (11 is default), and n is number of allowable answers, among 25,50,100,200,400.'
     dataset_length:
         default: 1
         help: "number of papers to analyse"

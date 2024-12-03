@@ -354,10 +354,15 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
         pydantic_form = metadata_schemas.arxpr_schema 
     elif args.dataset[:6] == "arxpr2":
         dataset_literal_length = args.dataset.split("_")[1]
-        loader_kwargs["version"] = "2_25" # loaded dataset always 25, only pydantic form depends on literal_length
-        if args.dataset[:8] == "arxpr2s_":
+        loader_kwargs["version"] = "2_25" # loaded dataset always 25, only pydantic form depends on literal_length and shuffling
+        if len(args.dataset[:9].split(":")) == 2: # shuffled by seed
+            seed = args.dataset[:9].split(":")[1]
+            seed = int(seed)
+            pydantic_form = metadata_schemas.arxpr2s_schemas_by_seed[seed][dataset_literal_length]
+        elif args.dataset[:8] == "arxpr2s_": # standard shuffled version
             pydantic_form = metadata_schemas.arxpr2s_schemas[dataset_literal_length]
-        else:
+        else: #unshuffled version
+            assert args.dataset[:7] == "arxpr2_"
             pydantic_form = metadata_schemas.arxpr2_schemas[dataset_literal_length]
         loader_kwargs["mode"] = args.mode
         loader = dataset_loader.load_arxpr_data
