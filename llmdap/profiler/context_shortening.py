@@ -238,6 +238,7 @@ class Keybert(ContextShortener):
                 "0" : 'all-MiniLM-L6-v2',
                 "3" : 'all-mpnet-base-v2',
                 "4" : 'dunzhang/stella_en_1.5B_v5',
+                "5" : "aaditya/Llama3-OpenBioLLM-8B",
                 }[emb_model_v]
 
         self.emb_model = kom.get_embedding_model(emb_model_id)
@@ -253,7 +254,21 @@ class Keybert(ContextShortener):
                 field_type = field.annotation
                 self.descriptions[fieldname] = field_type.__args__
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
-        else:
+        elif mode == "list": # literal but listed
+            fields = pydantic_form.__fields__
+            for fieldname in fields:
+                field = fields[fieldname]
+                field_type = field.annotation
+                self.descriptions[fieldname] = [str(field_type.__args__)]
+                self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
+        elif mode == "fielddescription": #field description (should be same as rag setup)
+            fields = pydantic_form.__fields__
+            for fieldname in fields:
+                self.descriptions[fieldname] = fields[fieldname].description
+                self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
+
+        else: # from ontology
+            assert mode in ["label", "description", "both"]
             fields = pydantic_form.__fields__
             assert len(fields) == 1 # TODO allow more and other fields
             for fieldname in fields:

@@ -308,14 +308,18 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     else: # huggingface model, with outlines
         # load HF llm through dspy
         if preloaded_dspy_model is None:
+            model_kwargs = {}
             if args.ff_model == "llama3.1I-8b-q4":
                 model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
             elif args.ff_model == "biolm":
                 model_id = "aaditya/Llama3-OpenBioLLM-8B"
+            elif args.ff_model == "ministral_gguf":
+                model_id = "bartowski/Ministral-8B-Instruct-2410-GGUF"
+                model_kwargs = {"gguf_file" : "Ministral-8B-Instruct-2410-Q4_K_M.gguf"}
             else:
                 model_id = args.ff_model
             try:
-                dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2")
+                    dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2", model_kwargs = model_kwargs)
             except RuntimeError:
                 dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:0")
         else:

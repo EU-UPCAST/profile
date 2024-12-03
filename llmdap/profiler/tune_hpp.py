@@ -62,8 +62,10 @@ def sweep_run():
 dk_params = { # direct keyword
         "ff_model" :{"value" : "keybert"},
         "context_shortener" : {"values" : [
-            "keyword-literal", 
-            "keybert-literal", 
+            "keyword-literal-5", 
+            "keybert-literal-5", 
+            #"keyword-literal", 
+            #"keybert-literal", 
             ]},
         "reduce_chunk_size" : {"value" : 500},
         "reduce_chunk_overlap" : {"value" : 100},
@@ -80,6 +82,7 @@ rag_params = { # baseline rag
             #"llama3.1",
             #"Losspost/stella_en_1.5b_v5",
             "all-minilm:l6-v2",
+            #"koesn/llama3-openbiollm-8b",
             ]},
         "context_shortener" : {"values" : [
             "rag", 
@@ -109,7 +112,65 @@ rag_params_2 = { # baseline rag with comparable context
         "similarity_k" : {"values" : [
             10]},
     }
+new_rag_params_2 = {
+        "ff_model" :{"value" : "4om"},
+        "context_shortener" : {"values" : [
+            "keyword-list",
+            "keyword-fielddescription", 
+            ]},
+        "reduce_chunk_size" : {"values" : [
+            500
+            ]},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            10]},
+    }
 
+keyword_open_params = {
+        "ff_model" :{"values" : [
+            ##"ministral_gguf",
+            #"mistralai/Ministral-8B-Instruct-2410",
+            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
+            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
+            "TheBloke/Mistral-7B-v0.1-GPTQ",
+            ]},
+        "context_shortener" : {"values" : [
+            "keyword-literal", 
+            ]},
+        "reduce_chunk_size" : {"values" : [
+            #150,
+            #200,
+            300,
+            #500, 
+            ]},
+        "reduce_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            #2,
+            #3,
+            4,
+            #5,
+            ]},
+    }
+rag_open_params = {
+        "ff_model" :{"values" : [
+            ##"ministral_gguf",
+            #"mistralai/Ministral-8B-Instruct-2410",
+            #"PyrTools/Ministral-8B-Instruct-2410-GPTQ-128G",
+            #"shuyuej/Ministral-8B-Instruct-2410-GPTQ",
+            "TheBloke/Mistral-7B-v0.1-GPTQ",
+            ]},
+        "rag_llm" :{"values": [
+            #"Losspost/stella_en_1.5b_v5",
+            "all-minilm:l6-v2",
+            ]},
+        "rag_chunk_size" : {"values" : [
+            500,  
+            ]},
+        "rag_chunk_overlap" : {"value" : 100},
+        "similarity_k" : {"values" : [
+            5,
+            ]},
+    }
 
 keyword_llama_params = {
         "context_shortener" : {"values" : [
@@ -131,7 +192,7 @@ keyword_llama_params = {
             ]},
     }
 
-rag_llama_params = { # TODO tune this.
+rag_llama_params = {
         "rag_llm" :{"values": [
             #"Losspost/stella_en_1.5b_v5",
             "all-minilm:l6-v2",
@@ -196,6 +257,34 @@ def run_sweep(parameters, dataset_length, sweep_count, method, dataset = "arxpr"
 
 def run_tests():
     dl, fl = 1500, 100
+    run_sweep(new_rag_params_2, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="newrag_rag_test",
+              )
+    quit()
+    run_sweep(rag_open_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="mstral_rag_test",
+              )
+    run_sweep(keyword_open_params, 
+              dataset_length = dl,
+              fields_length = fl,
+              sweep_count = 1,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              mode = "test",
+              name="mstral_test",
+              )
     run_sweep(dk_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -205,7 +294,6 @@ def run_tests():
               mode = "test",
               name="dk_test",
               )
-    quit()
     run_sweep(openai_params, 
               dataset_length = dl,
               fields_length = fl,
@@ -262,26 +350,35 @@ def run_tests():
               name="kw_test",
               )
 if __name__ == "__main__":
-    run_tests()
-    quit()
+    #run_tests()
+    #quit()
 
-    run_sweep(rag_llama_params, 
+    run_sweep(kw_test, 
               dataset_length = 300,
               fields_length = 30,
-              sweep_count = 4,
+              sweep_count = 2,
               method = "grid",
               dataset=["arxpr2s_25"],
-              name="rag_llama_tune_cs",
+              name="newrags",
+              )
+    run_sweep(rag_params_2, 
+              dataset_length = 300,
+              fields_length = 30,
+              sweep_count = 3,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              name="rag_retune",
+              )
+    quit()
+    run_sweep(new_rag_params_2, 
+              dataset_length = 300,
+              fields_length = 30,
+              sweep_count = 2,
+              method = "grid",
+              dataset=["arxpr2s_25"],
+              name="newrags",
               )
     #quit()
-    #run_sweep(rag_params, 
-    #          dataset_length = 300,
-    #          fields_length = 30,
-    #          sweep_count = 3,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],
-    #          name="rag_retune",
-    #          )
     #quit()
     #run_sweep(dk_params, 
     #          dataset_length = 600,
