@@ -127,6 +127,36 @@ def load_arxpr_data(max_amount = 10, version = "", mode = "train"):
 
     return paper_texts, labels
 
+class Arxpr_generator:
+    def __init__(self, version = "", mode = "train"):
+        """ mode : "single" or "elements" """
+        self.data_folder = "/mnt/data/upcast/data/"
+
+        if mode == "train":
+            with open(self.data_folder + f"arxpr{version}_metadataset_train.json") as file:
+                self.labels = json.load(file)
+        elif mode == "test":
+            with open(self.data_folder + f"arxpr{version}_metadataset_holdout.json") as file:
+                self.labels = json.load(file)
+
+        self.i = 0
+        self.keys = list(self.labels.keys())
+
+    def get_next_labels(self):
+        if self.i >= len(self.labels):
+            return None
+        key = self.keys[self.i]
+        self.i += 1
+        return key, self.labels[key]
+
+    def get_paper_text(self, key):
+        paper_texts, labels = load_paper_text({key:self.labels[key]}, 1, self.data_folder)
+        assert len(paper_text) == len(labels)
+        if len(paper_texts) == 0:
+            return None
+        assert len(paper_texts) == 1
+        return paper_text[key]
+
 
 def load_study_type_data(max_amount = 10):
     """ mode : "single" or "elements" """
@@ -190,8 +220,8 @@ def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
 
 if __name__=="__main__":
     # print(load_ega_data(1)[1])
-    t,l = load_arxpr_data(5)
-    
+    t,l = load_arxpr_data(5, "2_25")
     print(l.keys())
-
-
+    generator = Arxpr_generator("2_25")
+    for i in range(5):
+        print(generator.get_next_labels()[0])

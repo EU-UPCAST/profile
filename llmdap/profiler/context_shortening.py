@@ -39,8 +39,7 @@ class FullPaperShortener(ContextShortener):
         return self.document
 
 class RAGShortener(ContextShortener):
-    def __init__(self, chat_model, embed_model, pydantic_form, retriever_type, chunk_size, chunk_overlap, similarity_k, mmr_param):
-        self.chat_model = chat_model
+    def __init__(self, embed_model, pydantic_form, retriever_type, chunk_size, chunk_overlap, similarity_k, mmr_param):
         self.embed_model = embed_model
         self.pydantic_form = pydantic_form
         self.set_description_retrieval_prompt() # default : use description for retrieval
@@ -82,7 +81,6 @@ class RAGShortener(ContextShortener):
     def set_document(self,document):
         # make vectorstore
         vs = RAG.VectorStoreWeave(document=document,
-                                  chat_model=self.chat_model,
                                   embed_model=self.embed_model,
                                   chunk_size = self.chunk_size,
                                   chunk_overlap = self.chunk_overlap,

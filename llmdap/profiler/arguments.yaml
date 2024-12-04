@@ -1,6 +1,6 @@
 dataset__args:
     dataset:
-        default: "arxpr"
+        default: "arxpr2"
         help: 'one of ["ega","nhrf", "nhrf2", "nhrf3", "simple_test", "study_type", "arxpr","arxpr2"]'
     dataset_literal_length:
         default: 25

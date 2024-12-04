@@ -72,14 +72,11 @@ values = dict(
 )
 
 
-random.seed(11)
 lengths = [25,50,100,200,400]
 classes = {}
-shuffled_classes = {}
 for i, length in enumerate(lengths):
 
     fields = {}
-    shuffled_fields = {}
     for field_name in values:
 
         description = values[field_name]["description"]
@@ -89,46 +86,40 @@ for i, length in enumerate(lengths):
 
         field_type = Literal[tuple(values_to_include)] # make Literal dynamically by converting to tuple
 
+        field = Field(description = description)
+        fields[field_name] = (field_type, field)
+
+    classes[str(length)] = create_model(f'arxpr2_{length}', **fields)
+
+
+def get_shuffled_form(seed, length):
+    random.seed(seed)
+    
+    shuffled_fields = {}
+    for field_name in values:
+    
+        description = values[field_name]["description"]
+        values_to_include = []
+        j = 0
+        while len(values_to_include) < length and len(values[field_name][f"_{lengths[j]}"]): # second term ensures we stop if there are no more values
+            values_to_include = [*values_to_include, *values[field_name][f"_{lengths[j]}"]]
+            j += 1
+    
         # shuffle the values
         random.shuffle(values_to_include)
         shuffled_field_type = Literal[tuple(values_to_include)]
-
+    
         field = Field(description = description)
-        fields[field_name] = (field_type, field)
         shuffled_fields[field_name] = (shuffled_field_type, field)
-
-    classes[str(length)] = create_model(f'arxpr2_{length}', **fields)
-    shuffled_classes[str(length)] = create_model(f'arxpr2_{length}', **shuffled_fields)
-
-
-
-# redo several times to check variance across seeds
-
-lengths = [25,50,100,200,400]
-shuffled_classes_by_seed = {}
-for seed in range(1,5):
-    random.seed(seed)
-    shuffled_classes_by_seed[seed] = {}
-    for i, length in enumerate(lengths):
     
-        shuffled_fields = {}
-        for field_name in values:
-    
-            description = values[field_name]["description"]
-            values_to_include = []
-            for j in range(i+1):
-                values_to_include = [*values_to_include, *values[field_name][f"_{lengths[j]}"]]
-    
-            # shuffle the values
-            random.shuffle(values_to_include)
-            shuffled_field_type = Literal[tuple(values_to_include)]
-    
-            field = Field(description = description)
-            shuffled_fields[field_name] = (shuffled_field_type, field)
-    
-        shuffled_classes_by_seed[seed][str(length)] = create_model(f'arxpr2_{length}', **shuffled_fields)
+    pydantic_form = create_model(f'arxpr2:{seed}_{length}', **shuffled_fields)
+    return pydantic_form
+
+
 if __name__ == "__main__":
     import pprint
     pprint.pprint(classes["50"].__fields__["organism_part_5"])
     print("")
-    pprint.pprint(shuffled_classes["50"].__fields__["organism_part_5"])
+    pprint.pprint(get_shuffled_form(4,25).__fields__["organism_part_5"])
+    get_shuffled_form(6,25)
+    pprint.pprint(get_shuffled_form(4,25).__fields__["organism_part_5"])
