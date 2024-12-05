@@ -116,6 +116,7 @@ class FormFillingIterator:
             assert labels is None
             assert not form_generator is None
             assert not document_generator is None
+            assert fields_length>0
         else:
             assert not form_filler.pydantic_form is None
             assert form_generator is None
@@ -135,12 +136,7 @@ class FormFillingIterator:
         self.fields_length = fields_length
         self.mode = mode
 
-
-        if documents is None:
-            raise NotImplementedError
-        else:
-            self.iterate = self._iterate_using_list
-            self.field_names = self.form_filler.pydantic_form.__fields__ # TODO do this dynamcally // no, just set manually for generator method
+        self.field_names = self.form_filler.pydantic_form.__fields__ 
 
         self.all_scores = {}
         for field in self.field_names:
@@ -148,10 +144,48 @@ class FormFillingIterator:
         #self.all_times = []
         self.skips = 0
 
+        if documents is None:
+            self.iterate = self._iterate_using_generator
+        else:
+            self.iterate = self._iterate_using_list
+
     @weave.op()
     def __call__(self):
         self.iterate()
-        return self.evaluate()
+
+        if self.documents is None or self.labels:
+            return self.evaluate()
+        return
+
+    def _iterate_using_generator(self):
+
+        while True:
+            key, paper_labels = self.document_generator.get_next_labels()
+
+            # get equal amount of predictions for each label
+            # by removing labels for fields with enough predictions already
+            skipped_fields = 0
+            for field in paper_labels:
+                if len(self.all_scores[field]) >= self.fields_length:
+                    #if len(paper_labels[field]):
+                    #    print("--- skipping field with enough preidictions:", field)
+                    paper_labels[field] = []
+                    skipped_fields += 1
+            if skipped_fields >= len(self.all_scores): # all fields have the required number of predictions
+                print("---------Enough predictions made")
+                break
+
+            if len(paper_labels) == len(self.remove_fields(paper_labels)):
+                #print("!!! No usable labels, skippping paper")
+                continue
+
+            # now that most labels have been disgarded (via continue), we load document (which takes a bit of time)
+            paper_text = self.document_generator.get_paper_text(key)
+
+            pydantic_form = self.form_generator(seed = int(key)) # use key as seed to ensure unique seeds
+            self.form_filler.re_set_pydantic_form(pydantic_form)
+
+            self.fill_single_form(key,paper_text, paper_labels)
 
 
     def _iterate_using_list(self):
@@ -163,10 +197,6 @@ class FormFillingIterator:
             paper_text = self.documents[key]
             if self.labels:
                 paper_labels = self.labels[key]
-                if "arxpr2" in self.argstring:
-                    paper_labels.pop("sex_2",None) # TODO remove this from the labels file instead of here
-                    paper_labels.pop("adjusted_type_24",None) # TODO remove this from the labels file instead of here
-
 
                 if self.fields_length:
                     # get equal amount of predictions for each label
@@ -185,20 +215,14 @@ class FormFillingIterator:
                 if len(paper_labels) == len(self.remove_fields(paper_labels)):
                     #print("!!! No usable labels, skippping paper")
                     continue
-                if "arxpr2" in self.argstring:
-                    # skip the common ones just to avoid having a very skewed score. TODO: solve this problem in a better way
-                    if set(paper_labels.keys())-set(self.remove_fields(paper_labels)) <= {"assay_by_molecule_14", "study_type_18"}:
-                        print("!!! only the common labels, skippping paper")
-                        continue
             
                 self.fill_single_form(key,paper_text, paper_labels)
             else:
                 self.fill_single_form(key,paper_text)
 
 
-    def fill_single_form(self, key, paper_text, paper_labels=None, pydantic_form=None):
-        if pydantic_form is None:
-            pydantic_form = self.form_filler.pydantic_form
+    def fill_single_form(self, key, paper_text, paper_labels=None):
+        pydantic_form = self.form_filler.pydantic_form
 
         filled_form = None
 
@@ -226,12 +250,11 @@ class FormFillingIterator:
         
             print("--------- setting document")
             self.context_shortener.set_document(paper_text)
-            #?? # (re)set pydantic form
         
             # fill out the form
             try:
                 print("--------- generating")
-                if self.labels:
+                if not paper_labels is None:
                     filled_form = self.form_filler.forward(self.context_shortener, exclude_fields=self.remove_fields(paper_labels))
                 else:
                     filled_form = self.form_filler.forward(self.context_shortener)
@@ -259,7 +282,7 @@ class FormFillingIterator:
 
 
         # evaluate
-        if self.labels:
+        if not paper_labels is None:
             scores = self.evaluation_fnc(paper_labels, filled_form, verbose=False)
 
             print("score:", scores)
@@ -275,48 +298,47 @@ class FormFillingIterator:
 
     def evaluate(self):
 
-        if self.labels:
-            if self.mode == "test":
-                save_score(self.argstring, self.all_scores)
-            #print("________printing final scores:")
-            #pprint.pprint(all_scores)
-            means_by_field = {}
-            for field in self.all_scores:
-                print(field, np.mean(self.all_scores[field]))
-                means_by_field[field] = np.mean(self.all_scores[field])
+        if self.mode == "test":
+            save_score(self.argstring, self.all_scores)
+        #print("________printing final scores:")
+        #pprint.pprint(all_scores)
+        means_by_field = {}
+        for field in self.all_scores:
+            print(field, np.mean(self.all_scores[field]))
+            means_by_field[field] = np.mean(self.all_scores[field])
 
-            # calculate mean score
-            final_score = []
-            final_accuracy = []
-            final_similarity = []
-            for field in self.all_scores:
-                scores = self.all_scores[field]
-                final_score.extend(scores)
+        # calculate mean score
+        final_score = []
+        final_accuracy = []
+        final_similarity = []
+        for field in self.all_scores:
+            scores = self.all_scores[field]
+            final_score.extend(scores)
 
-                field_properties = self.form_filler.pydantic_form.schema()["properties"][field]
-                if (
-                        field_properties["type"] == "integer" or
-                        (field_properties["type"] == "string" and "enum" in field_properties)
-                        ):
-                    print(field, " -- accuacy")
-                    final_accuracy.extend(scores)
-                else:
-                    final_similarity.extend(scores)
-                    print(field, " -- similarity ")
-                #print(field_properties["type"], "enum" in field_properties, field_properties)
-            print("all scores:", final_score)
-            print("length:", len(final_score))
-            print("mean", np.mean(final_score))
-            
-            info_to_log = means_by_field
-            info_to_log["final_scores"] = final_score
-            info_to_log["total_score"] = np.mean(final_score)
-            info_to_log["total_accuracy"] = np.mean(final_accuracy)
-            info_to_log["total_similarity"] = np.mean(final_similarity)
-            #info_to_log["seconds"] = np.mean(all_times)
-            info_to_log["papers_skipped"] = skips
+            field_properties = self.form_filler.pydantic_form.schema()["properties"][field]
+            if (
+                    field_properties["type"] == "integer" or
+                    (field_properties["type"] == "string" and "enum" in field_properties)
+                    ):
+                print(field, " -- accuacy")
+                final_accuracy.extend(scores)
+            else:
+                final_similarity.extend(scores)
+                print(field, " -- similarity ")
+            #print(field_properties["type"], "enum" in field_properties, field_properties)
+        print("all scores:", final_score)
+        print("length:", len(final_score))
+        print("mean", np.mean(final_score))
+        
+        info_to_log = means_by_field
+        info_to_log["final_scores"] = final_score
+        info_to_log["total_score"] = np.mean(final_score)
+        info_to_log["total_accuracy"] = np.mean(final_accuracy)
+        info_to_log["total_similarity"] = np.mean(final_similarity)
+        #info_to_log["seconds"] = np.mean(all_times)
+        info_to_log["papers_skipped"] = self.skips
 
-            return info_to_log
+        return info_to_log
 
 
 
@@ -408,13 +430,14 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
 
     if args.dataset == "arxpr2" and args.dataset_shuffle == "r":
         # do dynamic reloading+shuffling
-        form_generator = metadata_schemas.get_shuffled_arxpr2
+        length = args.dataset_literal_length
+        form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
         document_generator = dataset_loader.Arxpr_generator(version = "2_25")
         dataset_kwargs = dict(
                 form_generator = form_generator,
                 document_generator = document_generator,
                 )
-        pydantic_form = None
+        pydantic_form = form_generator()
     else:
         # load up front
         loader_kwargs = {"max_amount": args.dataset_length}
@@ -426,12 +449,15 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             if args.dataset_shuffle == "s": #preshuffled
                 raise NotImplementedError # just shiffle here instead
                 #pydantic_form = metadata_schemas.arxpr2s_schemas[str(args.dataset_literal_length)] # TODO shuffle
-            elif type(args.dataset_shuffle) is int: #preshuffled
-                raise NotImplementedError # just shiffle here instead
-                #seed = args.dataset_shuffle
-                #pydantic_form = metadata_schemas.arxpr2s_schemas_by_seed[seed][str(args.dataset_literal_length)]
-            else: #unshuffled version
+            elif args.dataset_shuffle == "n": # not shuffled
                 pydantic_form = metadata_schemas.arxpr2_schemas[str(args.dataset_literal_length)]
+            elif type(args.dataset_shuffle) is int: #preshuffled
+                length = args.dataset_literal_length
+                form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
+                pydantic_form = form_generator(seed=args.dataset_shuffle)
+            else:
+                raise ValueError
+
             loader_kwargs["mode"] = args.mode #train or test
             loader = dataset_loader.load_arxpr_data
         elif args.dataset == "study_type":
@@ -551,12 +577,16 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 max_tokens = args.outlines_ff_max_tokens)
 
     # remove fields?
-    if args.remove_fields == "None" or (args.remove_fields == "default" and len(all_labels)==0):
+    if args.remove_fields == "None":
         remove_fields = lambda x:[]
     elif args.remove_fields == "empty":
         remove_fields = remove_empty_fields
-    elif args.remove_fields == "non-single" or (args.remove_fields=="default" and len(all_labels)):
+    elif args.remove_fields == "non-single":
         remove_fields = remove_non_single_fields
+    else:
+        print(args.remove_fields)
+        raise ValueError
+
 
 
     prepared_kwargs = dict(

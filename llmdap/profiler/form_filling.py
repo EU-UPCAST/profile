@@ -245,6 +245,13 @@ class SequentialFormFiller(dspy.Module):
                     listify = self.listify_form,
                     )
 
+    def re_set_pydantic_form(self,pydantic_form):
+        """after shufling literal values, there is no need to remake field filleds since they do not use order"""
+        if self.pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
+        self.pydantic_form = pydantic_form
+
+
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
@@ -393,7 +400,7 @@ class OpenAIFormFiller(dspy.Module):
     """
     def __init__(self,
                  model_id,
-                 pydantic_form,
+                 pydantic_form=None,
                  listify_form = False,
                  max_tokens = 50,
                  verbose = False
@@ -404,6 +411,16 @@ class OpenAIFormFiller(dspy.Module):
                               )
         self.verbose = verbose
         self.listify_form = listify_form
+
+
+        if not pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
+
+    def set_pydantic_form(self, pydantic_form):
+        self.pydantic_form = pydantic_form
+    def re_set_pydantic_form(self, pydantic_form):
+        if self.pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
         self.pydantic_form = pydantic_form
 
     @weave.op()
@@ -528,6 +545,10 @@ class OpenAISequentialFormFiller(dspy.Module):
 
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+    def re_set_pydantic_form(self, pydantic_form):
+        if self.pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
+        self.pydantic_form = pydantic_form
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
@@ -637,6 +658,10 @@ class DirectKeywordSimilarityFiller(dspy.Module):
         if not pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
     def set_pydantic_form(self, pydantic_form):
+        self.pydantic_form = pydantic_form
+    def re_set_pydantic_form(self, pydantic_form):
+        if self.pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
         self.pydantic_form = pydantic_form
 
 

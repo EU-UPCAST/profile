@@ -6,8 +6,8 @@ dataset__args:
         default: 25
         help:  'number of allowable answers, among 25,50,100,200,400.'
     dataset_shuffle:
-        default: "s"
-        help: "shuffling parameter, currently not used"
+        default: "r"
+        help: "shuffling parameter, s for shufle, int for seed, r for reshufle"
     dataset_length:
         default: 1
         help: "number of papers to analyse"
@@ -18,9 +18,9 @@ dataset__args:
       default: "train"
       choices: ["train", "test"]
     remove_fields:
-        default: "default"
-        choices: ["default", "None", "empty", "non-single"]
-        help: "Remove fields to avoid predicting fields without labels (empty) or all fields with no/several values(non-single). Defaults based on dataset, to non-single if there are labels, else None."
+        default: "non-single"
+        choices: ["None", "empty", "non-single"]
+        help: "Remove fields to avoid predicting fields without labels (empty) or all fields with no/several values(non-single). "
     listed_output:
         default: False
         help: "predict several values per field"

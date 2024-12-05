@@ -151,11 +151,11 @@ class Arxpr_generator:
 
     def get_paper_text(self, key):
         paper_texts, labels = load_paper_text({key:self.labels[key]}, 1, self.data_folder)
-        assert len(paper_text) == len(labels)
+        assert len(paper_texts) == len(labels)
         if len(paper_texts) == 0:
             return None
         assert len(paper_texts) == 1
-        return paper_text[key]
+        return paper_texts[key]
 
 
 def load_study_type_data(max_amount = 10):
