@@ -6,9 +6,10 @@ import yaml
 import main
 
 
-#model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
-#dspy_model = dspy.HFModel(model = model_id)
-dspy_model = None
+model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
+#model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+dspy_model = dspy.HFModel(model = model_id)
+#dspy_model = None
 
 PRELOADED_DATASET = None
 
@@ -98,108 +99,124 @@ gpt_rag_params = {
             ]},
         "similarity_k" : {"values": [10]},
         }
-        # TODO set context length
-        #llama_sota= {
-        #        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
-        #        "field_info_to_compare" : {"values":[
-        #            "choices",
-        #            "choice-list",
-        #            ]},
-        #        "include_choice_every" : {"values" :[
-        #            1,
-        #            3,
-        #            5,
-        #            8,
-        #        "similarity_k" : {"values": [10]},
-        #        }
-        #mistral_sota= {
-        #        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
-        #        "field_info_to_compare" : {"values":[
-        #            "choices",
-        #            "choice-list",
-        #            ]},
-        #        "include_choice_every" : {"values" :[
-        #            1,
-        #            3,
-        #            5,
-        #            8,
-        #        "similarity_k" : {"values": [10]},
-        #        }
 
-#open_rag_params = {
-#        "ff_model" :{"values" : [
-#            "TheBloke/Mistral-7B-v0.1-GPTQ",
-#            "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4",
-#            ]},
-#        "field_info_to_compare" : {"values":[
-#            "description",
-#            ]},
-#        "similarity_k" : {"values": [10]},
-#        }
-
-test_11 = {
-        "ff_model" :{"value" : "4om"},
+llama_sota= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
         "field_info_to_compare" : {"values":[
             "choices",
             "choice-list",
-            "description",
             ]},
-        "similarity_k" : {"values": [10]},
-        "dataset_shuffle" : {"value" : 11},
+        "include_choice_every" : {"values" :[
+            1,
+            3,
+            5,
+            8,
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+mistral_sota= {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            "choices",
+            "choice-list",
+            ]},
+        "include_choice_every" : {"values" :[
+            1,
+            3,
+            5,
+            8,
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
         }
 
+llama_rag= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            "description",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+mistral_rag = {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            "description",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
 
+llama_tune= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            "choices",
+            #"choice-list",
+            ]},
+        "include_choice_every" : {"values" :[
+            1,
+            #3,
+            #5,
+            #8,
+            ]},
+        "chunk_size" : {"values" : [
+            250,
+            300,
+            400,
+            500,
+            ]},
+        "similarity_k" : {"values" : [
+            3,
+            4,
+            5,
+            6,
+            7,
+            ]},
+        }
 
-
-
-
-#
-#keyword_llama_params = {
-#        "context_shortener" : {"values" : [
-#            "keyword-literal", 
-#            "keybert-literal", 
-#            ]},
-#        "chunk_size" : {"values" : [
-#            #150,
-#            #200,
-#            300,
-#            #500, 
-#            ]},
-#        "chunk_overlap" : {"value" : 100},
-#        "similarity_k" : {"values" : [
-#            #2,
-#            #3,
-#            4,
-#            #5,
-#            ]},
-#    }
-#
-#rag_llama_params = {
-#        "embedding_model" :{"values": [
-#            #"Losspost/stella_en_1.5b_v5",
-#            "all-minilm:l6-v2",
-#            ]},
-#        "chunk_size" : {"values" : [
-#            #150,
-#            #200,
-#            #300, # more is clearly better
-#            500,  
-#            #700,  
-#            #850,
-#            #1000,
-#            ]},
-#        "chunk_overlap" : {"value" : 100},
-#        "similarity_k" : {"values" : [
-#            #2,
-#            #3,
-#            #4, # more is clearly better 
-#            5,
-#            #6,
-#            #7,
-#            #8,
-#            ]},
-#    }
-
+mistral_tune= {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            "choices",
+            #"choice-list",
+            ]},
+        "include_choice_every" : {"values" :[
+            1,
+            #3,
+            #5,
+            #8,
+            ]},
+        "chunk_size" : {"values" : [
+            250,
+            300,
+            400,
+            500,
+            ]},
+        "similarity_k" : {"values" : [
+            3,
+            4,
+            5,
+            6,
+            7,
+            ]},
+        }
 
 def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr", name = None, fields_length = 0, mode = "train"):
     parameters["dataset_length"] = {"value" : dataset_length}
@@ -229,135 +246,87 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
 
 def run_tests():
     fl = 100
-    run_sweep(best_choice_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              dataset=["arxpr2"],
-              mode = "test",
-              name="best_choice",
-              )
-    run_sweep(gpt_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              dataset=["arxpr2"],
-              mode = "test",
-              name="gpt_rag",
-              )
-    run_sweep(gpt_sota, 
+    #run_sweep(best_choice_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="best_choice",
+    #          )
+    #run_sweep(gpt_rag_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="gpt_rag",
+    #          )
+    #run_sweep(gpt_sota, 
+    #          fields_length = fl,
+    #          sweep_count = 8,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="gpt_sota",
+    #          )
+    #run_sweep(fullpaper_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="gpt_fullpaper",
+    #          )
+    #run_sweep(llama_sota, 
+    #          fields_length = fl,
+    #          sweep_count = 8,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="llama_sota",
+    #          )
+    #run_sweep(llama_rag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          dataset=["arxpr2"],
+    #          mode = "test",
+    #          name="llama_rag",
+    #          )
+
+    #global dspy_model
+    #del dspy_model
+    #import time
+    #time.sleep(60*5)
+    #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+    #dspy_model = dspy.HFModel(model = model_id)
+
+    run_sweep(mistral_sota, 
               fields_length = fl,
               sweep_count = 8,
               dataset=["arxpr2"],
               mode = "test",
-              name="gpt_sota",
+              name="misrtal_rag",
               )
-    quit()
-    run_sweep(fullpaper_params, 
+    run_sweep(mistral_rag, 
               fields_length = fl,
               sweep_count = 1,
               dataset=["arxpr2"],
               mode = "test",
-              name="gpt_fullpaper",
+              name="mistral_rag",
               )
+
 if __name__ == "__main__":
     run_tests()
     quit()
-    run_sweep(sota_11, 
-              dataset_length=300,
-              fields_length = 30,
-              sweep_count = 1,
+    run_sweep(llama_tune, 
+              fields_length = 50,
+              sweep_count = 20,
+              mode="random",
               dataset=["arxpr2"],
-              name="newpipeline_notshufled",
+              name="llama_tuna",
               )
-    run_sweep(sota_params, 
-              dataset_length=300,
-              fields_length = 30,
-              sweep_count = 1,
-              dataset=["arxpr2"],
-              name="newpipeline_notshufled",
-              )
-    quit()
-    run_sweep(best_choice_params, 
-              fields_length = 30,
-              sweep_count = 3,
-              dataset=["arxpr2"],
-              name="newpipelinetest",
-              )
-    run_sweep(fullpaper_params, 
-              fields_length = 30,
-              sweep_count = 3,
-              dataset=["arxpr2"],
-              name="newpipelinetest",
-              )
-    quit()
-    run_sweep(sota_params, 
-              fields_length = 30,
-              sweep_count = 3,
-              dataset=["arxpr2"],
-              name="newpipelinetest",
-              )
-    quit()
-    #TODO cleanup or remove below
-    run_sweep(shorter_literal_test, 
-              dataset_length = 300,
-              fields_length = 30,
-              sweep_count = 5,
-              method = "grid",
-              dataset=["arxpr2s:1_25", "arxpr2s:2_25", "arxpr2s:3_25", "arxpr2s:4_25", "arxpr2s_25"],
-              name="reshufled_lit5_kw",
-              )
-    quit()
-
-    run_sweep(kw_test, 
-              dataset_length = 300,
-              fields_length = 30,
-              sweep_count = 5,
-              method = "grid",
-              dataset=["arxpr2s:1_25", "arxpr2s:2_25", "arxpr2s:3_25", "arxpr2s:4_25", "arxpr2s_25"],
-              name="reshufled_kw",
-              )
-    quit()
-    run_sweep(shorter_literal_test, 
-              dataset_length = 300,
-              fields_length = 30,
-              sweep_count = 8,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              name="shorterliteral",
-              )
-    quit()
-    run_sweep(new_rag_params_2, 
-              dataset_length = 300,
-              fields_length = 30,
-              sweep_count = 2,
-              method = "grid",
-              dataset=["arxpr2s_25"],
-              name="newrags",
-              )
-    #quit()
-    #quit()
-    #run_sweep(dk_params, 
-    #          dataset_length = 600,
-    #          fields_length = 30,
-    #          sweep_count = 6,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],
-    #          name="dk_return",
-    #          )
-    #run_sweep(keybert_params, 
-    #          dataset_length = 100,
-    #          sweep_count = 5,
-    #          method = "grid",
-    #          dataset=["arxpr2s_25"],#, "arxpr2s_50", "arxpr2s_100", "arxpr2s_200", "arxpr2s_400"],
-    #          name="ragtuneK",#"tuned_llama_25->400",
-    #          )
 
 
-    #for p in [openai_params, keybert_params]: #
-    #for p in [rag_params]:
-    #    run_sweep(p, 
-    #              dataset_length = 100,
-    #              sweep_count = 1,
-    #              method = "grid",
-    #              dataset="arxpr2s_25",
-    #              name="2s25-4omresults",
-    #              )
+    run_sweep(mistral_tune, 
+              fields_length = 50,
+              sweep_count = 20,
+              mode="random",
+              dataset=["arxpr2"],
+              name="mistral_tuna",
+              )

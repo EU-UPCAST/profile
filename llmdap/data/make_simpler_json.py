@@ -199,10 +199,12 @@ def simplify_jsons():
 
                     # parse into dict
                     try:
-                        ff_dict = {"value" : ff["value"],
-                                   "ontology" : None}
+                        value = ff["value"]
                     except KeyError:
                         continue
+                    value = value.replace("_", " ") # "_" is used instead of " ", by some but not all it seems - especially in experimental design, we mergge many values by this.
+                    ff_dict = {"value" : value,
+                               "ontology" : None}
 
                     # find any ontology info
                     if "valqual" in ff:
@@ -358,7 +360,7 @@ def restrict_arxpr2_metadataset():
 
 if __name__ == "__main__":
     # count_fields()
-    # simplify_jsons()
+    #simplify_jsons()
     # make_arxpr_metadataset()
     make_arxpr2_metadataset()
     restrict_arxpr2_metadataset()

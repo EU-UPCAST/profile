@@ -77,15 +77,19 @@ def save_form(key, argstring, form_dict):
         json.dump(data, f)
 
 
-def save_score(argstring, scores):
+def save_score(argstring, scores, index_log, choice_log):
     if not argstring: # something wrong
         raise ValueError
     try:
         with open("all_results/scores.json") as f:
             data = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
-        data= {}
-    data[argstring] = scores
+        data= {"scores":{}, "index_logs":{}, "choice_logs":choice_log}
+    data["scores"][argstring] = scores
+    data["index_logs"][argstring] = index_log
+    if not "choice_log" in data:
+        data["choice_log"] = {}
+    data["choice_log"][argstring] = choice_log
     os.makedirs("all_results", exist_ok = True)
     with open("all_results/scores.json", "w") as f:
         json.dump(data, f)
@@ -139,8 +143,12 @@ class FormFillingIterator:
         self.field_names = self.form_filler.pydantic_form.__fields__ 
 
         self.all_scores = {}
+        self.index_log = {}
+        self.choice_log = {}
         for field in self.field_names:
             self.all_scores[field] = []
+            self.index_log[field] = []
+            self.choice_log[field] = []
         #self.all_times = []
         self.skips = 0
 
@@ -185,7 +193,29 @@ class FormFillingIterator:
             pydantic_form = self.form_generator(seed = int(key)) # use key as seed to ensure unique seeds
             self.form_filler.re_set_pydantic_form(pydantic_form)
 
-            self.fill_single_form(key,paper_text, paper_labels)
+            filled_form = self.fill_single_form(key,paper_text, paper_labels)
+
+            # log index
+            self.log_index(filled_form, paper_labels, pydantic_form)
+
+    def log_index(self,filled_form, paper_labels, pydantic_form):
+
+        pydantic_fields = pydantic_form.__fields__
+        for fieldname in paper_labels:
+            if len(paper_labels[fieldname]):
+                assert len(paper_labels[fieldname]) == 1
+
+                literal_values = pydantic_fields[fieldname].annotation.__args__
+
+                label_choice = paper_labels[fieldname][0]
+                label_index = literal_values.index(label_choice)
+
+                pred_choice = getattr(filled_form, fieldname)
+                pred_index = literal_values.index(pred_choice)
+
+                print((label_index, pred_index))
+                self.index_log[fieldname].append((label_index, pred_index))
+                self.choice_log[fieldname].append((label_choice, pred_choice))
 
 
     def _iterate_using_list(self):
@@ -221,6 +251,7 @@ class FormFillingIterator:
                 self.fill_single_form(key,paper_text)
 
 
+    @weave.op()
     def fill_single_form(self, key, paper_text, paper_labels=None):
         pydantic_form = self.form_filler.pydantic_form
 
@@ -296,10 +327,12 @@ class FormFillingIterator:
                 print(fn, len(self.all_scores[fn]), end= "; ")
             print("")
 
+        return filled_form
+
     def evaluate(self):
 
         if self.mode == "test":
-            save_score(self.argstring, self.all_scores)
+            save_score(self.argstring, self.all_scores, self.index_log, self.choice_log)
         #print("________printing final scores:")
         #pprint.pprint(all_scores)
         means_by_field = {}
