@@ -112,12 +112,10 @@ llama_sota= {
             5,
             8,
             ]},
-        "chunk_size" : {"values" : [
-            300,
-            ]},
-        "similarity_k" : {"values" : [
-            4,
-            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler" : {"value" : "multi"},
+        "sampler_temp" : {"value" : 0.001},
         }
 mistral_sota= {
         "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
@@ -131,12 +129,10 @@ mistral_sota= {
             5,
             8,
             ]},
-        "chunk_size" : {"values" : [
-            300,
-            ]},
-        "similarity_k" : {"values" : [
-            4,
-            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler" : {"value" : "multi"},
+        "sampler_temp" : {"value" : 0.001},
         }
 
 llama_rag= {
@@ -257,6 +253,89 @@ def run_tests():
               mode = "test",
               name="mistral_rag",
               )
+llama_decodetune= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            #"description",
+            "choices",
+            #"choice-list",
+            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler_beams": {"values" : [3,5]},
+        }
+llama_decodetune2= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            #"description",
+            "choices",
+            #"choice-list",
+            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler" : {"values" : ["multi"]},
+        "sampler_temp" : {"values" : [0.001,0.01,0.05]},#, 0.1, 0.2,0.3, 0.5, 0.7]},
+        }
+mist_decodetune= {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            #"description",
+            "choices",
+            #"choice-list",
+            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler_beams": {"values" : [3,5]},
+        }
+mist_decodetune2= {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            #"description",
+            "choices",
+            #"choice-list",
+            ]},
+        "chunk_size" : {"value" : 300},
+        "similarity_k" : {"value" : 4},
+        "sampler" : {"values" : ["multi"]},
+        "sampler_temp" : {"values" : [0.001,0.01,0.05]},#, 0.1, 0.2,0.3, 0.5, 0.7]},
+        }
 
 if __name__ == "__main__":
     run_tests()
+    quit()
+    fl = 100
+    #run_sweep(llama_decodetune, 
+    #          fields_length = fl,
+    #          sweep_count = 6,
+    #          dataset=["arxpr2"],
+    #          mode = "train",
+    #          name="llama_decodetune",
+    #          )
+    run_sweep(llama_decodetune2, 
+              fields_length = fl,
+              sweep_count = 6,
+              dataset=["arxpr2"],
+              mode = "train",
+              name="llama_decodetune",
+              )
+
+    del dspy_model
+    import time
+    time.sleep(60*5)
+    model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+    dspy_model = dspy.HFModel(model = model_id)
+
+    #run_sweep(mist_decodetune, 
+    #          fields_length = fl,
+    #          sweep_count = 6,
+    #          dataset=["arxpr2"],
+    #          mode = "train",
+    #          name="mist_decodetune",
+    #          )
+    run_sweep(mist_decodetune2, 
+              fields_length = fl,
+              sweep_count = 6,
+              dataset=["arxpr2"],
+              mode = "train",
+              name="mist_decodetune",
+              )
