@@ -3,7 +3,6 @@ import pprint
 import torch
 
 import RAG
-import restrictedmap
 from chunking import chunk_by_headeres_and_clean
 import keybert_ontology_mapping as kom
 
@@ -11,13 +10,20 @@ import keybert_ontology_mapping as kom
 
 
 class ContextShortener():
-    """ template for document shortener (RAG, rerank, etc) """
+    """ General / template context shortener.
+    The context shortener reduces the context from the entire paper, to whatever will be fed as context to the llm prompt. This could be a summary, keywords, certain chunks etc."""
     def __init__(self):
         pass
     def set_document(self,document):
         self.document = document
     def __call__(self, **kwargs):
         raise NotImplementedError
+
+
+class FullPaperShortener(ContextShortener):
+    """ output the whole document """
+    def __call__(self, **kwargs):
+        return self.document
 
 
 class CreateRetrievalPromptSignature(dspy.Signature):
@@ -33,12 +39,9 @@ class CreateRetrievalPromptSignature(dspy.Signature):
 
     answer = dspy.OutputField(desc="String to be used for retrieving the above info from the context")
 
-class FullPaperShortener(ContextShortener):
-    """ output the whole document """
-    def __call__(self, **kwargs):
-        return self.document
-
 class RAGShortener(ContextShortener):
+    """ Retrieval implemented in the RAG.py file """
+
     def __init__(self, embed_model, pydantic_form, retriever_type, chunk_size, chunk_overlap, similarity_k, mmr_param):
         self.embed_model = embed_model
         self.pydantic_form = pydantic_form
@@ -50,6 +53,7 @@ class RAGShortener(ContextShortener):
         self.mmr_param = mmr_param
 
     def generate_retrieval_prompt_using_llm(self, dspy_lm):
+        """ Generate a retrieval prompt for each field using a dspy llm"""
         dspy.settings.configure(lm=dspy_lm)
 
         predictor = dspy.Predict(signature=CreateRetrievalPromptSignature)
@@ -72,6 +76,8 @@ class RAGShortener(ContextShortener):
         print("")
 
     def set_description_retrieval_prompt(self):
+        """Set the destricption of each field to be the retrieval prompt"""
+
         # iterate through fields
         fields = self.pydantic_form.__fields__
         self.retrieval_prompts = {fieldname : fields[fieldname].description for fieldname in fields}
@@ -121,94 +127,9 @@ class RAGShortener(ContextShortener):
         #return context
 
 
-class Reduce(ContextShortener):
-    def __init__(self, hf_model, hf_tokenizer, temperature, max_tokens, chunk_size, chunk_overlap, verbose=False):
-        self.reducemodel = restrictedmap.RestrictedReduce(
-                restrictedmap.RestrictedModel(
-                    hf_model, 
-                    hf_tokenizer, 
-                    temperature = temperature,
-                    max_new_tokens=max_tokens,
-                    ),
-                )
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.verbose = verbose
-    def set_document(self,document):
-        self.reducemodel.set_chunks(
-                restrictedmap.recursive_split(
-                    document,
-                    reverse=True,
-                    chunk_size = self.chunk_size, # TODO move to init
-                    chunk_overlap = self.chunk_overlap,
-                    )
-                )
-
-
-    def __call__(self, **kwargs):
-        reducemodel = self.reducemodel
-        reducemodel.set_question(f"""Fill out the schema field with name '{kwargs["answer_field_name"]}' and description '{kwargs["answer_field_description"]}'.""")
-        reducemodel.query_chunks()
-
-        q = "Preliminary summaries:"
-
-        for key in reducemodel.summaries:
-            q += "\n---"+reducemodel.summaries[key]
-        if self.verbose:
-            print("")
-            print(kwargs["answer_field_name"])
-            print(q)
-            print("")
-        return q
-
-
-class Rerank(ContextShortener):
-    def __init__(self, hf_model, hf_tokenizer, verbose=False):
-        self.rerankmodel = restrictedmap.RestrictedRerank(
-                restrictedmap.RestrictedModel(
-                    hf_model, 
-                    hf_tokenizer, 
-                    temperature = 0,
-                    max_new_tokens=50
-                    ),
-                selection_mode = "combine",
-                top_k = 5,
-                restrict_scores = True)
-        self.verbose = verbose
-    def set_document(self,document):
-        self.rerankmodel.set_chunks(
-                restrictedmap.recursive_split(
-                    document,
-                    reverse=True,
-                    chunk_size = 20000, # TODO move to init
-                    chunk_overlap = 400,
-                    )
-                )
-
-
-    def __call__(self, **kwargs):
-        rerankmodel = self.rerankmodel
-        rerankmodel.set_question(f"""Fill out the schema field with name '{kwargs["answer_field_name"]}' and description '{kwargs["answer_field_description"]}'.""")
-        rerankmodel.query_chunks()
-        rerankmodel.rank_chunks()
-
-        q = "Preliminary answers:"
-        top_k_scores = sorted(
-                rerankmodel.scores, 
-                key=rerankmodel.scores.get,
-                reverse=True
-                )[:min(rerankmodel.top_k, len(rerankmodel.scores))]
-        for key in top_k_scores:
-            q += "\n - " + rerankmodel.generated_answers[key]
-        if self.verbose:
-            print("")
-            print(kwargs["answer_field_name"])
-            print(q)
-            print("")
-        return q
-
 
 class Retrieval(ContextShortener):
+    """ Retrieval implemented using keybert """
     def __init__(self, 
             *, # force keyword arguments since there are so many
             chunk_info_to_compare,

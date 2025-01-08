@@ -4,6 +4,15 @@ from typing import Type
 import typing
 
 def conlistify_pydantic_model(original_class: Type[BaseModel], min_length=1) -> Type[BaseModel]:
+    """ given a pydantic model, make a new one where all the fields have list type of the original fields type.
+    Conlist is used to ensure at least min_length entries in each field.
+
+    Example: original_class has field_1 with type int.
+    New_class will have field_1 of type conlist(int, min_length).
+    New fields have same examples and description as original.
+    """
+
+
     fields = original_class.__fields__
     new_fields = {}
     for name, field in fields.items():

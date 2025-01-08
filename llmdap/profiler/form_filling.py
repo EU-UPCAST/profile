@@ -156,7 +156,7 @@ class FieldFiller(dspy.Module):
             return parse_single_output(field_type, answer)
 
 def parse_single_output(field_type, stringoutput, answer_in_quotes = None):
-    # parse output
+    # parse string output into the given type
     try:
         if getattr(field_type, "__origin__", None) is typing.Literal:
             output = str(stringoutput)
