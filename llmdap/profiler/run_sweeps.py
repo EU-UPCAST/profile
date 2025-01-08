@@ -7,7 +7,7 @@ import main
 
 
 model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
-#model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
 dspy_model = dspy.HFModel(model = model_id)
 #dspy_model = None
 
@@ -54,10 +54,12 @@ def sweep_run():
     if args["mmr_param"]==1:
         args["mmr_param"]= 1.0
 
+    dataset_name = args["dataset"]
+
     args = args.items()
     argstring = str(sorted(args))
     #load = False # REMOVE THIS!!
-    score = main.FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode)()
+    score = main.FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
 
     wandb.log(score)
 
@@ -300,42 +302,71 @@ mist_decodetune2= {
         "sampler_temp" : {"values" : [0.001,0.01,0.05]},#, 0.1, 0.2,0.3, 0.5, 0.7]},
         }
 
+gpt_ontorag_params = {
+        "ff_model" :{"values" : [
+            "4om",
+            ]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "similarity_k" : {"values": [10]},
+        }
+
+
+llama_ontorag= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+mistral_ontorag = {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+
 if __name__ == "__main__":
     run_tests()
     quit()
+
     fl = 100
-    #run_sweep(llama_decodetune, 
-    #          fields_length = fl,
-    #          sweep_count = 6,
-    #          dataset=["arxpr2"],
-    #          mode = "train",
-    #          name="llama_decodetune",
-    #          )
-    run_sweep(llama_decodetune2, 
+    run_sweep(gpt_ontorag_params, 
               fields_length = fl,
-              sweep_count = 6,
-              dataset=["arxpr2"],
-              mode = "train",
-              name="llama_decodetune",
+              sweep_count = 1,
+              dataset=["study_type"],
+              mode = "test",
+              name="gptstydytype_test",
               )
-
-    del dspy_model
-    import time
-    time.sleep(60*5)
-    model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-    dspy_model = dspy.HFModel(model = model_id)
-
-    #run_sweep(mist_decodetune, 
-    #          fields_length = fl,
-    #          sweep_count = 6,
-    #          dataset=["arxpr2"],
-    #          mode = "train",
-    #          name="mist_decodetune",
-    #          )
-    run_sweep(mist_decodetune2, 
+    run_sweep(llama_ontorag, 
               fields_length = fl,
-              sweep_count = 6,
-              dataset=["arxpr2"],
-              mode = "train",
-              name="mist_decodetune",
+              sweep_count = 1,
+              dataset=["study_type"],
+              mode = "test",
+              name="llamastydytype_test",
+              )
+    run_sweep(mistral_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              dataset=["study_type"],
+              mode = "test",
+              name="mistralstydytype_test",
               )

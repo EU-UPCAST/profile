@@ -157,6 +157,14 @@ class Arxpr_generator:
         assert len(paper_texts) == 1
         return paper_texts[key]
 
+class Studytype_generator(Arxpr_generator):
+    def get_next_labels(self):
+        if self.i >= len(self.labels):
+            return None
+        key = self.keys[self.i]
+        self.i += 1
+        return key, {"study_type_18": self.labels[key]["study_type_18"] if "study_type_18" in self.labels[key] else []}
+
 
 def load_study_type_data(max_amount = 10):
     """ mode : "single" or "elements" """
