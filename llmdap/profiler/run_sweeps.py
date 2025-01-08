@@ -5,16 +5,17 @@ import yaml
 
 import main
 
-
-model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
-model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-dspy_model = dspy.HFModel(model = model_id)
-#dspy_model = None
+# Load llm now instead of for each run
+#model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
+#model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+#dspy_model = dspy.HFModel(model = model_id)
+dspy_model = None
 
 PRELOADED_DATASET = None
 
 
 def add_defaults(parameters):
+    """ given parameters for a run, add default values for all fields that are not included (from arguments.yaml) """
 
     with open("arguments.yaml", "r") as f:
         argument_template = yaml.safe_load(f)
@@ -30,6 +31,7 @@ def add_defaults(parameters):
 
 
 def sweep_run():
+    # function for the runs in the wandb sweep (one run of FormFillingIterator for a specific set of parameters)
     global PRELOADED_DATASET
     wandb.init(project= "upcast_profiler")
     
@@ -63,7 +65,10 @@ def sweep_run():
 
     wandb.log(score)
 
-best_choice_params = {
+
+# define sets of parameters to test
+
+best_choice_params = { # directly use bext match (no generation)
         "ff_model" :{"value" : "best_choice"},
         "context_shortener" :{"value" : "retrieval"},
         "chunk_info_to_compare" : {"values": [
@@ -73,12 +78,12 @@ best_choice_params = {
         "field_info_to_compare": {"value":"choices"},
     }
 
-fullpaper_params = { # best baseline
+fullpaper_params = { # best baseline, put the whole thing in gpt
         "ff_model" :{"value" : "4om"},
         "context_shortener" : {"value" :"full_paper"},
     }
 
-gpt_sota= {
+gpt_sota= { # gpt using choices for retrieval
         "ff_model" :{"values" : ["4om"]},
         "field_info_to_compare" : {"values":[
             "choices",
@@ -92,7 +97,7 @@ gpt_sota= {
             ]},
         "similarity_k" : {"values": [10]},
         }
-gpt_rag_params = {
+gpt_rag_params = { # gpt using field description for retrieval
         "ff_model" :{"values" : [
             "4om",
             ]},
@@ -102,7 +107,7 @@ gpt_rag_params = {
         "similarity_k" : {"values": [10]},
         }
 
-llama_sota= {
+llama_sota= { # llama using choices for retrieval
         "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
         "field_info_to_compare" : {"values":[
             "choices",
@@ -119,7 +124,8 @@ llama_sota= {
         "sampler" : {"value" : "multi"},
         "sampler_temp" : {"value" : 0.001},
         }
-mistral_sota= {
+mistral_sota= { # mistral using choices for retrieval
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
         "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
         "field_info_to_compare" : {"values":[
             "choices",
@@ -137,7 +143,7 @@ mistral_sota= {
         "sampler_temp" : {"value" : 0.001},
         }
 
-llama_rag= {
+llama_rag= { # llama using rag for retrieval
         "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
         "field_info_to_compare" : {"values":[
             "description",
@@ -149,7 +155,7 @@ llama_rag= {
             4,
             ]},
         }
-mistral_rag = {
+mistral_rag = { # mistral using description for retrieval
         "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
         "field_info_to_compare" : {"values":[
             "description",
@@ -164,6 +170,7 @@ mistral_rag = {
 
 
 def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr", name = None, fields_length = 0, mode = "train"):
+    # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
     parameters["mode"] = {"value" : mode}
@@ -190,6 +197,7 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
     #wandb.teardown()
 
 def run_tests():
+    # call run_sweep for each set of parameters
     fl = 100
     run_sweep(best_choice_params, 
               fields_length = fl,
@@ -255,6 +263,10 @@ def run_tests():
               mode = "test",
               name="mistral_rag",
               )
+
+
+
+# sets of parameters used for tuing
 llama_decodetune= {
         "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
         "field_info_to_compare" : {"values":[

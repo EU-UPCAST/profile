@@ -1,4 +1,3 @@
-# test - extract keywords from a text and return the closest ontology concept from a given ontology
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer, util
 from owlready2 import get_ontology
@@ -52,6 +51,7 @@ if __name__ == "__main__":
     kws, scores = get_keywords(text, kw_model, top_n =2)
                                   #use_maxsum=True, nr_candidates=4)
     print(kws, scores) # cheese and cake
+
     #kws, scores = get_keywords(text, kw_model, top_n =2, keyphrase_ngram_range=(2,2))
     #print(kws, scores) #  cheese love and love cake
 
@@ -68,28 +68,3 @@ if __name__ == "__main__":
     similarity = get_similarity_matrix(text_emb, target_emb)
     print(similarity) # cheescake is most relevant target (!)
 
-    quit()
-
-
-    # test subontology
-    print(len(get_subontology("label")))
-    print(len(get_subontology("description")))
-    print(len(get_subontology("both")))
-
-    text = "Monoclonal antibodies directed against cytotoxic T lymphocyte-associated antigen-4 (CTLA-4), such as ipilimumab, yield considerable clinical benefit for patients with metastatic melanoma by inhibiting immune checkpoint activity, but clinical predictors of response to these therapies remain incompletely characterized. To investigate the roles of tumor-specific neoantigens and alterations in the tumor microenvironment in the response to ipilimumab, we analyzed whole exomes from pretreatment melanoma tumor biopsies and matching germline tissue samples from 110 patients."
-
-    #print(0)
-    kw_model = get_kw_model()
-    #print(1) # ^takes a while
-    kws, scores = get_keywords(text, kw_model, top_n=5)
-    #print(2) # ^lot quicker
-    emb_model = get_embedding_model()
-    #print(3)
-    targets = get_subontology("description")
-
-    #print(4)
-    kw_emb = emb_model.encode(kws)
-    target_emb = emb_model.encode(targets)
-    similarity = get_similarity_matrix(kw_emb, target_emb)
-    print(similarity)
-    print(similarity.shape)

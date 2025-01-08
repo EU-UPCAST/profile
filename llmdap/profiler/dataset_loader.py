@@ -7,26 +7,10 @@ def get_simple_test(max_amount):
 
     abstract1 = """In this paper we analyse 45 biosamples from brain tumors of a female brown rat. (James P. Salot, University of Copenhagen, 2015)"""
     papers = {
-            #"0":abstract1,
-            #"1":abstract1,
-            #"2":abstract1,
-            #"3":abstract1,
             "4":abstract1,
             }
 
     labels = {
-        #    "0":{
-        #"sex_2": ["female"], #literal 
-        #},
-        #    "1":{
-        #"releasedate_12" : [2015],# int
-        #},
-        #    "2":{
-        #"organism_16": ["rattus norvegicus"]# constr(40)
-        #},
-        #    "3":{
-        #"name_19 ": ["univerity of copenhagen"]# constr, need description to understand this is organisation name, not author name
-        #},
             "4":{
         "sex_2": ["female"], #literal 
         "releasedate_12" : [2015],# int
@@ -46,6 +30,7 @@ def get_simple_test(max_amount):
     return papers, labels
 
 def load_nhrf_examples2(max_amount):
+    """ test of single paper with NHRF ground truth """
     data_folder = "/mnt/data/upcast/data/"
     labels = {
             "26359337":{
@@ -83,7 +68,7 @@ def load_nhrf_examples(max_amount):
     return paper_texts, {}
 
 def load_ega_data(max_amount = 10):
-    """ mode : "single" or "elements" """
+    """ get the ega (European Genome-Phenome Archive) dataset """
     data_folder = "/mnt/data/upcast/data/"
 
     with open(data_folder + "ega/prepared_dataset.json") as file:
@@ -93,7 +78,9 @@ def load_ega_data(max_amount = 10):
     return paper_texts, labels
 
 def load_arxpr_data(max_amount = 10, version = "", mode = "train"):
-    """ mode : "single" or "elements" """
+    """ load arrayepress dataset 
+
+    version: "" or "2_25". Version 2 has fewer fields (more carefully picked) with only some labels included (25)."""
     data_folder = "/mnt/data/upcast/data/"
 
     if mode == "train":
@@ -128,8 +115,8 @@ def load_arxpr_data(max_amount = 10, version = "", mode = "train"):
     return paper_texts, labels
 
 class Arxpr_generator:
+    """ similar to load_arxpr_data, but in (pseudo-)generator styele - documents are loaded one at a time as needed, instead of upfront """
     def __init__(self, version = "", mode = "train"):
-        """ mode : "single" or "elements" """
         self.data_folder = "/mnt/data/upcast/data/"
 
         if mode == "train":
@@ -158,6 +145,7 @@ class Arxpr_generator:
         return paper_texts[key]
 
 class Studytype_generator(Arxpr_generator):
+    """ like Arxpr_generator but with only the study type labels (for using ontology information) """
     def get_next_labels(self):
         if self.i >= len(self.labels):
             return None
@@ -167,13 +155,11 @@ class Studytype_generator(Arxpr_generator):
 
 
 def load_study_type_data(max_amount = 10):
-    """ mode : "single" or "elements" """
+    """ like load_arxpr_data but with only the study type labels (for using ontology information) """
     data_folder = "/mnt/data/upcast/data/"
 
     with open(data_folder + "arxpr_metadataset_train.json") as file:
         train_labels = json.load(file)
-    #with open(data_folder + "arxpr_metadataset_holdout.json") as file:
-    #    holdout_labels = json.load(file)
 
     # restrict labels to those with study type, and remove the other fields
     study_type_labels = {}
@@ -186,17 +172,21 @@ def load_study_type_data(max_amount = 10):
     train_labels = study_type_labels
 
     train_paper_texts, train_labels = load_paper_text(train_labels, max_amount, data_folder)
-    ###holdout_paper_texts, holdout_labels = load_paper_text(holdout_labels, max_amount)
 
     return train_paper_texts, train_labels
 
 
 def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
+    """ 
+    Given labels dict, loads the paper texts using the keys (pmids).
+    Also removes any labels not used (due to missing papers, or max_amount reached).
+
+    mode : "single" or "elements" """
 
     full_xmls = {}
     i = 0
     for key in labels:
-        try: # TODO move this tp its own fnc to avoid repeating
+        try:
             xml_file = data_folder + f"all_xmls/{key}_ascii_pmcoa.xml"
 
             # single
@@ -225,11 +215,3 @@ def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
     labels = {key:labels[key] for key in full_xmls}
 
     return full_xmls, labels
-
-if __name__=="__main__":
-    # print(load_ega_data(1)[1])
-    t,l = load_arxpr_data(5, "2_25")
-    print(l.keys())
-    generator = Arxpr_generator("2_25")
-    for i in range(5):
-        print(generator.get_next_labels()[0])

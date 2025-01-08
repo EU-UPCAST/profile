@@ -48,6 +48,8 @@ def similarity(a,b, a_func = max, b_func = sum, semantic=True):
 
 @weave.op()
 def score_ega_prediction(labels, filled_form, verbose = False):
+    """ Score a prediction/label pair from the ega dataset, 
+    using inclusion or similarity depending on the field"""
     if type(labels) == dspy.primitives.example.Example:
         labels = labels.label
 
@@ -91,7 +93,7 @@ def score_ega_prediction(labels, filled_form, verbose = False):
 @weave.op()
 def score_general_prediction(labels, filled_form, verbose = False):
     """
-    The evaluation function used for ARXPR dataset.
+    The evaluation function used for ARXPR dataset and others with same structure.
     This function evaluates a single paper (average is then calculated in main.py)
     One score is calculated per field, depending on field type.
 

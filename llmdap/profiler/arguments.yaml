@@ -114,8 +114,10 @@ context_shortener__keybert__args:
 context_shortener__reduce__args:
     reduce_max_tokens:
         default: 50
+        help: "deprecated"
     reduce_temperature:
         default: 0.4
+        help: "deprecated"
 
 query_storage__args:
     load:
