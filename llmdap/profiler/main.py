@@ -77,11 +77,11 @@ def save_form(key, argstring, form_dict):
         json.dump(data, f)
 
 
-def save_score(argstring, scores, index_log, choice_log):
+def save_score(argstring, scores, index_log, choice_log, dataset):
     if not argstring: # something wrong
         raise ValueError
     try:
-        with open("all_results/scores.json") as f:
+        with open(f"all_results/{dataset}_scores.json") as f:
             data = json.load(f)
     except (FileNotFoundError, json.decoder.JSONDecodeError):
         data= {"scores":{}, "index_logs":{}, "choice_logs":choice_log}
@@ -91,7 +91,7 @@ def save_score(argstring, scores, index_log, choice_log):
         data["choice_log"] = {}
     data["choice_log"][argstring] = choice_log
     os.makedirs("all_results", exist_ok = True)
-    with open("all_results/scores.json", "w") as f:
+    with open(f"all_results/{dataset}_scores.json", "w") as f:
         json.dump(data, f)
 
 
@@ -113,7 +113,8 @@ class FormFillingIterator:
         save=True, 
         load = True, 
         fields_length = 0, 
-        mode = "train"):
+        mode = "train",
+        dataset_name = ""):
 
         # make sure we have correct inputs
         if documents is None:
@@ -139,6 +140,7 @@ class FormFillingIterator:
         self.load = load
         self.fields_length = fields_length
         self.mode = mode
+        self.dataset_name = dataset_name
 
         self.field_names = self.form_filler.pydantic_form.__fields__ 
 
@@ -332,7 +334,7 @@ class FormFillingIterator:
     def evaluate(self):
 
         if self.mode == "test":
-            save_score(self.argstring, self.all_scores, self.index_log, self.choice_log)
+            save_score(self.argstring, self.all_scores, self.index_log, self.choice_log, dataset = self.dataset_name)
         #print("________printing final scores:")
         #pprint.pprint(all_scores)
         means_by_field = {}
@@ -465,12 +467,22 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
         # do dynamic reloading+shuffling
         length = args.dataset_literal_length
         form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
-        document_generator = dataset_loader.Arxpr_generator(version = "2_25")
+        document_generator = dataset_loader.Arxpr_generator(version = "2_25", mode=args.mode)
         dataset_kwargs = dict(
                 form_generator = form_generator,
                 document_generator = document_generator,
                 )
         pydantic_form = form_generator()
+    elif args.dataset == "study_type" and args.dataset_shuffle == "r":
+        # do dynamic reloading+shuffling
+        length = args.dataset_literal_length
+        form_generator = metadata_schemas.get_shuffled_arxpr2(length = length, only_shuffle_type = True)
+        document_generator = dataset_loader.Studytype_generator(version = "2_25", mode=args.mode)
+        dataset_kwargs = dict(
+                form_generator = form_generator,
+                document_generator = document_generator,
+                )
+        pydantic_form = form_generator(0)
     else:
         # load up front
         loader_kwargs = {"max_amount": args.dataset_length}
@@ -667,4 +679,4 @@ if __name__ == "__main__":
     mode = args.pop("mode")
     fields_length = args.pop("fields_length")
     argstring = str(sorted(args.items()))
-    FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode)()
+    FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = args.dataset)()

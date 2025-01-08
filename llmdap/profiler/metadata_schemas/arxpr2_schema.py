@@ -62,8 +62,12 @@ for i, length in enumerate(lengths):
     classes[str(length)] = create_model(f'arxpr2_{length}', **fields)
 
 
-def get_shuffled_form_generator(length):
-    """ specify length here, then return pseudo-generator with this already set"""
+def get_shuffled_form_generator(length, only_shuffle_type=False):
+    """ specify length here, then return pseudo-generator with this already set
+
+    length: number of choices to include, from 25, 50, 100, 200.
+    only_shuffle_type: remove all other fields (for ontology retrieval)"""
+
     def get_shuffled_form(seed=None):
         assert not length is None
         if seed is None:
@@ -72,6 +76,9 @@ def get_shuffled_form_generator(length):
         
         shuffled_fields = {}
         for field_name in values:
+            
+            if only_shuffle_type and field_name != "study_type_18":
+                continue
         
             description = values[field_name]["description"]
             values_to_include = []
