@@ -30,7 +30,7 @@ def add_defaults(parameters):
 
 
 
-def sweep_run():
+def sweep_single_run():
     # function for the runs in the wandb sweep (one run of FormFillingIterator for a specific set of parameters)
     global PRELOADED_DATASET
     wandb.init(project= "upcast_profiler")
@@ -193,10 +193,10 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
     
     sweep_id = wandb.sweep(sweep=sweep_configuration, project="upcast_profiler")
 
-    wandb.agent(sweep_id, function=sweep_run, count=sweep_count)
+    wandb.agent(sweep_id, function=sweep_single_run, count=sweep_count)
     #wandb.teardown()
 
-def run_tests():
+def run_test_sweeps():
     # call run_sweep for each set of parameters
     fl = 100
     run_sweep(best_choice_params, 
@@ -357,7 +357,7 @@ mistral_ontorag = {
         }
 
 if __name__ == "__main__":
-    run_tests()
+    run_test_sweeps()
     quit()
 
     fl = 100
