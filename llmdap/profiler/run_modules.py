@@ -177,6 +177,7 @@ class FormFillingIterator:
 
             pydantic_form = self.form_generator(seed = int(key)) # use key as seed to ensure unique seeds
             self.form_filler.re_set_pydantic_form(pydantic_form)
+            self.context_shortener.set_pydantic_form(pydantic_form)
 
             filled_form = self.fill_single_form(key,paper_text, paper_labels)
 

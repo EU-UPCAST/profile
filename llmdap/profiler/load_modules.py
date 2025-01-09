@@ -201,7 +201,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
     elif args.context_shortener == "retrieval":
-        if not args.dataset in ["study_type", "arxpr2"]:# keybert-based retrieval implementation requires all fields are literals, or have ontology, for now # TODO update so description retrieval is viable
+        if not args.dataset in ["study_type", "arxpr2"] and not args.field_info_to_compare=="description":
             raise ValueError
 
         context_shortener = context_shortening.Retrieval(
@@ -209,7 +209,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 field_info_to_compare = args.field_info_to_compare,
                 include_choice_every = args.include_choice_every,
                 embedding_model_id = args.embedding_model,
-                pydantic_form = pydantic_form, # TODO change this with the shuffling
+                pydantic_form = pydantic_form if args.include_choice_every==1 or args.dataset_shuffle!="r" else None, # if we are to reshufle and pick only some values, we do not specify the pydantic form here.
                 n_keywords = args.n_keywords,
                 top_k = args.similarity_k,
                 chunk_size = args.chunk_size,

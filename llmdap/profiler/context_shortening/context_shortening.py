@@ -16,6 +16,8 @@ class ContextShortener():
         pass
     def set_document(self,document):
         self.document = document
+    def set_pydantic_form(self, pydantic_form):
+        pass
     def __call__(self, **kwargs):
         raise NotImplementedError
 
@@ -136,11 +138,11 @@ class Retrieval(ContextShortener):
             field_info_to_compare,
             include_choice_every,
             embedding_model_id,
-            pydantic_form,
             n_keywords, 
             top_k, 
             chunk_size,
             chunk_overlap,
+            pydantic_form = None,
             mmr_param = 1,
             maxsum_factor = 1,
             keyphrase_range = (1,1),
@@ -163,39 +165,46 @@ class Retrieval(ContextShortener):
         # define embedding model through these version numbers (dont want to handle the long names through args and main.py...
         self.emb_model = kom.get_embedding_model(embedding_model_id)
         self.kw_model = kom.get_kw_model(self.emb_model)
+        
+
+        if not pydantic_form is None:
+            self.set_pydantic_form(pydantic_form)
 
 
+
+
+    def set_pydantic_form(self, pydantic_form):
         self.descriptions = {}
         self.target_emb = {}
 
-        if field_info_to_compare == "choices":
+        if self.field_info_to_compare == "choices":
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
                 literal_values = field_type.__args__
-                field_literal_skip_number = min(include_choice_every, len(literal_values))
+                field_literal_skip_number = min(self.include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
                 self.descriptions[fieldname] = literal_values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
-        elif field_info_to_compare == "choice-list": # choices but in a list, single string
+        elif self.field_info_to_compare == "choice-list": # choices but in a list, single string
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 field = fields[fieldname]
                 field_type = field.annotation
                 literal_values = field_type.__args__
-                field_literal_skip_number = min(include_choice_every, len(literal_values))
+                field_literal_skip_number = min(self.include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
                 self.descriptions[fieldname] = [str(literal_values)] # make list of length one,  with a string of the whole list of values
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
-        elif field_info_to_compare == "description": #field description (should be same as rag setup)
+        elif self.field_info_to_compare == "description": #field description (should be same as rag setup)
             fields = pydantic_form.__fields__
             for fieldname in fields:
                 self.descriptions[fieldname] = fields[fieldname].description
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
 
-        elif field_info_to_compare.startswith("onto-"): # from ontology
-            mode = field_info_to_compare[5:]
+        elif self.field_info_to_compare.startswith("onto-"): # from ontology
+            mode = self.field_info_to_compare[5:]
             assert mode in ["label", "description", "both"]
             fields = pydantic_form.__fields__
             assert len(fields) == 1 # TODO allow more and other fields
