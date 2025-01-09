@@ -35,7 +35,7 @@ from llama_index.core.extractors import (
     BaseExtractor,
 )
 
-from chunking import chunk_by_headeres_and_clean
+from context_shortening.chunking import chunk_by_headeres_and_clean
 
 def set_openai_api_key():
     import openai

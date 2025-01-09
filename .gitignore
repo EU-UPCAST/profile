@@ -1,6 +1,4 @@
-llmdap/profiler/__pycache__/
-llmdap/profiler/metadata_schemas/__pycache__/
-llmdap/ontologies/__pycache__/
+llmdap/**/__pycache__/
 llmdap/profiler/wandb/
 llmdap/profiler/openai_key.py
 llmdap/profiler/all_results/**.json

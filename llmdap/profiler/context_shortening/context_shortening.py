@@ -2,9 +2,9 @@ import dspy
 import pprint
 import torch
 
-import RAG
-from chunking import chunk_by_headeres_and_clean
-import keybert_ontology_mapping as kom
+from context_shortening import RAG
+from context_shortening.chunking import chunk_by_headeres_and_clean
+from context_shortening import keybert_ontology_mapping as kom
 
 
 

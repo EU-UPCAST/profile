@@ -3,7 +3,8 @@ import dspy
 from argparse import Namespace
 import yaml
 
-import main
+from load_modules import load_modules
+from run_modules import FormFillingIterator
 
 # Load llm now instead of for each run
 #model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
@@ -38,7 +39,7 @@ def sweep_single_run():
     args = wandb.config
 
 
-    prepared_kwargs = main.load_modules(args, preloaded_dspy_model = dspy_model, preloaded_dataset = PRELOADED_DATASET)
+    prepared_kwargs = load_modules(args, preloaded_dspy_model = dspy_model, preloaded_dataset = PRELOADED_DATASET)
     args = args._items
     args.pop("_wandb")
     args.pop("dataset_length")
@@ -50,7 +51,7 @@ def sweep_single_run():
     if "documents" in prepared_kwargs and "labels" in prepared_kwargs:
         PRELOADED_DATASET = (prepared_kwargs["documents"], prepared_kwargs["labels"])
 
-    # use floats in argstring to load results from main
+    # use floats in argstring to load results in run_modules
     if args["maxsum_factor"]==1:
         args["maxsum_factor"]= 1.0
     if args["mmr_param"]==1:
@@ -61,7 +62,7 @@ def sweep_single_run():
     args = args.items()
     argstring = str(sorted(args))
     #load = False # REMOVE THIS!!
-    score = main.FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
+    score = FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
 
     wandb.log(score)
 

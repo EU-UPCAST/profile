@@ -11,9 +11,9 @@ import pprint
 import numpy as np
 from difflib import SequenceMatcher
 
-from dspy_x_outlines import make_dspy_generator, make_constrained_generator
-from dspy_x_openai import GPT3
-import listify_pydantic
+from form_filling.dspy_x_outlines import make_dspy_generator, make_constrained_generator
+from form_filling.dspy_x_openai import GPT3
+from form_filling import listify_pydantic
 
 class OpenAIFormFillSignature(dspy.Signature):
     # dspy signature (prompt template) for sequential form filling (i.e. one field at a time), field-agnistic.
