@@ -8,75 +8,6 @@
 
 This is the upcast profiling tool, that aims to profile biomedical datasets based on the papers/documents presenting the datasets.
 
-NOTE: Due to the experimental nature of the current stage of the project (i.e. trying out lots of different approaches as well as continuously adjusting the scope and tasks), the code it quite messy - lots of modules/arguments are no longer used (but kept in case they will be), functionalities that only work in specific cases etc. - and the code is not aimed to be particularly user friendly.
-I think once experiments are done, we should make another repo with just the relevant stuff to open-source.
-
-
-### test results
-based on 100 values per field.
-|                 |   hardware_4 |   organism_part_5 |   experimental_designs_10 |   assay_by_molecule_14 |   study_type_18 |   experimental_factors_20 |    total |
-|:----------------|-------------:|------------------:|--------------------------:|-----------------------:|----------------:|--------------------------:|---------:|
-| keyword_gpt     |         0.64 |              0.71 |                      0.3  |                   0.84 |            0.69 |                      0.22 | 0.566667 |
-| keybert_gpt     |         0.52 |              0.7  |                      0.3  |                   0.87 |            0.75 |                      0.17 | 0.551667 |
-| rag_gpt_17      |         0.53 |              0.68 |                      0.17 |                   0.61 |            0.53 |                      0.32 | 0.473333 |
-| fullpaper_gpt   |         0.5  |              0.67 |                      0.02 |                   0.85 |            0.35 |                      0.17 | 0.426667 |
-| rag_gpt_10      |         0.36 |              0.61 |                      0.15 |                   0.54 |            0.29 |                      0.31 | 0.376667 |
-| keyword_keyword |         0.09 |              0.44 |                      0.55 |                   0.75 |            0.17 |                      0.13 | 0.355    |
-| keybert_keyword |         0.01 |              0.42 |                      0.39 |                   0.77 |            0.21 |                      0.1  | 0.316667 |
-| keybert_llama   |         0.05 |              0.51 |                      0.01 |                   0.56 |            0.61 |                      0.07 | 0.301667 |
-| keyword_llama   |         0.07 |              0.51 |                      0.01 |                   0.56 |            0.43 |                      0.06 | 0.273333 |
-| rag_llama       |         0.02 |              0.29 |                      0    |                   0.38 |            0.25 |                      0.05 | 0.165    |
-
-
-
-
-### old results
-Results on the forst 100 papers, with the arxpr2s_25 dataset (the most relevant one i think. 25 alloable labels, in shuffled order)
-| Retrieval method    | generation model | Accuracy   | Comment |
-|:--------------------|:-----------------|:-----------|:--------|
-|Full paper in context| GPT 4o-mini      | 0.477      | Best baseline |
-|Regular retrieval    | GPT 4o-mini      | 0.390      | Baseline rag  |
-|Keybert-literal      | GPT 4o-mini      | 0.703      | Best          |
-|Keyword-literal      | GPT 4o-mini      | 0.665      |               |
-|Keyword-literal      | best keyword     | 0.449      |               |
-|Keyword-literal      |llama(still tuning)| 0.492     |               |
-|Keybert-literal      |llama(still tuning)| 0.555     |Best open model|
-
-
-Predicting the study_type field of 79 papers:
-
-| Retrieval method    | generation model | Accuracy |
-|:--------------------|:-----------------|:---------|
-|Full paper in context| GPT 4o-mini      | 0.52     |
-|Regular retrieval    | GPT 4o-mini      | 0.468    |
-|Keybert-based rerank using ontology | GPT 4o-mini      | 0.760    |
-|Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.797    |
-
-
-Predicting arxpr2_100* fields for the first 100 papers:
-| Retrieval method    | generation model | Accuracy |
-|:--------------------|:-----------------|:---------|
-|Full paper in context| GPT 4o-mini      | 0.526    |
-|Regular retrieval    | GPT 4o-mini      | 0.430    |
-|Keybert-based rerank using allowed answers | GPT 4o-mini      | 0.718    |
-|Keybert-based rerank using allowed answers | best keyword     | 0.333    |
-
-*this dataset has 100 allowabel answers, sorted in decreasing frequency (which is kind of cheating i guess)
-
-Shuffling literal worsen score for gpt:
-(keybert-literal with 4om)
-| generation model | Accuracy |
-|:-----------------|:---------|
-| arxpr2_400       | 0.692    |
-| arxpr2s_400      | 0.530    |
-
-In other words, when the list of 400 answers are sorted in decreasing frequency, gpt is not affected much by the long list
-
-
-(note that these tests are on a relative small test sample, on which they have been tuned, so more tests are required before concluding)
-
-
-
 
 
 ## How to run:
@@ -96,26 +27,29 @@ cd profiler
 python main.py --dataset simple_test --no-log
 ```
 
-Running on the other datasets require quite a bit more work as of now, to download the papers and prepare the metadata files.
+Look through `introduction.ipynb` for an introduction to how the different parts work.
 
 ## Quick file overview
 
 Folders:
-- data: for preparing the datasets - downloading papers and metadata + collecting metadata into one json file
--  ontologies: some scripts with experiments for exploring the ontologies, + some ontology files.
-- llm_ui: user interface app made early in the project (i.e. currently outdated, but may eventually be connected to the rest of the pipeline again)
-- profiler: the llm pipeline
-- profile/metadata_schemas: pydantic schemas describing the format of the output of the pipeline
+- `data`: for preparing the datasets - downloading papers and metadata + collecting metadata into one json file
+- `ontologies`: some scripts with experiments for exploring the ontologies, + some ontology files.
+- `llm_ui`: user interface app made early in the project (i.e. currently outdated, but may eventually be connected to the rest of the pipeline again)
+- `profiler`: the llm pipeline
+- `profile/metadata_schemas`: pydantic schemas describing the format of the output of the pipeline
+- `profiler/context_shortening/`: for reducing the size of the context fed to the llm (meant as a generalisation of the retrieval concept in rag - can be regular retrieval, keybert based retrieval, just feeding the full paper, or using llm to summarice)
+- `profiler/form_filling/`: for the generation part, with structured output handled in different ways according to the llm and the flied. Returns an object following the correct pydantic schema for the specified dataset.
 
-Some files to know about:
-- `profiler/main.py`: assemples the pipeline and runs it according to the arguments. Calls:
-  - `profiler/dataset_loader.py` for dataset loading
-  - `profiler/context_shortening.py` for reducing the size of the context fed to the llm (meant as a generalisation of the retrieval concept in rag - can be regular retrieval, keybert based retrieval, just feeding the full paper, or using llm to summarice)
-  - `profiler/form_filling.py` for the generation part, with structured output handled in different ways according to the llm and the flied. Returns an object following the correct pydantic schema for the specified dataset.
-  - `profiler/evaluation.py` to calculate the score
-- `profiler/arguments.py`: defines all the arguments for main.py. Run `python main.py --help` to list them.
-- `profiler/tune_hpp.py`: uses sweeps from weights and biases for hyper parameter tuning. Calls main.py.
-- `profiler/chunker_test.ipynb`: notebook with some testing of the chunker
+
+Some file descriptions:
+#####- `profiler/main.py`: assemples the pipeline and runs it according to the arguments.
+- `profiler/load_modules.py`: assemples the pipeline according to the arguments
+- `profiler/run_modules.py`: runs the pipeline from load_modules.
+- `profiler/dataset_loader.py` for dataset loading
+- `profiler/evaluation.py` to calculate the score
+- `profiler/arguments.yaml`: defines all the arguments for used in main.py and run_wandb_sweeps.py. Run `python main.py --help` to list them.
+- `profiler/run_wandb_sweeps.py`: uses sweeps from weights and biases for hyper parameter tuning and for running all the final tests on the test set. Calls `load_/run_modules.py`.
+- `profiler/context_shortening/chunker_test.ipynb`: notebook with some testing of the chunker
 - `profiler/optimize`: dspy prompt optimization - not updated in a while/currently not in use
 
 Some missing files (in .gitignore)
@@ -163,7 +97,7 @@ Some missing files (in .gitignore)
 - When generating answers for the field, we use restricted output.
   - For generation using llama3 or other open source models, Outlines is used to ensure the restrictions are followed. It works by setting the probabilities of disallowed tokens to 0 before sampling the generated tokens.
   This means, for integer fields the output will always be integer, for Literal fields it will always be one of the listed allowed answers, and for free-text it will follow the maximum length (which, when done this way instead of using max tokens, in most cases avoids halv sentences).
-  - For generation through openai, we use their structured_output option, which I am not sure how works under the hood. They do not allow restricted field length, so this is ignored.
+  - For generation through openai, we use their structured_output option, which works in the same way (masking disallowed tokens) but they have not implemented as many restrictions - e.g. they do not allow restricted field length, so this is ignored.
 
 ### Evaluation
 - Each field is evaluated in the following manner depending on the type:

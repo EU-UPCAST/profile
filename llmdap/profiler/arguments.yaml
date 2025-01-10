@@ -13,7 +13,7 @@ dataset__args:
         help: "number of papers to analyse"
     fields_length:
         default: 0
-        help: "number of papers to analyse per field - once a feald has reached this many predictions, no more predictions are made in this field (to get even results). If 0, this restriction is removed"
+        help: "number of papers to analyse per field - once a feald has reached this many predictions, no more predictions are made in this field (to get even results). If 0, this restriction is removed. Must be positive for reshuffling!"
     mode:
       default: "train"
       choices: ["train", "test"]
@@ -23,7 +23,7 @@ dataset__args:
         help: "Remove fields to avoid predicting fields without labels (empty) or all fields with no/several values(non-single). "
     listed_output:
         default: False
-        help: "predict several values per field"
+        help: "predict several values per field. NOTE: I dont expect this option will work since it was only used in early version of the pipeline (but may be looked into again in the future)."
 
 form_filler__llm__args:
     ff_model:
