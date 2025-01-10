@@ -172,8 +172,10 @@ class Retrieval(ContextShortener):
 
 
 
-
     def set_pydantic_form(self, pydantic_form):
+        self.set_target_embeddings(pydantic_form)
+
+    def set_target_embeddings(self, pydantic_form):
         self.descriptions = {}
         self.target_emb = {}
 

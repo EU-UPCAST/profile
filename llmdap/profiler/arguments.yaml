@@ -23,7 +23,7 @@ dataset__args:
         help: "Remove fields to avoid predicting fields without labels (empty) or all fields with no/several values(non-single). "
     listed_output:
         default: False
-        help: "predict several values per field"
+        help: "predict several values per field. NOTE: I dont expect this option will work since it was only used in early version of the pipeline (but may be looked into again in the future)."
 
 form_filler__llm__args:
     ff_model:
