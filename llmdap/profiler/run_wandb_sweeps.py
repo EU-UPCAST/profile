@@ -169,8 +169,49 @@ mistral_rag = { # mistral using description for retrieval
             ]},
         }
 
+gpt_ontorag_params = {
+        "ff_model" :{"values" : [
+            "4om",
+            ]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "similarity_k" : {"values": [10]},
+        }
 
-def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr", name = None, fields_length = 0, mode = "train"):
+
+llama_ontorag= {
+        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+mistral_ontorag = {
+        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
+        "field_info_to_compare" : {"values":[
+            "onto-description",
+            "onto-label",
+            "onto-both",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+
+def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train"):
     # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
@@ -203,44 +244,51 @@ def run_test_sweeps():
     run_sweep(best_choice_params, 
               fields_length = fl,
               sweep_count = 1,
-              dataset=["arxpr2"],
               mode = "test",
               name="best_choice",
               )
     run_sweep(gpt_rag_params, 
               fields_length = fl,
               sweep_count = 1,
-              dataset=["arxpr2"],
               mode = "test",
               name="gpt_rag",
               )
     run_sweep(gpt_sota, 
               fields_length = fl,
               sweep_count = 8,
-              dataset=["arxpr2"],
               mode = "test",
               name="gpt_sota",
               )
     run_sweep(fullpaper_params, 
               fields_length = fl,
               sweep_count = 1,
-              dataset=["arxpr2"],
               mode = "test",
               name="gpt_fullpaper",
               )
+    run_sweep(gpt_ontorag_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="gpt_onto_test",
+              )
+
     run_sweep(llama_sota, 
               fields_length = fl,
               sweep_count = 8,
-              dataset=["arxpr2"],
               mode = "test",
               name="llama_sota",
               )
     run_sweep(llama_rag, 
               fields_length = fl,
               sweep_count = 1,
-              dataset=["arxpr2"],
               mode = "test",
               name="llama_rag",
+              )
+    run_sweep(llama_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="llama_onto_test",
               )
 
     global dspy_model
@@ -253,16 +301,20 @@ def run_test_sweeps():
     run_sweep(mistral_sota, 
               fields_length = fl,
               sweep_count = 8,
-              dataset=["arxpr2"],
               mode = "test",
               name="misrtal_rag",
               )
     run_sweep(mistral_rag, 
               fields_length = fl,
               sweep_count = 1,
-              dataset=["arxpr2"],
               mode = "test",
               name="mistral_rag",
+              )
+    run_sweep(mistral_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="mistral_onto_test",
               )
 
 
@@ -315,71 +367,27 @@ mist_decodetune2= {
         "sampler_temp" : {"values" : [0.001,0.01,0.05]},#, 0.1, 0.2,0.3, 0.5, 0.7]},
         }
 
-gpt_ontorag_params = {
-        "ff_model" :{"values" : [
-            "4om",
-            ]},
-        "field_info_to_compare" : {"values":[
-            "onto-description",
-            "onto-label",
-            "onto-both",
-            ]},
-        "similarity_k" : {"values": [10]},
-        }
-
-
-llama_ontorag= {
-        "ff_model" :{"values" : ["hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"]},
-        "field_info_to_compare" : {"values":[
-            "onto-description",
-            "onto-label",
-            "onto-both",
-            ]},
-        "chunk_size" : {"values" : [
-            300,
-            ]},
-        "similarity_k" : {"values" : [
-            4,
-            ]},
-        }
-mistral_ontorag = {
-        "ff_model" :{"values" : ["TheBloke/Mistral-7B-v0.1-GPTQ"]},
-        "field_info_to_compare" : {"values":[
-            "onto-description",
-            "onto-label",
-            "onto-both",
-            ]},
-        "chunk_size" : {"values" : [
-            300,
-            ]},
-        "similarity_k" : {"values" : [
-            4,
-            ]},
-        }
 
 if __name__ == "__main__":
     run_test_sweeps()
     quit()
 
-    fl = 100
+    fl = 50
     run_sweep(gpt_ontorag_params, 
               fields_length = fl,
-              sweep_count = 1,
-              dataset=["study_type"],
-              mode = "test",
-              name="gptstydytype_test",
+              sweep_count = 3,
+              #mode = "test",
+              name="gpt_onto",
               )
     run_sweep(llama_ontorag, 
               fields_length = fl,
-              sweep_count = 1,
-              dataset=["study_type"],
-              mode = "test",
-              name="llamastydytype_test",
+              sweep_count = 3,
+              #mode = "test",
+              name="llama_onto",
               )
     run_sweep(mistral_ontorag, 
               fields_length = fl,
-              sweep_count = 1,
-              dataset=["study_type"],
-              mode = "test",
-              name="mistralstydytype_test",
+              sweep_count = 3,
+              #mode = "test",
+              name="mistral_onto",
               )
