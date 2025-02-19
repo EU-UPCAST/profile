@@ -367,9 +367,30 @@ mist_decodetune2= {
         "sampler_temp" : {"values" : [0.001,0.01,0.05]},#, 0.1, 0.2,0.3, 0.5, 0.7]},
         }
 
+deepseek_rag= { 
+        "ff_model" :{"values" : ["jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"]},
+        "field_info_to_compare" : {"values":[
+            "description",
+            ]},
+        "chunk_size" : {"values" : [
+            300,
+            ]},
+        "similarity_k" : {"values" : [
+            4,
+            ]},
+        }
+
 
 if __name__ == "__main__":
-    run_test_sweeps()
+    #run_test_sweeps()
+    #quit()
+    fl = 2
+    run_sweep(deepseek_rag, 
+              fields_length = fl,
+              sweep_count = 1,
+              #mode = "test",
+              name="ds_rag",
+              )
     quit()
 
     fl = 50

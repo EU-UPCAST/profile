@@ -64,6 +64,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             elif args.ff_model == "ministral_gguf":
                 model_id = "bartowski/Ministral-8B-Instruct-2410-GGUF"
                 model_kwargs = {"gguf_file" : "Ministral-8B-Instruct-2410-Q4_K_M.gguf"}
+            elif args.ff_model == "ds8b-i4":
+                model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
             else:
                 model_id = args.ff_model
             try:
