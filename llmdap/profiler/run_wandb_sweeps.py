@@ -7,10 +7,10 @@ from load_modules import load_modules
 from run_modules import FormFillingIterator
 
 # Load llm now instead of for each run
-#model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
+model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
 #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-#dspy_model = dspy.HFModel(model = model_id)
-dspy_model = None
+dspy_model = dspy.HFModel(model = model_id)
+#dspy_model = None
 
 PRELOADED_DATASET = None
 
@@ -61,7 +61,7 @@ def sweep_single_run():
 
     args = args.items()
     argstring = str(sorted(args))
-    #load = False # REMOVE THIS!!
+    load = False # REMOVE THIS!!
     score = FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
 
     wandb.log(score)
@@ -241,36 +241,36 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
 def run_test_sweeps():
     # call run_sweep for each set of parameters
     fl = 100
-    run_sweep(best_choice_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="best_choice",
-              )
-    run_sweep(gpt_rag_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_rag",
-              )
-    run_sweep(gpt_sota, 
-              fields_length = fl,
-              sweep_count = 8,
-              mode = "test",
-              name="gpt_sota",
-              )
-    run_sweep(fullpaper_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_fullpaper",
-              )
-    run_sweep(gpt_ontorag_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_onto_test",
-              )
+    #run_sweep(best_choice_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="best_choice",
+    #          )
+    #run_sweep(gpt_rag_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="gpt_rag",
+    #          )
+    #run_sweep(gpt_sota, 
+    #          fields_length = fl,
+    #          sweep_count = 8,
+    #          mode = "test",
+    #          name="gpt_sota",
+    #          )
+    #run_sweep(fullpaper_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="gpt_fullpaper",
+    #          )
+    #run_sweep(gpt_ontorag_params, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="gpt_onto_test",
+    #          )
 
     run_sweep(llama_sota, 
               fields_length = fl,
@@ -382,8 +382,8 @@ deepseek_rag= {
 
 
 if __name__ == "__main__":
-    #run_test_sweeps()
-    #quit()
+    run_test_sweeps()
+    quit()
     fl = 2
     run_sweep(deepseek_rag, 
               fields_length = fl,
