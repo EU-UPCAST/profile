@@ -61,7 +61,7 @@ def sweep_single_run():
 
     args = args.items()
     argstring = str(sorted(args))
-    load = False # REMOVE THIS!!
+    #load = False # REMOVE THIS!!
     score = FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
 
     wandb.log(score)
@@ -91,10 +91,15 @@ gpt_sota= { # gpt using choices for retrieval
             "choice-list",
             ]},
         "include_choice_every" : {"values" :[
-            1,
-            3,
-            5,
-            8,
+            #1, # 25 values
+            2, # 12 values
+            #3, # 8 values
+            4, # 6 values
+            #5, # 5 values
+            6, # 4 values
+            #8, # 3 vales
+            12, # 2 values
+            24, # 1 value
             ]},
         "similarity_k" : {"values": [10]},
         }
@@ -115,10 +120,15 @@ llama_sota= { # llama using choices for retrieval
             "choice-list",
             ]},
         "include_choice_every" : {"values" :[
-            1,
-            3,
-            5,
-            8,
+            #1, # 25 values
+            2, # 12 values
+            #3, # 8 values
+            4, # 6 values
+            #5, # 5 values
+            6, # 4 values
+            #8, # 3 vales
+            12, # 2 values
+            24, # 1 value
             ]},
         "chunk_size" : {"value" : 300},
         "similarity_k" : {"value" : 4},
@@ -133,10 +143,15 @@ mistral_sota= { # mistral using choices for retrieval
             "choice-list",
             ]},
         "include_choice_every" : {"values" :[
-            1,
-            3,
-            5,
-            8,
+            #1, # 25 values
+            2, # 12 values
+            #3, # 8 values
+            4, # 6 values
+            #5, # 5 values
+            6, # 4 values
+            #8, # 3 vales
+            12, # 2 values
+            24, # 1 value
             ]},
         "chunk_size" : {"value" : 300},
         "similarity_k" : {"value" : 4},
@@ -253,12 +268,12 @@ def run_test_sweeps():
     #          mode = "test",
     #          name="gpt_rag",
     #          )
-    #run_sweep(gpt_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 8,
-    #          mode = "test",
-    #          name="gpt_sota",
-    #          )
+    run_sweep(gpt_sota, 
+              fields_length = fl,
+              sweep_count = 10,
+              mode = "test",
+              name="gpt_sota",
+              )
     #run_sweep(fullpaper_params, 
     #          fields_length = fl,
     #          sweep_count = 1,
@@ -274,22 +289,22 @@ def run_test_sweeps():
 
     run_sweep(llama_sota, 
               fields_length = fl,
-              sweep_count = 8,
+              sweep_count = 10,
               mode = "test",
               name="llama_sota",
               )
-    run_sweep(llama_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="llama_rag",
-              )
-    run_sweep(llama_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="llama_onto_test",
-              )
+    #run_sweep(llama_rag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="llama_rag",
+    #          )
+    #run_sweep(llama_ontorag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="llama_onto_test",
+    #          )
 
     global dspy_model
     del dspy_model
@@ -300,22 +315,22 @@ def run_test_sweeps():
 
     run_sweep(mistral_sota, 
               fields_length = fl,
-              sweep_count = 8,
+              sweep_count = 10,
               mode = "test",
               name="misrtal_rag",
               )
-    run_sweep(mistral_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="mistral_rag",
-              )
-    run_sweep(mistral_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="mistral_onto_test",
-              )
+    #run_sweep(mistral_rag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="mistral_rag",
+    #          )
+    #run_sweep(mistral_ontorag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="mistral_onto_test",
+    #          )
 
 
 
