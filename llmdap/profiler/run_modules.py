@@ -307,7 +307,7 @@ class FormFillingIterator:
             # NOTE: This will overwrite!
             jsondata = {
                     "filled_form": filled_form.dict(),
-                    "context" : "(TO BE IMPLEMENTED)",
+                    "context" : self.form_filler.contexts,
                     }
             with open(self.output_json_path, "w") as f:
                 json.dump(jsondata, f, indent=4)
