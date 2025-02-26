@@ -216,6 +216,26 @@ def load_paper_text(labels, max_amount,data_folder, mode = "elements"):
 
     return full_xmls, labels
 
+def load_paper_text_from_file_path(xml_file, mode = "elements"):
+    """ 
+    loads singe xml file from absolute path (used in inference)
+    mode : "single" or "elements" """
+    if mode == "single":
+        # single
+        paper_text = UnstructuredXMLLoader(xml_file, mode = "single").load()[0].page_content
+    
+    elif mode == "elements":
+        # element
+        docs = UnstructuredXMLLoader(xml_file, mode = "elements").load()
+        string = ""
+        for doc in docs:
+            # ignore useless metadata, + some 
+            if doc.metadata["category"] != "UncategorizedText":
+                string += doc.page_content + "\n"
+        paper_text = string
+    else:
+        raise ValueError
+    return paper_text
 
 def count_fields(test_or_train = "train"):
     g = Arxpr_generator("2_25", test_or_train)

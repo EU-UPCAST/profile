@@ -2,6 +2,7 @@ import weave
 import outlines
 import dspy
 import openai
+import importlib
 
 import dataset_loader
 import metadata_schemas 
@@ -97,9 +98,21 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             raise ValueError
 
 
+    if args.dataset is None: # inference mode:
 
+        schema_path = args.schema_path
+        if schema_path.endswith(".py"):
+            schema_path = schema_path[:-3]
+        schema_path = schema_path.replace("/",".")
+        pydantic_form = importlib.import_module(schema_path).Metadata_form
 
-    if args.dataset == "arxpr2" and args.dataset_shuffle == "r":
+        paper_text = dataset_loader.load_paper_text_from_file_path(args.paper_path)
+
+        dataset_kwargs = dict(
+                documents = {0:paper_text},
+                )
+
+    elif args.dataset == "arxpr2" and args.dataset_shuffle == "r":
         # do dynamic reloading+shuffling
         length = args.dataset_literal_length
         form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
