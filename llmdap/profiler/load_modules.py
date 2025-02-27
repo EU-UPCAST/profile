@@ -2,6 +2,7 @@ import weave
 import outlines
 import dspy
 import openai
+import importlib
 
 import dataset_loader
 import metadata_schemas 
@@ -64,6 +65,8 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             elif args.ff_model == "ministral_gguf":
                 model_id = "bartowski/Ministral-8B-Instruct-2410-GGUF"
                 model_kwargs = {"gguf_file" : "Ministral-8B-Instruct-2410-Q4_K_M.gguf"}
+            elif args.ff_model == "ds8b-i4":
+                model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
             else:
                 model_id = args.ff_model
             try:
@@ -95,9 +98,21 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
             raise ValueError
 
 
+    if args.dataset is None: # inference mode:
 
+        schema_path = args.schema_path
+        if schema_path.endswith(".py"):
+            schema_path = schema_path[:-3]
+        schema_path = schema_path.replace("/",".")
+        pydantic_form = importlib.import_module(schema_path).Metadata_form
 
-    if args.dataset == "arxpr2" and args.dataset_shuffle == "r":
+        paper_text = dataset_loader.load_paper_text_from_file_path(args.paper_path)
+
+        dataset_kwargs = dict(
+                documents = {0:paper_text},
+                )
+
+    elif args.dataset == "arxpr2" and args.dataset_shuffle == "r":
         # do dynamic reloading+shuffling
         length = args.dataset_literal_length
         form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
@@ -201,7 +216,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
     elif args.context_shortener == "retrieval":
-        if not args.dataset in ["study_type", "arxpr2"] and not args.field_info_to_compare=="description":
+        if not args.dataset in ["study_type", "arxpr2", None] and not args.field_info_to_compare=="description":
             raise ValueError
 
         context_shortener = context_shortening.Retrieval(

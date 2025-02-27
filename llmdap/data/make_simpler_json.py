@@ -127,12 +127,13 @@ def count_fields():
             string += "\n"
             f.write(string)
         for line in sorted_counts:
-            if line[1]["unique_json_count"] >= len(files)/10: 
-                printwrite(line[1]["count"], "\t", line[1]["unique_json_count"], "\t", line[1]["ont_count"], "\t", line[0],"\n\t\t\t\t", line[1]["ex"])
-                if line[1]["ont_count"]:
-                    printwrite("\t\t\t\t", line[1]["ont_ex"])
-                    printwrite("\t\t\t\t", line[1]["ont_term_ex"])
+            #if line[1]["unique_json_count"] >= len(files)/10: 
+            printwrite(line[1]["count"], "\t", line[1]["unique_json_count"], "\t", line[1]["ont_count"], "\t", line[0],"\n\t\t\t\t", line[1]["ex"])
+                #if line[1]["ont_count"]:
+                #    printwrite("\t\t\t\t", line[1]["ont_ex"])
+                #    printwrite("\t\t\t\t", line[1]["ont_term_ex"])
         printwrite("Total line count: ", len(sorted_counts))
+    print(len(sorted_counts))
 
 
 def find_field(field, obj):
@@ -359,8 +360,8 @@ def restrict_arxpr2_metadataset():
         json.dump(metadataset, f, indent=4)
 
 if __name__ == "__main__":
-    # count_fields()
+    count_fields()
     #simplify_jsons()
     # make_arxpr_metadataset()
-    make_arxpr2_metadataset()
-    restrict_arxpr2_metadataset()
+    #make_arxpr2_metadataset()
+    #restrict_arxpr2_metadataset()
