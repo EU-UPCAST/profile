@@ -112,9 +112,6 @@ class FormFillingIterator:
         self.save = args.pop("save")
         self.mode = args.pop("mode")
         self.fields_length = args.pop("fields_length")
-        self.output_json_path = args.pop("output_json_path", None)
-        args.pop("paper_path", None)
-        args.pop("schema_path", None)
         args.pop("dataset_length")
         self.argstring = str(sorted(args.items()))
 
@@ -131,25 +128,24 @@ class FormFillingIterator:
         #self.all_times = []
         self.skips = 0
 
-        # make sure we have correct inputs
-        if documents is None:
-            assert labels is None
-            assert not form_generator is None
-            assert not document_generator is None
-            assert self.fields_length>0
-        else:
-            assert not form_filler.pydantic_form is None
-            assert form_generator is None
-            assert document_generator is None
-
-        if documents is None:
-            self.iterate = self._iterate_using_generator
-        else:
-            self.iterate = self._iterate_using_list
 
     @weave.op()
     def __call__(self):
-        self.iterate()
+        # make sure we have correct inputs
+        if self.documents is None:
+            assert self.labels is None
+            assert not self.form_generator is None
+            assert not self.document_generator is None
+            assert self.fields_length>0
+        else:
+            assert not self.form_filler.pydantic_form is None
+            assert self.form_generator is None
+            assert self.document_generator is None
+
+        if documents is None:
+            self._iterate_using_generator()
+        else:
+            self._iterate_using_list()
 
         if self.documents is None or self.labels:
             return self.evaluate()
@@ -243,8 +239,9 @@ class FormFillingIterator:
 
 
     @weave.op()
-    def fill_single_form(self, key, paper_text, paper_labels=None):
-        pydantic_form = self.form_filler.pydantic_form
+    def fill_single_form(self, key, paper_text, paper_labels=None, pydantic_form=None, return_dict_with_context=False):
+        if pydantic_form is None:
+            pydantic_form = self.form_filler.pydantic_form
 
         filled_form = None
 
@@ -305,15 +302,6 @@ class FormFillingIterator:
             return
 
 
-        if not self.output_json_path is None:
-            # unlike save_form, which is meant to save masses of queries in training/testing, this is the output file for inference
-            # NOTE: This will overwrite!
-            jsondata = {
-                    "filled_form": filled_form.dict(),
-                    "context" : self.form_filler.contexts,
-                    }
-            with open(self.output_json_path, "w") as f:
-                json.dump(jsondata, f, indent=4)
 
 
         # evaluate
@@ -331,6 +319,11 @@ class FormFillingIterator:
                 print(fn, len(self.all_scores[fn]), end= "; ")
             print("")
 
+        if return_dict_with_context:
+            return {
+                    "filled_form": filled_form.dict(),
+                    "context" : self.form_filler.contexts,
+                    }
         return filled_form
 
     def evaluate(self):
