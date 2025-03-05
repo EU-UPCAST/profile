@@ -221,11 +221,12 @@ mistral_ontorag = {
             ]},
         }
 
-def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train"):
+def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train", log=True):
     # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
     parameters["mode"] = {"value" : mode}
+    parameters["log"] = {"value" : log}
     if type(dataset) is str:
         parameters["dataset"] = {"value" : dataset}
         name = f"{name}_{dataset}_{sweep_count}_{dataset_length}"

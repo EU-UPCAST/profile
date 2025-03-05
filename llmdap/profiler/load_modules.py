@@ -3,6 +3,7 @@ import outlines
 import dspy
 import openai
 import importlib
+import torch
 
 import dataset_loader
 import metadata_schemas 
@@ -69,10 +70,7 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None):
                 model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
             else:
                 model_id = args.ff_model
-            try:
-                    dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2", model_kwargs = model_kwargs)
-            except RuntimeError:
-                dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:0")
+            dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0", model_kwargs = model_kwargs)
         else:
             dspy_model = preloaded_dspy_model
         hf_model = dspy_model.model

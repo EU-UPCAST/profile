@@ -1,6 +1,7 @@
 from keybert import KeyBERT
 from sentence_transformers import SentenceTransformer, util
 
+import torch
 
 def get_kw_model(model=None): return KeyBERT(model)
 def get_keywords(text, kw_model, **kwargs): 
@@ -8,8 +9,7 @@ def get_keywords(text, kw_model, **kwargs):
     keywords = [x[0] for x in keywords_and_scores]
     scores = [x[1] for x in keywords_and_scores]
     return keywords, scores
-#def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id)#, device = "cuda:1")
-def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id, device = "cuda:1")
+def get_embedding_model(embedding_model_id = 'all-MiniLM-L6-v2'): return SentenceTransformer(embedding_model_id, device = "cuda:1" if torch.cuda.device_count()>1 else "cuda:0")
 def get_similarity_matrix(kw_embeddings, target_embeddings):  return util.cos_sim(kw_embeddings, target_embeddings)
 
 
