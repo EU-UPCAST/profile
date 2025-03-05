@@ -19,7 +19,38 @@ def add_defaults(parameters):
                 parameters[argname] = argument_template[argtype][argname]["default"]
     return parameters
 
-def call_inference(paper_text, schema, **kwargs):
+def call_inference(
+        schema,
+        parsed_paper_text = None,
+        raw_xml_paper_text = None,
+        paper_path = None,
+        paper_url = None,
+        **kwargs):
+    """
+    schema: pydantic form that the pipeline should filll out
+
+    include ONE of the following four string arguments:
+        parsed_paper_text: paper text ready for reading
+        raw_xml_paper_text: paper text in xml format (typically starting with "<?xml version="1.0" encoding="UTF-8"?>...)"
+        paper_path: local path to paper file in XML format
+        paper_url: url to paper file in XML format
+    """
+
+    if parsed_paper_text:
+        paper_text = parsed_paper_text
+    elif raw_xml_paper_text:
+        import dataset_loader
+        paper_text = dataset_loader.parse_raw_xml_string(raw_xml_paper_text)
+    elif paper_path:
+        import dataset_loader
+        paper_text = dataset_loader.load_paper_text_from_file_path(paper_path)
+    elif paper_url:
+        import dataset_loader
+        paper_text = dataset_loader.load_paper_text_from_url(paper_url)
+    else:
+        raise ValueError
+
+
     parameters = add_defaults(kwargs)
 
     args=SimpleNamespace(**parameters)
@@ -35,15 +66,27 @@ def call_inference(paper_text, schema, **kwargs):
 
 
 if __name__ == "__main__":
-    # test it out:
 
+    
     path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
     import dataset_loader
-    paper_text = dataset_loader.load_paper_text_from_file_path(path)
+
+    parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
+    with open(path, "r") as f:
+        raw_xml_paper_text = f.read()
+    paper_path = path
+    paper_url = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12093373/ascii"
+
 
     from metadata_schemas.arxpr2_schema import Metadata_form as schema
 
-    output = call_inference(paper_text, schema, 
+    output = call_inference(
+            schema,
+            # choose one to try out
+            #parsed_paper_text = parsed_xml_paper_text,
+            #raw_xml_paper_text = raw_xml_paper_text,
+            #paper_path = paper_path,
+            paper_url = paper_url,
             similarity_k = 5,
             field_info_to_compare = "choices",
             )
