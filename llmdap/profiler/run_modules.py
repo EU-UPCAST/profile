@@ -85,6 +85,7 @@ def save_score(argstring, scores, index_log, choice_log, dataset):
 class FormFillingIterator:
     def __init__(
         self,
+        argument_object,
         context_shortener, 
         form_filler, 
         documents=None, 
@@ -93,24 +94,8 @@ class FormFillingIterator:
         labels=None, 
         evaluation_fnc=None, 
         remove_fields = lambda x:[], 
-        argstring="", 
-        save=True, 
-        load = True, 
-        fields_length = 0, 
-        mode = "train",
-        dataset_name = "",
-        output_json_path = None):
+        ):
 
-        # make sure we have correct inputs
-        if documents is None:
-            assert labels is None
-            assert not form_generator is None
-            assert not document_generator is None
-            assert fields_length>0
-        else:
-            assert not form_filler.pydantic_form is None
-            assert form_generator is None
-            assert document_generator is None
 
         self.context_shortener = context_shortener
         self.form_filler = form_filler
@@ -120,13 +105,20 @@ class FormFillingIterator:
         self.labels = labels
         self.evaluation_fnc = evaluation_fnc
         self.remove_fields = remove_fields
-        self.argstring = argstring
-        self.save = save
-        self.load = load
-        self.fields_length = fields_length
-        self.mode = mode
-        self.dataset_name = dataset_name
-        self.output_json_path = output_json_path
+
+
+        args = argument_object.__dict__
+        self.load = args.pop("load")
+        self.save = args.pop("save")
+        self.mode = args.pop("mode")
+        self.fields_length = args.pop("fields_length")
+        self.output_json_path = args.pop("output_json_path", None)
+        args.pop("paper_path", None)
+        args.pop("schema_path", None)
+        args.pop("dataset_length")
+        self.argstring = str(sorted(args.items()))
+
+        self.dataset_name = args["dataset"]
         self.field_names = self.form_filler.pydantic_form.__fields__ 
 
         self.all_scores = {}
@@ -138,6 +130,17 @@ class FormFillingIterator:
             self.choice_log[field] = []
         #self.all_times = []
         self.skips = 0
+
+        # make sure we have correct inputs
+        if documents is None:
+            assert labels is None
+            assert not form_generator is None
+            assert not document_generator is None
+            assert self.fields_length>0
+        else:
+            assert not form_filler.pydantic_form is None
+            assert form_generator is None
+            assert document_generator is None
 
         if documents is None:
             self.iterate = self._iterate_using_generator

@@ -2,6 +2,7 @@ import wandb
 import dspy
 from argparse import Namespace
 import yaml
+from types import SimpleNamespace
 
 from load_modules import load_modules
 from run_modules import FormFillingIterator
@@ -42,27 +43,21 @@ def sweep_single_run():
     prepared_kwargs = load_modules(args, preloaded_dspy_model = dspy_model, preloaded_dataset = PRELOADED_DATASET)
     args = args._items
     args.pop("_wandb")
-    args.pop("dataset_length")
-    mode = args.pop("mode")
-    load = args.pop("load")
-    save = args.pop("save")
-    fields_length = args.pop("fields_length")
-
-    if "documents" in prepared_kwargs and "labels" in prepared_kwargs:
-        PRELOADED_DATASET = (prepared_kwargs["documents"], prepared_kwargs["labels"])
-
     # use floats in argstring to load results in run_modules
     if args["maxsum_factor"]==1:
         args["maxsum_factor"]= 1.0
     if args["mmr_param"]==1:
         args["mmr_param"]= 1.0
-
     dataset_name = args["dataset"]
+    #args["load"] = False # REMOVE THIS!!
+    args = SimpleNamespace(**args)
 
-    args = args.items()
-    argstring = str(sorted(args))
-    #load = False # REMOVE THIS!!
-    score = FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
+    if "documents" in prepared_kwargs and "labels" in prepared_kwargs:
+        PRELOADED_DATASET = (prepared_kwargs["documents"], prepared_kwargs["labels"])
+
+
+
+    score = FormFillingIterator(args, **prepared_kwargs)()
 
     wandb.log(score)
 
