@@ -20,9 +20,6 @@ import run_inference
 
 app = FastAPI()
 
-TEMP_DIR = "all_results"  # Directory for storing temporary files
-os.makedirs(TEMP_DIR, exist_ok=True)  # Ensure directory exists
-
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -72,7 +69,7 @@ def run_App1(file: Path, url: str, flag: str):
     # Generate the filename for the output file
     json_profile = f"{file_path.split('.')[0]}_profile.json"
     json_profile_name = os.path.basename(json_profile)
-    output_file_path = f"../all_results/{json_profile_name}"
+    output_file_path = f"all_results/{json_profile_name}"
     # Create output_files directory if it doesn't exist
     #os.makedirs("output_files", exist_ok=True)
 
@@ -113,7 +110,7 @@ def run_App3(file: Path, url: str, flag: str):
         if not output_filename.endswith(".json"):
             output_filename += ".json"
 
-    output_file_path = f"../all_results/{output_filename}"
+    output_file_path = f"all_results/{output_filename}"
 
     #paper_url = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12093373/ascii"
     #TODO: user optionally upload a schema 
@@ -199,7 +196,7 @@ async def upload_file_or_url(selected_app: str = Form(...), file: UploadFile = N
     if selected_app not in [app_name.value for app_name in AppName]:
         return JSONResponse(content={"error": "Invalid app name"}, status_code=400)
     
-    UPLOAD_DIR = "../output_files"
+    UPLOAD_DIR = "output_files"
     #output_file_path, output_filename = run_app(selected_app, file)
     if file:
         # Save uploaded file
@@ -351,7 +348,7 @@ from fastapi.openapi.utils import get_openapi
 
 openapi_schema = get_openapi(
     title="UPCAST Data Profiling API",
-    version="0.2.0",
+    version="0.3.0",
     description="OpenAPI specification for the UPCAST Data Profiling API",
     routes=app.routes,
 )
@@ -366,3 +363,12 @@ openapi_file = os.path.join(api_folder, "openapi.json")
 with open(openapi_file, "w") as file:
     import json
     json.dump(openapi_schema, file)
+
+# Set the current path to the parent of api
+print("current path: ", os.getcwd())
+if os.getcwd().endswith("api"):
+    os.chdir("..")
+print("current path - new: ", os.getcwd())
+
+TEMP_DIR = "all_results"  # Directory for storing temporary files
+os.makedirs(TEMP_DIR, exist_ok=True)  # Ensure directory exists
