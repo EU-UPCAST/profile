@@ -2,6 +2,7 @@ import wandb
 import dspy
 from argparse import Namespace
 import yaml
+from types import SimpleNamespace
 
 from load_modules import load_modules
 from run_modules import FormFillingIterator
@@ -42,27 +43,21 @@ def sweep_single_run():
     prepared_kwargs = load_modules(args, preloaded_dspy_model = dspy_model, preloaded_dataset = PRELOADED_DATASET)
     args = args._items
     args.pop("_wandb")
-    args.pop("dataset_length")
-    mode = args.pop("mode")
-    load = args.pop("load")
-    save = args.pop("save")
-    fields_length = args.pop("fields_length")
-
-    if "documents" in prepared_kwargs and "labels" in prepared_kwargs:
-        PRELOADED_DATASET = (prepared_kwargs["documents"], prepared_kwargs["labels"])
-
     # use floats in argstring to load results in run_modules
     if args["maxsum_factor"]==1:
         args["maxsum_factor"]= 1.0
     if args["mmr_param"]==1:
         args["mmr_param"]= 1.0
-
     dataset_name = args["dataset"]
+    #args["load"] = False # REMOVE THIS!!
+    args = SimpleNamespace(**args)
 
-    args = args.items()
-    argstring = str(sorted(args))
-    #load = False # REMOVE THIS!!
-    score = FormFillingIterator(**prepared_kwargs, load = load, save = save, argstring = argstring, fields_length = fields_length, mode=mode, dataset_name = dataset_name)()
+    if "documents" in prepared_kwargs and "labels" in prepared_kwargs:
+        PRELOADED_DATASET = (prepared_kwargs["documents"], prepared_kwargs["labels"])
+
+
+
+    score = FormFillingIterator(args, **prepared_kwargs)()
 
     wandb.log(score)
 
@@ -226,11 +221,12 @@ mistral_ontorag = {
             ]},
         }
 
-def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train"):
+def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train", log=True):
     # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
     parameters["mode"] = {"value" : mode}
+    parameters["log"] = {"value" : log}
     if type(dataset) is str:
         parameters["dataset"] = {"value" : dataset}
         name = f"{name}_{dataset}_{sweep_count}_{dataset_length}"
