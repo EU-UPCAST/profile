@@ -396,12 +396,12 @@ if __name__ == "__main__":
     #run_test_sweeps()
     #quit()
     fl = 2
-    run_sweep(llama_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              #mode = "test",
-              name="llama_onto",
-              )
+    #run_sweep(llama_ontorag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          #mode = "test",
+    #          name="llama_onto",
+    #          )
     run_sweep(deepseek_rag, 
               fields_length = fl,
               sweep_count = 1,

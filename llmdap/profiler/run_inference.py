@@ -122,11 +122,12 @@ if __name__ == "__main__":
             #raw_xml_paper_text = raw_xml_paper_text,
             #paper_path = paper_path,
             #paper_path = [paper_path, path2],
-            #paper_url = paper_url,
-            paper_url = {"paper1": paper_url, "paper2":paper_url2},
+            paper_url = paper_url,
+            #paper_url = {"paper1": paper_url, "paper2":paper_url2},
             #
             similarity_k = 5,
             field_info_to_compare = "choices",
+            ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
             )
 
     print("output:")
