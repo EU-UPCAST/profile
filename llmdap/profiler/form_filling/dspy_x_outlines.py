@@ -62,7 +62,7 @@ class OutlinesHFModel(LM):
         elif generator.sampling_params.sampler == "beam_search":
             kwargs["temperature"] = 0
         elif generator.sampling_params.sampler == "multinomial":
-            kwargs["temperature"] = generator.sampler.temperature
+            kwargs["temperature"] = generator.sampling_params.temperature
         else:
             raise ValueError
         kwargs["max_tokens"] = max_tokens
