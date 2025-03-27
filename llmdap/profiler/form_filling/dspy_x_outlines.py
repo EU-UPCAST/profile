@@ -51,17 +51,20 @@ class OutlinesHFModel(LM):
         self.model = outlines_model
         self.generator = generator
         self.tokenizer = self.model.tokenizer.tokenizer
-        self.device = self.model.device
+
+        self.device = self.model.model.device
     
         self.history = []
 
 
-        if type(generator.sampler)==outlines.samplers.GreedySampler:
+        if generator.sampling_params.sampler == "greedy":
             kwargs["temperature"] = 0
-        elif type(generator.sampler)==outlines.samplers.BeamSearchSampler:
+        elif generator.sampling_params.sampler == "beam_search":
             kwargs["temperature"] = 0
-        elif type(generator.sampler)==outlines.samplers.MultinomialSampler:
-            kwargs["temperature"] = generator.sampler.temperature
+        elif generator.sampling_params.sampler == "multinomial":
+            kwargs["temperature"] = generator.sampling_params.temperature
+        else:
+            raise ValueError
         kwargs["max_tokens"] = max_tokens
         self.kwargs = kwargs
 
@@ -101,7 +104,7 @@ class OutlinesHFModel(LM):
 
         #print("GENERATED OUTPUT:", outputs)
 
-        if type(self.generator.sampler)==outlines.samplers.BeamSearchSampler:
+        if self.generator.sampling_params.sampler == "beam_search":
             #print("n tokens generated:", [len(self.tokenizer.encode(output)) for output in outputs]) 
             outputs = outputs[0] # greedy sample among the beams
         #else:

@@ -142,7 +142,7 @@ class FormFillingIterator:
             assert self.form_generator is None
             assert self.document_generator is None
 
-        if documents is None:
+        if self.documents is None:
             self._iterate_using_generator()
         else:
             self._iterate_using_list()
