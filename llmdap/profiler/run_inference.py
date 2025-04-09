@@ -110,8 +110,8 @@ if __name__ == "__main__":
     paper_url2= "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12095422/ascii"
 
 
-    #from metadata_schemas.arxpr2_schema import Metadata_form as schema
-    from metadata_schemas.nhrf_qa_schema import Metadata_form as schema
+    from metadata_schemas.arxpr2_schema import Metadata_form as schema
+    #from metadata_schemas.nhrf_qa_schema import Metadata_form as schema
 
     output = call_inference(
             schema,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
             paper_url = paper_url,
             #paper_url = {"paper1": paper_url, "paper2":paper_url2},
             #
-            similarity_k = 5,
+            similarity_k = 2,
             #field_info_to_compare = "choices",
             field_info_to_compare = "description",
             ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",

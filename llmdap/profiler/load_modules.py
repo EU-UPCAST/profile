@@ -1,6 +1,5 @@
 import weave
 import outlines
-import dspy
 import openai
 import importlib
 import torch
@@ -28,10 +27,10 @@ def remove_empty_fields(labels):
 
 
 @weave.op() # log args
-def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None, inference_schema = None):
+def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None):
     """
     prepare arguments, then call fill_out_forms 
-    preloaded_dspy_model can be inputted to avoid loading it in memory several times
+    preloaded_outlines_model can be inputted to avoid loading it in memory several times
     """
 
     # log arguments
@@ -56,32 +55,21 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None, in
         model_id = ""
         model_is_openai = True
     else: # huggingface model, with outlines
-        # load HF llm through dspy
-        if preloaded_dspy_model is None:
-            model_kwargs = {}
+        # load HF llm
+        if preloaded_outlines_model is None:
             if args.ff_model == "llama3.1I-8b-q4":
                 model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
             elif args.ff_model == "biolm":
                 model_id = "aaditya/Llama3-OpenBioLLM-8B"
-            elif args.ff_model == "ministral_gguf":
-                model_id = "bartowski/Ministral-8B-Instruct-2410-GGUF"
-                model_kwargs = {"gguf_file" : "Ministral-8B-Instruct-2410-Q4_K_M.gguf"}
             elif args.ff_model == "ds8b-i4":
                 model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
             else:
                 model_id = args.ff_model
-            dspy_model = dspy.HFModel(model = model_id, hf_device_map = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0", model_kwargs = model_kwargs)
+            outlines_llm = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
         else:
-            dspy_model = preloaded_dspy_model
-        hf_model = dspy_model.model
-        hf_tokenizer = dspy_model.tokenizer
-
-        # set some dspy model options
-        #dspy_model.kwargs["max_tokens"]=args.max_tokens
-        dspy_model.drop_prompt_from_output = True
+            outlines_llm = preloaded_outlines_model
 
         # define outlines llm and sampler
-        outlines_llm = outlines.models.Transformers(model=hf_model, tokenizer=hf_tokenizer)
         if args.sampler == "greedy":
             outlines_sampler = outlines.samplers.GreedySampler()
         elif args.sampler == "beam":
@@ -185,21 +173,6 @@ def load_modules(args, preloaded_dspy_model = None, preloaded_dataset = None, in
                 chunk_overlap = args.chunk_overlap,
                 similarity_k = args.similarity_k,
                 mmr_param = args.mmr_param,
-                )
-    elif args.context_shortener == "rerank":
-        if model_is_openai:
-            raise NotImplementedError
-        context_shortener = context_shortening.Rerank(hf_model, hf_tokenizer)
-    elif args.context_shortener == "reduce":
-        if model_is_openai:
-            raise NotImplementedError
-        context_shortener = context_shortening.Reduce(
-                hf_model,
-                hf_tokenizer,
-                temperature = args.reduce_temperature,
-                chunk_size = args.chunk_size,
-                chunk_overlap = args.chunk_overlap,
-                max_tokens = args.reduce_max_tokens,
                 )
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
