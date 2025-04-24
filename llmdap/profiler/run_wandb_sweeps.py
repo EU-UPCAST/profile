@@ -1,8 +1,8 @@
 import wandb
-import dspy
 from argparse import Namespace
 import yaml
 from types import SimpleNamespace
+import outlines
 
 from load_modules import load_modules
 from run_modules import FormFillingIterator
@@ -11,8 +11,8 @@ from run_modules import FormFillingIterator
 #model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
 #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
 model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
-dspy_model = dspy.HFModel(model = model_id)
-#dspy_model = None
+outlines_model = outlines.models.transformers(model_name=model_id)
+#outlines_model = None
 
 PRELOADED_DATASET = None
 
@@ -41,7 +41,7 @@ def sweep_single_run():
     args = wandb.config
 
 
-    prepared_kwargs = load_modules(args, preloaded_dspy_model = dspy_model, preloaded_dataset = PRELOADED_DATASET)
+    prepared_kwargs = load_modules(args, preloaded_outlines_model = outlines_model, preloaded_dataset = PRELOADED_DATASET)
     args = args._items
     args.pop("_wandb")
     # use floats in argstring to load results in run_modules
@@ -351,12 +351,12 @@ def run_test_sweeps():
     #          name="llama_onto_test",
     #          )
 
-    #global dspy_model
-    #del dspy_model
+    #global outlines_model
+    #del outlines_model
     #import time
     #time.sleep(60*5)
     #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-    #dspy_model = dspy.HFModel(model = model_id)
+    #outlines_model = outlines.models.transformers(model_name=model_id)
 
     #run_sweep(mistral_sota, 
     #          fields_length = fl,
@@ -377,12 +377,12 @@ def run_test_sweeps():
     #          name="mistral_onto_test",
     #          )
 
-    #global dspy_model
-    #del dspy_model
+    #global outlines_model
+    #del outlines_model
     #import time
     #time.sleep(60*5)
     #model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
-    #dspy_model = dspy.HFModel(model = model_id)
+    #outlines_model = outlines.models.transformers(model_name=model_id)
 
     run_sweep(deepseek_rag, 
               fields_length = fl,
