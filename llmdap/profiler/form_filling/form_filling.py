@@ -37,7 +37,6 @@ class FormFillSignature(dspy.Signature):
     answer_field_name = dspy.InputField()
     answer_field_type = dspy.InputField()
     answer_field_description = dspy.InputField()
-    answer_field_examples = dspy.InputField()
 
     answer = dspy.OutputField()
 
@@ -53,7 +52,6 @@ class ListedFormFillSignature(dspy.Signature):
     answer_field_name = dspy.InputField()
     answer_field_type = dspy.InputField()
     answer_field_description = dspy.InputField()
-    answer_field_examples = dspy.InputField()
     answer = dspy.OutputField()
 
 
@@ -91,26 +89,6 @@ class FieldFiller(dspy.Module):
         self.verbose = verbose
 
     def forward(self, prompt_input, context, field_type):
-
-        # retireve chunks
-        if self.verbose:
-            print("    --INFO--: retrieving context")
-            print("              Signature Desc: ", self.signature)
-            print("              Form Desc     : ", prompt_input["answer_field_description"])
-
-
-        if self.verbose:
-            # print context
-            #print("\ncontext_nodes type:", type(context_nodes), len(context_nodes))
-            #print("node type:", type(context_nodes[0]))
-            #print("node 0:", context_nodes[0])
-            print("    --INFO--: retireval node scores:", [context_nodes[i].score for i in range(len(context_nodes))])
-            #print("node 0 text:", context_nodes[0].get_text(),"\n")
-            print("    --INFO--: context lenght in chars:", len(context))
-
-            if "Illumina" in context and "Illumina" in prompt_input["answer_field_examples"]:
-                print("-____-----------illumina in contrext-____-----------")
-
 
         # generate answer
         prompt_input["context"] = context
@@ -267,15 +245,6 @@ class SequentialFormFiller(dspy.Module):
             field = fields[fieldname]
             field_type = field.annotation
 
-            if field.examples is None:
-                examples = []
-            else:
-                examples = field.examples
-                if self.answer_in_quotes:
-                    examples = [str(example) for example in examples]
-            examples = str(examples)
-            if self.answer_in_quotes:
-                examples = examples.replace("'",'"') # answering is in double quotes TODO should probably drop that just to not have to do this thing)
 
             # make prompt input
             prompt_input = {
@@ -283,7 +252,6 @@ class SequentialFormFiller(dspy.Module):
                            "answer_field_name":fieldname,
                            "answer_field_description":field.description,
                            "answer_field_type":str(field_type),
-                           "answer_field_examples":examples
                             }
             context = get_context(**prompt_input)
             self.contexts[fieldname] = context
@@ -363,7 +331,7 @@ class SequentialFormFiller(dspy.Module):
         return copy
 
 
-def get_subschema(original_schema: pydantic.BaseModel, exclude_fields: list = [], remove_maxlength_and_examples = False):
+def get_subschema(original_schema: pydantic.BaseModel, exclude_fields: list = [], remove_maxlength= False):
     """Get a pydantic form with fewer fields"""
 
     # Extract the fields from the original schema
@@ -375,14 +343,10 @@ def get_subschema(original_schema: pydantic.BaseModel, exclude_fields: list = []
 
             properties = original_schema.schema()["properties"][field]
             #print(properties)
-            if remove_maxlength_and_examples:
+            if remove_maxlength:
                 # this is needed for openai api
                 if "maxLength" in properties:
                     properties.pop("maxLength") # maxlength is simply ignored
-                if "examples" in properties:
-                    # examples are put in description instead
-                    properties["description"] = properties["description"] + "\nExamples: " + str(properties["examples"])
-                    properties.pop("examples")
 
                 new_fields[field] = (original_schema.__fields__[field].annotation, pydantic.Field(**properties))
             else:
@@ -428,7 +392,7 @@ class OpenAIFormFiller(dspy.Module):
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
-        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields, remove_maxlength_and_examples = True)
+        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields, remove_maxlength= True)
 
 
         output_dict = {}
@@ -555,7 +519,7 @@ class OpenAISequentialFormFiller(dspy.Module):
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
-        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields) # keep examples as is for now (for retrieval)
+        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
 
         fields = pydantic_form.__fields__
         output_dict = {}
@@ -568,11 +532,6 @@ class OpenAISequentialFormFiller(dspy.Module):
             field = fields[fieldname]
             field_type = field.annotation
 
-            if field.examples is None:
-                examples = []
-            else:
-                examples = field.examples
-            examples = str(examples)
 
             # make prompt input
             prompt_input = {
@@ -580,7 +539,6 @@ class OpenAISequentialFormFiller(dspy.Module):
                            "answer_field_name":fieldname, 
                            "answer_field_description":field.description, 
                            "answer_field_type":str(field_type),
-                           "answer_field_examples":examples
                             }
 
             context = get_context(**prompt_input)
@@ -588,7 +546,7 @@ class OpenAISequentialFormFiller(dspy.Module):
         
             all_other_fields = list(self.pydantic_form.__fields__.keys())
             all_other_fields.remove(fieldname)
-            subschema = get_subschema(self.pydantic_form, exclude_fields = all_other_fields, remove_maxlength_and_examples = True) # for generation, remove the stuff openai cant handle
+            subschema = get_subschema(self.pydantic_form, exclude_fields = all_other_fields, remove_maxlength= True) # for generation, remove the stuff openai cant handle
 
             # generate output
             output = openAIFieldFiller(
