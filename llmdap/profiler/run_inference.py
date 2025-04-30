@@ -97,20 +97,22 @@ def call_inference(
 if __name__ == "__main__":
 
     
-    path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
-    path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
-    import dataset_loader
+    #path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
+    #path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
+    #import dataset_loader
 
-    parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
-    with open(path, "r") as f:
-        raw_xml_paper_text = f.read()
+    #parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
+    #with open(path, "r") as f:
+    #    raw_xml_paper_text = f.read()
 
-    paper_path = path
+    #paper_path = path
     paper_url = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12093373/ascii"
     paper_url2= "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12095422/ascii"
 
 
     from metadata_schemas.arxpr2_schema import Metadata_form as schema
+    from metadata_schemas.arxpr2_schema import get_shuffled_form_generator
+    schema = get_shuffled_form_generator(25, v3=True)()
     #from metadata_schemas.nhrf_qa_schema import Metadata_form as schema
 
     output = call_inference(
