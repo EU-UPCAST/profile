@@ -270,7 +270,7 @@ deepseek_ontorag = {
             ]},
         }
 
-def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr2", name = None, fields_length = 0, mode = "train", log=True):
+def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr3", name = None, fields_length = 0, mode = "train", log=True):
     # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
     parameters["fields_length"] = {"value" : fields_length}
@@ -300,82 +300,83 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
 
 def run_test_sweeps():
     # call run_sweep for each set of parameters
-    fl = 100
-    #run_sweep(best_choice_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="best_choice",
-    #          )
-    #run_sweep(gpt_rag_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="gpt_rag",
-    #          )
-    #run_sweep(gpt_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="gpt_sota",
-    #          )
-    #run_sweep(fullpaper_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="gpt_fullpaper",
-    #          )
-    #run_sweep(gpt_ontorag_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="gpt_onto_test",
-    #          )
+    fl = 10
+    run_sweep(best_choice_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="best_choice",
+              )
+    run_sweep(gpt_rag_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="gpt_rag",
+              )
+    quit()
+    run_sweep(gpt_sota, 
+              fields_length = fl,
+              sweep_count = 10,
+              mode = "test",
+              name="gpt_sota",
+              )
+    run_sweep(fullpaper_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="gpt_fullpaper",
+              )
+    run_sweep(gpt_ontorag_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="gpt_onto_test",
+              )
 
-    #run_sweep(llama_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="llama_sota",
-    #          )
-    #run_sweep(llama_rag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="llama_rag",
-    #          )
-    #run_sweep(llama_ontorag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="llama_onto_test",
-    #          )
+    run_sweep(llama_sota, 
+              fields_length = fl,
+              sweep_count = 10,
+              mode = "test",
+              name="llama_sota",
+              )
+    run_sweep(llama_rag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="llama_rag",
+              )
+    run_sweep(llama_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="llama_onto_test",
+              )
 
-    #global outlines_model
-    #del outlines_model
-    #import time
-    #time.sleep(60*5)
-    #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-    #outlines_model = outlines.models.transformers(model_name=model_id)
+    global outlines_model
+    del outlines_model
+    import time
+    time.sleep(60*5)
+    model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+    outlines_model = outlines.models.transformers(model_name=model_id)
 
-    #run_sweep(mistral_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="misrtal_rag",
-    #          )
-    #run_sweep(mistral_rag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="mistral_rag",
-    #          )
-    #run_sweep(mistral_ontorag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="mistral_onto_test",
-    #          )
+    run_sweep(mistral_sota, 
+              fields_length = fl,
+              sweep_count = 10,
+              mode = "test",
+              name="misrtal_rag",
+              )
+    run_sweep(mistral_rag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="mistral_rag",
+              )
+    run_sweep(mistral_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="mistral_onto_test",
+              )
 
     #global outlines_model
     #del outlines_model
@@ -384,24 +385,24 @@ def run_test_sweeps():
     #model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
     #outlines_model = outlines.models.transformers(model_name=model_id)
 
-    run_sweep(deepseek_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="deeps_rag_test",
-              )
-    run_sweep(deepseek_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="deeps_onto_test",
-              )
-    run_sweep(deepseek_sota, 
-              fields_length = fl,
-              sweep_count = 10,
-              mode = "test",
-              name="deepseek_sota_test",
-              )
+    #run_sweep(deepseek_rag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="deeps_rag_test",
+    #          )
+    #run_sweep(deepseek_ontorag, 
+    #          fields_length = fl,
+    #          sweep_count = 1,
+    #          mode = "test",
+    #          name="deeps_onto_test",
+    #          )
+    #run_sweep(deepseek_sota, 
+    #          fields_length = fl,
+    #          sweep_count = 10,
+    #          mode = "test",
+    #          name="deepseek_sota_test",
+    #          )
 
 
 

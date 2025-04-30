@@ -80,10 +80,16 @@ def load_ega_data(max_amount = 10):
 def load_arxpr_data(max_amount = 10, version = "", mode = "train"):
     """ load arrayepress dataset 
 
-    version: "" or "2_25". Version 2 has fewer fields (more carefully picked) with only some labels included (25)."""
+    version: "" or "2_25", or "3_X. Version 2 has fewer fields (more carefully picked) with only some labels included (25).
+    3_25_X is normalised (as good as possible. X is number of values per field. Dataset must be made first (for each new X)"""
     data_folder = "/mnt/data/upcast/data/"
 
-    if mode == "train":
+    if version.startswith("3"): # TODO remove this, and rename arxpr3 sets to align with arxpr2_holdout syntax (when /mnt/data is up and running again)
+        assert mode == "test"
+        X = version.split("_")[2]
+        with open(f"/home/sondre/upcast/temp/arxpr3_holdout_normalized_{X}.json") as file: 
+            labels = json.load(file)
+    elif mode == "train":
         with open(data_folder + f"arxpr{version}_metadataset_train.json") as file:
             labels = json.load(file)
     elif mode == "test":
@@ -119,7 +125,13 @@ class Arxpr_generator:
     def __init__(self, version = "", mode = "train"):
         self.data_folder = "/mnt/data/upcast/data/"
 
-        if mode == "train":
+        if version.startswith("3"): # TODO remove this, and rename arxpr3 sets to align with arxpr2_holdout syntax (when /mnt/data is up and running again)
+            assert mode == "test"
+            X = version.split("_")[2]
+            with open(f"/home/sondre/upcast/temp/arxpr3_holdout_normalized_{X}.json") as file: 
+                self.labels = json.load(file)
+        elif mode == "train":
+        #if mode == "train":
             with open(self.data_folder + f"arxpr{version}_metadataset_train.json") as file:
                 self.labels = json.load(file)
         elif mode == "test":
