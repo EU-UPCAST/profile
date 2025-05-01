@@ -128,9 +128,11 @@ if __name__ == "__main__":
             #paper_url = {"paper1": paper_url, "paper2":paper_url2},
             #
             similarity_k = 2,
-            #field_info_to_compare = "choices",
-            field_info_to_compare = "description",
-            ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
+            field_info_to_compare = "choices",
+            #field_info_to_compare = "description",
+            #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
+            #ff_model = "llama3.1I-8b-q4",
+            ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
             )
 
     print("output:")

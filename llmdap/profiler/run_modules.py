@@ -113,6 +113,7 @@ class FormFillingIterator:
         self.mode = args.pop("mode")
         self.fields_length = args.pop("fields_length")
         args.pop("dataset_length")
+        args.pop("log_to_weave")
         self.argstring = str(sorted(args.items()))
 
         self.dataset_name = args["dataset"]
