@@ -154,7 +154,12 @@ class FormFillingIterator:
     def _iterate_using_generator(self):
 
         while True:
-            key, paper_labels = self.document_generator.get_next_labels()
+            try:
+                key, paper_labels = self.document_generator.get_next_labels()
+            except StopIteration:
+                print("---------All documents predictions predicted")
+                break
+
 
             # get equal amount of predictions for each label
             # by removing labels for fields with enough predictions already
