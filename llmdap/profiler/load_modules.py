@@ -34,7 +34,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     """
 
     # log arguments
-    if args.log:
+    if args.log_to_weave:
         weave.init(project_name = "upcast_profiler",
                    )
 

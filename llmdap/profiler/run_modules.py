@@ -113,6 +113,7 @@ class FormFillingIterator:
         self.mode = args.pop("mode")
         self.fields_length = args.pop("fields_length")
         args.pop("dataset_length")
+        args.pop("log_to_weave")
         self.argstring = str(sorted(args.items()))
 
         self.dataset_name = args["dataset"]
@@ -154,7 +155,12 @@ class FormFillingIterator:
     def _iterate_using_generator(self):
 
         while True:
-            key, paper_labels = self.document_generator.get_next_labels()
+            try:
+                key, paper_labels = self.document_generator.get_next_labels()
+            except StopIteration:
+                print("---------All documents predictions predicted")
+                break
+
 
             # get equal amount of predictions for each label
             # by removing labels for fields with enough predictions already
