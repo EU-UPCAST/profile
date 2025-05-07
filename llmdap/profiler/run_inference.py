@@ -97,13 +97,13 @@ def call_inference(
 if __name__ == "__main__":
 
     
-    #path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
-    #path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
-    #import dataset_loader
+    path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
+    path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
+    import dataset_loader
 
-    #parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
-    #with open(path, "r") as f:
-    #    raw_xml_paper_text = f.read()
+    parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
+    with open(path, "r") as f:
+        raw_xml_paper_text = f.read()
 
     #paper_path = path
     paper_url = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12093373/ascii"
@@ -120,19 +120,21 @@ if __name__ == "__main__":
             #
             # choose one to try out:
             #
-            #parsed_paper_text = parsed_xml_paper_text,
+            parsed_paper_text = parsed_xml_paper_text,#[1500:2000],
             #raw_xml_paper_text = raw_xml_paper_text,
             #paper_path = paper_path,
             #paper_path = [paper_path, path2],
-            paper_url = paper_url,
+            #paper_url = paper_url,
             #paper_url = {"paper1": paper_url, "paper2":paper_url2},
             #
             similarity_k = 2,
             field_info_to_compare = "choices",
             #field_info_to_compare = "description",
+            #context_shortener = "full_paper",
             #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
             #ff_model = "llama3.1I-8b-q4",
-            ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
+            #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
+            ff_model = "4om",
             )
 
     print("output:")
