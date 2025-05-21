@@ -203,10 +203,10 @@ class Retrieval(ContextShortener):
         elif self.field_info_to_compare == "choice-list": # choices but in a list, single string
             fields = pydantic_form.__fields__
             for fieldname in fields:
-                if not type(field_type) == typing._LiteralGenericAlias:
-                    raise ValueError('field_info_to_compare="choice-list" is only possible for Literal fields.')
                 field = fields[fieldname]
                 field_type = field.annotation
+                if not type(field_type) == typing._LiteralGenericAlias:
+                    raise ValueError('field_info_to_compare="choice-list" is only possible for Literal fields.')
                 literal_values = field_type.__args__
                 field_literal_skip_number = min(self.include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)

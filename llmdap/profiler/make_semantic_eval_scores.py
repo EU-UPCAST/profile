@@ -2,7 +2,7 @@
 from evaluation import similarity, define_semantic_model
 import json
 
-with open("all_results/arxpr2_scores.json") as f:
+with open("all_results/arxpr3_scores.json") as f:
     data = json.load(f)
 
 choice_data = data["choice_log"]
@@ -34,6 +34,6 @@ for emb_model in emb_models:
         for field in choice_data[run_key]:
             semantic_score_data[emb_model][run_key][field] = [get_similarity(pair[0],pair[1], emb_model, semantic_model) for pair in choice_data[run_key][field]]
         print(len(semantic_score_data[emb_model]))
-with open(f"all_results/arxpr2_semantic_scores.json", "w") as f:
+with open(f"all_results/arxpr3_semantic_scores.json", "w") as f:
     json.dump(semantic_score_data, f)
 

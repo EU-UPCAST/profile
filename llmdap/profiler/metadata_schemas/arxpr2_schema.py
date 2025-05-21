@@ -95,7 +95,7 @@ def get_shuffled_form_generator(length, only_shuffle_type=False, v3= False):
     def get_shuffled_form(seed=None):
         assert not length is None
         if seed is None:
-            return classes[str(length)]
+            return classes["v3" if v3 else str(length)]
         random.seed(seed)
         
         shuffled_fields = {}

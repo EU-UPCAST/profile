@@ -187,6 +187,8 @@ class FormFillingIterator:
             self.context_shortener.set_pydantic_form(pydantic_form)
 
             filled_form = self.fill_single_form(key,paper_text, paper_labels)
+            if filled_form is None:
+                continue # TODO log this?
 
             # log index
             self.log_index(filled_form, paper_labels, pydantic_form)
@@ -279,6 +281,12 @@ class FormFillingIterator:
             # fill out the form
             try:
                 print("--------- generating")
+                if key == "29434615" and "full_paper" in self.argstring: # too long paper for context. isolating this to ensure its only this paper.
+                    if not paper_labels is None:
+                        for field in list(set(paper_labels.keys())-set(self.remove_fields(paper_labels))):
+                            print("zeroing field:", field)
+                            self.all_scores[field].append(0)
+                        return
                 if not paper_labels is None:
                     filled_form = self.form_filler.forward(self.context_shortener, exclude_fields=self.remove_fields(paper_labels))
                 else:
@@ -295,12 +303,14 @@ class FormFillingIterator:
                 print("!! BAD REQUEST ERROR!!")
                 print(m)
                 print("skipping paper and filling zeros in score")
+                print("key:", key)
                 # evaluate
-                if self.labels:
+                #if self.labels:
+                if not paper_labels is None:
                     for field in list(set(paper_labels.keys())-set(self.remove_fields(paper_labels))):
                         print("zeroing field:", field)
                         self.all_scores[field].append(0)
-                    #all_times.append(time.time()-start_time)
+                    quit() # quitting to ensure this is noticed.
                     return
 
         elif filled_form == "skipped":

@@ -3,16 +3,17 @@ from argparse import Namespace
 import yaml
 from types import SimpleNamespace
 import outlines
+import torch
 
 from load_modules import load_modules
 from run_modules import FormFillingIterator
 
 # Load llm now instead of for each run
 #model_id = "hugging-quants/Meta-Llama-3.1-8B-Instruct-GPTQ-INT4"
-model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+#model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
 #model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
-outlines_model = outlines.models.transformers(model_name=model_id)
-#outlines_model = None
+#outlines_model = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
+outlines_model = None
 
 PRELOADED_DATASET = None
 
@@ -87,14 +88,14 @@ gpt_sota= { # gpt using choices for retrieval
             "choice-list",
             ]},
         "include_choice_every" : {"values" :[
-            1, # 25 values
-            2, # 12 values
-            3, # 8 values
-            4, # 6 values
-            5, # 5 values
-            6, # 4 values
-            8, # 3 vales
-            12, # 2 values
+            #1, # 25 values
+            #2, # 12 values
+            #3, # 8 values
+            #4, # 6 values
+            #5, # 5 values
+            #6, # 4 values
+            #8, # 3 vales
+            #12, # 2 values
             24, # 1 value
             ]},
         "similarity_k" : {"values": [10]},
@@ -300,77 +301,77 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
 
 def run_test_sweeps():
     # call run_sweep for each set of parameters
-    fl = 10
-    #run_sweep(best_choice_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="best_choice",
-    #          )
+    fl = 300
+    run_sweep(best_choice_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="best_choice",
+              )
     #run_sweep(gpt_rag_params, 
     #          fields_length = fl,
     #          sweep_count = 1,
     #          mode = "test",
     #          name="gpt_rag",
     #          )
-    #run_sweep(gpt_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="gpt_sota",
-    #          )
+    run_sweep(gpt_sota, 
+              fields_length = fl,
+              sweep_count = 18,
+              mode = "test",
+              name="gpt_sota",
+              )
+    quit()
     #run_sweep(fullpaper_params, 
     #          fields_length = fl,
     #          sweep_count = 1,
     #          mode = "test",
     #          name="gpt_fullpaper",
     #          )
-    #run_sweep(gpt_ontorag_params, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="gpt_onto_test",
-    #          )
+    run_sweep(gpt_ontorag_params, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="gpt_onto_test",
+              )
+    quit()
+    run_sweep(llama_sota, 
+              fields_length = fl,
+              sweep_count = 18,
+              mode = "test",
+              name="llama_sota",
+              )
+    run_sweep(llama_rag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="llama_rag",
+              )
+    run_sweep(llama_ontorag, 
+              fields_length = fl,
+              sweep_count = 1,
+              mode = "test",
+              name="llama_onto_test",
+              )
 
-    #run_sweep(llama_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="llama_sota",
-    #          )
-    #run_sweep(llama_rag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="llama_rag",
-    #          )
-    #run_sweep(llama_ontorag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="llama_onto_test",
-    #          )
+    global outlines_model
+    del outlines_model
+    import time
+    time.sleep(60*5)
+    model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
+    outlines_model = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
 
-    #global outlines_model
-    #del outlines_model
-    #import time
-    #time.sleep(60*5)
-    #model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-    #outlines_model = outlines.models.transformers(model_name=model_id)
-
-    #run_sweep(mistral_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="misrtal_rag",
-    #          )
+    run_sweep(mistral_sota, 
+              fields_length = fl,
+              sweep_count = 18,
+              mode = "test",
+              name="misrtal_rag",
+              )
     run_sweep(mistral_rag, 
               fields_length = fl,
               sweep_count = 1,
               mode = "test",
               name="mistral_rag",
               )
-    quit()
     run_sweep(mistral_ontorag, 
               fields_length = fl,
               sweep_count = 1,
@@ -383,7 +384,7 @@ def run_test_sweeps():
     #import time
     #time.sleep(60*5)
     #model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
-    #outlines_model = outlines.models.transformers(model_name=model_id)
+    #outlines_model = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
 
     #run_sweep(deepseek_rag, 
     #          fields_length = fl,
