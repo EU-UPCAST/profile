@@ -6,6 +6,7 @@ import pydantic
 from typing import Optional
 import time
 import json
+import fcntl
 import os
 import openai
 
@@ -58,7 +59,9 @@ def save_form(key, argstring, form_dict):
     data[argstring] = form_dict
     os.makedirs("all_results", exist_ok = True)
     with open("all_results/"+key+".json", "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
         json.dump(data, f)
+        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def save_score(argstring, scores, index_log, choice_log, dataset):
@@ -76,7 +79,9 @@ def save_score(argstring, scores, index_log, choice_log, dataset):
     data["choice_log"][argstring] = choice_log
     os.makedirs("all_results", exist_ok = True)
     with open(f"all_results/{dataset}_scores.json", "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
         json.dump(data, f)
+        fcntl.flock(f, fcntl.LOCK_UN)
 
 
 

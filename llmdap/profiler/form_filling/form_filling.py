@@ -93,6 +93,8 @@ class FieldFiller:
         # generate answer
         prompt_input["context"] = context
         answer = self.answer_generator(make_FormFillPrompt(**prompt_input))
+        #print("generated answer", answer, type(answer))
+        assert type(answer) is str
 
         if self.listify:
             assert answer[0] == "["
