@@ -34,7 +34,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     """
 
     # log arguments
-    if args.log:
+    if args.log_to_weave:
         weave.init(project_name = "upcast_profiler",
                    )
 
@@ -93,6 +93,16 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
         length = args.dataset_literal_length
         form_generator = metadata_schemas.get_shuffled_arxpr2(length = length)
         document_generator = dataset_loader.Arxpr_generator(version = "2_25", mode=args.mode)
+        dataset_kwargs = dict(
+                form_generator = form_generator,
+                document_generator = document_generator,
+                )
+        pydantic_form = form_generator()
+    elif args.dataset == "arxpr3" and args.dataset_shuffle == "r":
+        # do dynamic reloading+shuffling
+        length = args.dataset_literal_length
+        form_generator = metadata_schemas.get_shuffled_arxpr2(length = length, v3=True)
+        document_generator = dataset_loader.Arxpr_generator(version = f"3_25_{args.fields_length}", mode=args.mode)
         dataset_kwargs = dict(
                 form_generator = form_generator,
                 document_generator = document_generator,
@@ -177,7 +187,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
     elif args.context_shortener == "retrieval":
-        if not args.dataset in ["study_type", "arxpr2", None] and not args.field_info_to_compare=="description":
+        if not args.dataset in ["study_type", "arxpr2", None, "arxpr3"] and not args.field_info_to_compare=="description":
             raise ValueError
 
         context_shortener = context_shortening.Retrieval(
