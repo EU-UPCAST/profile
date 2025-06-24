@@ -13,14 +13,14 @@ model = AutoModelForCausalLM.from_pretrained(model_name, device_map= device, tru
 model.eval()
 
 chat = [
-    { "role": "user", "content": "List any 15 country capitals. Answer in a python list of tuples of form (country, capital)." },
+    { "role": "user", "content": "List any 5 country capitals. Answer in a python list of tuples of form (country, capital)." },
 ]
 chat = tokenizer.apply_chat_template(chat, tokenize=False, add_generation_prompt=True)
 
 input_tokens = tokenizer(chat, return_tensors="pt").to('cuda')
 
 output = model.generate(**input_tokens, 
-                        max_new_tokens=100)
+                        max_new_tokens=500)
 
 output = tokenizer.batch_decode(output)
 
