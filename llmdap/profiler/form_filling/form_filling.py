@@ -714,3 +714,89 @@ class DirectKeywordSimilarityFiller:
 
 
 
+class AdaptiveFormFiller:
+    """
+    Class for traversing through a graph, and predict each step based on the previous.
+    """
+    def __init__(self,
+                 outlines_llm,
+                 outlines_sampler,
+                 pydantic_form = None,
+                 listify_form = False,
+                 answer_in_quotes = True,
+                 max_tokens = 50,
+                 verbose = False
+                 ):
+        self.llm_model = outlines_llm
+        self.sampler = outlines_sampler
+        self.verbose = verbose
+        self.max_tokens = max_tokens
+
+        self.answer_in_quotes=answer_in_quotes
+        self.graph_traverser = pydantic_form
+        self.field_fillers = {}
+
+
+    def prepare_field_filler(self, field):
+        field_type = field.annotation
+
+        # only make a new generator if it is not equal to one already generated
+        if not field_type in self.field_fillers:
+            if self.verbose:
+                print("Generating regex generator...")
+
+            outlines_generator = regex_handling.make_constrained_generator(
+                    llm_model=self.llm_model,
+                    field_type=field_type,
+                    min_l=1,
+                    max_l=None,
+                    answer_in_quotes=self.answer_in_quotes,
+                    sampler = self.sampler)
+            #self.outlines_generators[field_type)] = outlines_generator
+
+            self.field_fillers[fieldname] = FieldFiller(
+                    answer_generator = generator,
+                    verbose = self.verbose,
+                    answer_in_quotes = self.answer_in_quotes,
+                    )
+            if self.verbose:
+                print("Finished generating regex generator.")
+
+
+    @weave.op()
+    def recursive_forward(self, get_context, exclude_fields = []):
+        current_field = self.graph_traverser.get_next_field()
+        self.prepare_field_filler(current_field)
+
+        # make prompt input
+        prompt_input = {
+                       "context":None,
+                       "answer_field_name":fieldname,
+                       "answer_field_description":field.description,
+                       "answer_field_type":str(field_type),
+                        }
+        context = get_context(**prompt_input)
+        self.contexts[fieldname] = context
+
+        # generate output
+        output = self.field_fillers[fieldname].forward(prompt_input, context, field_type)
+        assert type(output) is str 
+
+        self.graph_traverser.set_next_step(output)
+        self.recursive_forward(get_context)
+
+
+
+
+
+    @weave.op()
+    def forward(self, get_context, exclude_fields = []):
+        self.graph_traverser.reset()
+        
+        try:
+            self.recursive_forward()
+        except StopIteration:
+            path = self.graph_traverser.current_path
+
+        torch.cuda.empty_cache()
+        return path

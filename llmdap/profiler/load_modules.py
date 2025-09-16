@@ -27,7 +27,7 @@ def remove_empty_fields(labels):
 
 
 @weave.op() # log args
-def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None):
+def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, use_adaptive_form_filler=False):
     """
     prepare arguments, then call fill_out_forms 
     preloaded_outlines_model can be inputted to avoid loading it in memory several times
@@ -214,7 +214,13 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
         raise ValueError
 
 
-    if model_is_openai:
+    # set form_filler
+    if use_adaptive_form_filler:
+        form_filler = form_filling.AdaptiveFormFiller(
+                model_id=model_id,
+                pydantic_form = pydantic_form,
+                verbose=False)
+    elif model_is_openai:
         if args.context_shortener=="full_paper":
             form_filler = form_filling.OpenAIFormFiller(
                     model_id=model_id,

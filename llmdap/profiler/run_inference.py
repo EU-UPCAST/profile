@@ -25,6 +25,7 @@ def call_inference(
         raw_xml_paper_text = None,
         paper_path = None,
         paper_url = None,
+        use_adaptive_form_filler=False,
         **kwargs):
     """
     Fill out the schema for one or several papers.
@@ -55,7 +56,7 @@ def call_inference(
     args.save=False
 
     # load stuff
-    prepared_kwargs = load_modules(args, inference_schema = schema)
+    prepared_kwargs = load_modules(args, inference_schema = schema, use_adaptive_form_filler=use_adaptive_form_filler)
     ff_iterator = FormFillingIterator(args, **prepared_kwargs)
 
     # make the argument into dictionary
@@ -93,10 +94,25 @@ def call_inference(
     return outputs
 
 
+def call_hf_acm_run():
+    from hf_tag_graph import hftags_list
+    from metadata_schemas.acm_ccs import Traverser
 
-if __name__ == "__main__":
+
+    output = call_inference(
+            schema = Traverser,
+            parsed_paper_text = hftags_list,
+            use_adaptive_form_filler = True,
+            # kwargs
+            context_shortener = "full_paper",
+            ff_model = "llama3.1I-8b-q4",
+            #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
+            #ff_model = "4om",
+            )
 
     
+def test_call():
+
     path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
     path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
     import dataset_loader
@@ -130,7 +146,7 @@ if __name__ == "__main__":
             similarity_k = 2,
             field_info_to_compare = "choices",
             #field_info_to_compare = "description",
-            #context_shortener = "full_paper",
+            context_shortener = "full_paper",
             #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
             #ff_model = "llama3.1I-8b-q4",
             #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
@@ -141,3 +157,6 @@ if __name__ == "__main__":
     import pprint
     pprint.pprint(output)
 
+if __name__ == "__main__":
+    #test_call()
+    call_hf_acm_run()
