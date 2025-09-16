@@ -154,6 +154,24 @@ class Studytype_generator(Arxpr_generator):
         self.i += 1
         return key, {"study_type_18": self.labels[key]["study_type_18"] if "study_type_18" in self.labels[key] else []}
 
+def load_arxiv_papers(max_amount=10, full_text=False):
+    if full_text:
+        raise NotImplementedError
+    import pandas as pd
+    filepath = "/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv"
+    df = pd.read_csv(filepath, index_col=0)
+    abstracts = df["abstract"].to_dict()
+    titles= df["title"].to_dict()
+    papers = {}
+    i = 0
+    for key in titles:
+        papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
+        i += 1
+        if i>= max_amount:
+            break
+
+    return papers, None
+
 
 def load_study_type_data(max_amount = 10):
     """ like load_arxpr_data but with only the study type labels (for using ontology information) """

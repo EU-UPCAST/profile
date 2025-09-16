@@ -60,8 +60,8 @@ def sweep_single_run():
 
 
     score = FormFillingIterator(args, **prepared_kwargs)()
-
-    wandb.log(score)
+    if not score is None:
+        wandb.log(score)
 
 
 # define sets of parameters to test
@@ -283,6 +283,26 @@ deepseek_ontorag = {
         "sampler_temp" : {"value" : 0.001},
         }
 
+
+arxiv_paper_params_best_choice= { # directly use bext match (no generation)
+        "ff_model" :{"value" : "best_choice"},
+        "context_shortener" :{"value" : "retrieval"}, # use this and long context instead of full_paper, as fullpaper contextshortener is not implemented with the various field_info_to_compare options
+        "chunk_info_to_compare" : {"values": [
+            "direct",
+            ]},
+        "chunk_size" : {"values" : [
+            20000,
+            ]},
+        "similarity_k" : {"values" : [
+            1,
+            ]},
+        "field_info_to_compare": {"values":[
+            "ai_taxonomy-label",
+            "ai_taxonomy-description"
+            ]},
+    }
+
+
 def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", dataset = "arxpr3", name = None, fields_length = 0, mode = "train", log_to_weave=True):
     # perform the wandb sweep, trying out sets of parameters and running "sweep_run"
     parameters["dataset_length"] = {"value" : dataset_length}
@@ -311,124 +331,11 @@ def run_sweep(parameters, dataset_length=0, sweep_count=1, method="grid", datase
     wandb.agent(sweep_id, function=sweep_single_run, count=sweep_count)
     #wandb.teardown()
 
-def run_test_sweeps():
-    # call run_sweep for each set of parameters
-    fl = 300
-    run_sweep(best_choice_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="best_choice",
-              )
-    run_sweep(gpt_rag_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_rag",
-              )
-    run_sweep(gpt_sota, 
-              fields_length = fl,
-              sweep_count = 18,
-              mode = "test",
-              name="gpt_sota",
-              )
-    run_sweep(fullpaper_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_fullpaper",
-              )
-    run_sweep(gpt_ontorag_params, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="gpt_onto_test",
-              )
-    run_sweep(llama_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="llama_rag",
-              )
-    run_sweep(llama_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="llama_onto_test",
-              )
-    run_sweep(llama_sota, 
-              fields_length = fl,
-              sweep_count = 18,
-              mode = "test",
-              name="llama_sota",
-              )
-    global outlines_model
-    del outlines_model
-    import time
-    time.sleep(60*5)
-    model_id = "TheBloke/Mistral-7B-v0.1-GPTQ"
-    outlines_model = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
-
-    run_sweep(mistral_rag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="mistral_rag",
-              )
-    run_sweep(mistral_ontorag, 
-              fields_length = fl,
-              sweep_count = 1,
-              mode = "test",
-              name="mistral_onto_test",
-              )
-    run_sweep(mistral_sota, 
-              fields_length = fl,
-              sweep_count = 18,
-              mode = "test",
-              name="misrtal_rag",
-              )
-
-    #global outlines_model
-    #del outlines_model
-    #import time
-    #time.sleep(60*5)
-    #model_id = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4"
-    #outlines_model = outlines.models.transformers(model_name=model_id, device = "cuda:2" if torch.cuda.device_count()>1 else "cuda:0")
-
-    #run_sweep(deepseek_rag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="deeps_rag_test",
-    #          )
-    #run_sweep(deepseek_ontorag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          mode = "test",
-    #          name="deeps_onto_test",
-    #          )
-    #run_sweep(deepseek_sota, 
-    #          fields_length = fl,
-    #          sweep_count = 10,
-    #          mode = "test",
-    #          name="deepseek_sota_test",
-    #          )
-
-
-
-
+    
 if __name__ == "__main__":
-    run_test_sweeps()
-    #fl = 2
-    #run_sweep(llama_ontorag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          #mode = "test",
-    #          name="llama_onto",
-    #          )
-    #run_sweep(deepseek_rag, 
-    #          fields_length = fl,
-    #          sweep_count = 1,
-    #          #mode = "test",
-    #          name="ds_rag",
-    #          )
+    run_sweep(arxiv_paper_params_best_choice,
+              sweep_count=2,
+              dataset_length = 170000,
+              dataset = "arxiv_paper_abstracts",
+              log_to_weave=False
+              )

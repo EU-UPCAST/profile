@@ -662,7 +662,7 @@ class DirectKeywordSimilarityFiller:
 
     def get_best_answer_for_field(self, context_shortener, fieldname, field_type):
 
-        target_keywords = context_shortener.descriptions[fieldname] # strings to match (e.g. ontology node labels or allowed answers)
+        target_keywords = context_shortener.target_keywords[fieldname] # strings to match (e.g. ontology node labels or allowed answers)
         target_keywords = [t.lower() for t in target_keywords] # to lower, to match the allowed answers
         if getattr(field_type, "__origin__", None) is typing.Literal:
             allowed_answers = field_type.__args__

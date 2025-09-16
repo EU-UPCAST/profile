@@ -159,6 +159,9 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
         elif args.dataset == "simple_test":
             loader = dataset_loader.get_simple_test
             pydantic_form = metadata_schemas.arxpr_schema 
+        elif args.dataset == "arxiv_paper_abstracts":
+            loader = dataset_loader.load_arxiv_papers
+            pydantic_form = metadata_schemas.constr_100_schema # max length of preflabel in AI tax is 84
         else:
             raise ValueError
         if preloaded_dataset is None:
@@ -187,8 +190,10 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     elif args.context_shortener == "full_paper":
         context_shortener = context_shortening.FullPaperShortener()
     elif args.context_shortener == "retrieval":
-        if not args.dataset in ["study_type", "arxpr2", None, "arxpr3"] and not args.field_info_to_compare=="description":
-            raise ValueError
+        if not args.dataset in ["study_type", "arxpr2", None, "arxpr3"]:
+            if not args.field_info_to_compare=="description":
+                if not args.dataset == "arxiv_paper_abstracts":
+                    raise ValueError
 
         context_shortener = context_shortening.Retrieval(
                 chunk_info_to_compare = args.chunk_info_to_compare,

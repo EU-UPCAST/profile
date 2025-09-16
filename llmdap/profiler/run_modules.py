@@ -261,21 +261,22 @@ class FormFillingIterator:
         if self.load:
             filled_form = load_form(key, self.argstring, pydantic_form)
 
-            if not (filled_form is None or filled_form == "skipped"):
-                # check all fields with labels have been filled
-                field_missing = False 
-                for field in filled_form.__fields__:
-                    label = paper_labels[field]
-                    # each paper only have labels for a subset of the fields.
-                    # we only calculate score for these
-                    if len(label):
-                        pred = getattr(filled_form, field)
-                        if pred is None:
-                            field_missing = True
-                            print("misssing field: ", field)
-                if field_missing:
-                    print("!! unloading document due to missing field(s)!!")
-                    filled_form = None # un-load
+            if not paper_labels is None:
+                if not (filled_form is None or filled_form == "skipped"):
+                    # check all fields with labels have been filled
+                    field_missing = False 
+                    for field in filled_form.__fields__:
+                        label = paper_labels[field]
+                        # each paper only have labels for a subset of the fields.
+                        # we only calculate score for these
+                        if len(label):
+                            pred = getattr(filled_form, field)
+                            if pred is None:
+                                field_missing = True
+                                print("misssing field: ", field)
+                    if field_missing:
+                        print("!! unloading document due to missing field(s)!!")
+                        filled_form = None # un-load
 
 
         if filled_form is None or filled_form == "skipped":
