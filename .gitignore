@@ -6,3 +6,4 @@ llmdap/profiler/output_log.txt
 llmdap/ontologies/efo.owl
 llmdap/ontologies/bto.owl
 *.swp
+*.pt

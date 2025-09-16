@@ -72,6 +72,16 @@ def get_subontology_for_field(
 
     return get_subontology(mode, *SUBTREE_BY_FIELDNAME[fieldname])
 
+def get_ai_taxonomy(mode):
+    import pandas as pd
+    df = pd.read_csv('/mnt/data/upcast/data/AI_InnoGraph_Taxonomy_v1.0.csv')
+    if mode == "label":
+        return df["prefLabel"].to_list()
+    if mode == "description":
+        return df["description"].fillna(df["prefLabel"]).to_list()
+
+
+
 
 if __name__ == "__main__":
 

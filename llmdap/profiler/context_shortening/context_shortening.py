@@ -187,6 +187,7 @@ class Retrieval(ContextShortener):
                 return # no need to update, as the order of literal values are not used
         self.descriptions = {}
         self.target_emb = {}
+        self.target_keywords = {} # this variable is used by direct form filler
 
         if self.field_info_to_compare == "choices":
             fields = pydantic_form.__fields__
@@ -199,6 +200,7 @@ class Retrieval(ContextShortener):
                 field_literal_skip_number = min(self.include_choice_every, len(literal_values))
                 literal_values = literal_values[field_literal_skip_number-1::field_literal_skip_number] # only include every n'th value (srtating on n-1)
                 self.descriptions[fieldname] = literal_values
+                self.target_keywords[fieldname] = literal_values 
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
         elif self.field_info_to_compare == "choice-list": # choices but in a list, single string
             fields = pydantic_form.__fields__
@@ -225,6 +227,14 @@ class Retrieval(ContextShortener):
             for fieldname in fields:
                 self.descriptions[fieldname] = get_ontology_descriptions.get_subontology_for_field(mode, fieldname)
                 self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
+        elif self.field_info_to_compare.startswith("ai_taxonomy-"): # from ai_taxonomy_df
+            mode = self.field_info_to_compare[12:]
+            assert mode in ["label", "description"], mode
+            fields = pydantic_form.__fields__
+            for fieldname in fields:
+                self.descriptions[fieldname] = get_ontology_descriptions.get_ai_taxonomy(mode)
+                self.target_emb[fieldname] = self.emb_model.encode(self.descriptions[fieldname])
+                self.target_keywords[fieldname] = get_ontology_descriptions.get_ai_taxonomy("label") # we want to predict label even if using description for matching
         else:
             print(field_info_to_compare)
             raise ValueError
