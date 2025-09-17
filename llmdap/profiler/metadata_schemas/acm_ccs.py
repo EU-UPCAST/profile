@@ -1,6 +1,3 @@
-from pydantic import BaseModel, Field, create_model
-from typing import Union, List, Literal
-import random
 
 CCS_HIERARCHY = {
     "Computing methodologies": {
@@ -211,45 +208,65 @@ CCS_HIERARCHY = {
 }
 
 
-def get_child_nodes(path):
-    """
-    path (list): path to current position in tree, eg [] or ["Computing methodologies","Artificial intelligence","Natural language processing"]
-    """
-    subtree = CCS_HIERARCHY
-    for key in path:
-        subtree = subtree[key]
-    if type(subtree) is dict:
-        return list(subtree.keys())
-    else:
-        assert type(subtree) is list, (subtree, path, type(subtree))
-        return subtree
-
-def is_leaf_node(path):
-    return len(get_child_nodes) == 0
-
-def get_next_field(path):
-    if is_leaf_node(path):
-        raise StopIteration
-    possible_values = get_child_nodes(path) 
-    possible_values.append(path[-1]) # add parent node, used for stopping traversal
-    field_type = Literal[tuple(possible_values)]# make Literal dynamically by converting to tuple
-
-    fieldname = "field_"+path[-1].replace(" ","_").replace("-","_").replace(",", "_").replace("/","_")
-    field = Field(description = "Most relevant subnode")
-    pydantic_form = create_model(fieldname, **{"possible_values", (field_type, field)})
-    return pydantic_form
+from pydantic import BaseModel, Field, create_model
+from typing import Literal
 
 class Traverser:
-    def __init__(self):
+    def __init__(self, tree):
+        self.TREE = tree
         self.reset()
-        self.__fields__ = ["category"] # this is used for the files storing results
+
+    def get_child_nodes(self):
+        path = self.current_path
+        subtree = self.TREE 
+        for key in path:
+            if type(subtree) is list: # if subtree is a list, and there is still a key in path, the key is a list element, i.e. leaf node (there are no child nodes)
+                return []
+            subtree = subtree[key]
+        if type(subtree) is dict:
+            return list(subtree.keys())
+        else:
+            assert type(subtree) is list, (subtree, path, type(subtree))
+            return subtree
+    
+    def is_leaf_node(self):
+        path = self.current_path
+        return len(self.get_child_nodes()) == 0
+    
+    def get_next_pydantic_form(self):
+        path = self.current_path
+        if self.is_leaf_node():
+            raise StopIteration
+        possible_values = [path[-1], *self.get_child_nodes()] # also add parent node, used for stopping traversal
+        field_type = Literal[tuple(possible_values)]# make Literal dynamically by converting to tuple
+    
+        fieldname = "field_"+path[-1].replace(" ","_").replace("-","_").replace(",", "_").replace("/","_")
+        field = Field(description = "Most relevant subnode")
+        pydantic_form = create_model(fieldname, **{"next_part_of_path":(field_type, field)})
+        return pydantic_form
+    
+    def get_next_field(self):
+        pydantic_form = self.get_next_pydantic_form()
+        return next(iter(pydantic_form.model_fields.values()))
+
     def set_next_step(self, key):
         if key == self.current_path[-1]:
             raise StopIteration
-        assert key in get_child_nodes(current_path)
+        assert key in self.get_child_nodes()
         self.current_path.append(key)
-    def get_next_field(self):
-        return get_next_field(self.current_path)
-    def reset(self):
+
+    def reset(self,):
         self.current_path = ["Computing methodologies"]
 
+
+class PathSchema(BaseModel):
+    path : list[str] = Field(description = "path to node position in tree")
+
+if __name__ == "__main__":
+    t = Traverser()
+    f = t.get_next_field()
+    #f = f.model_fields
+
+    print(f)
+    print(type(f))
+    print(f.annotation)

@@ -122,12 +122,11 @@ class FormFillingIterator:
         self.argstring = str(sorted(args.items()))
 
         self.dataset_name = args["dataset"]
-        self.field_names = self.form_filler.pydantic_form.__fields__ 
 
         self.all_scores = {}
         self.index_log = {}
         self.choice_log = {}
-        for field in self.field_names:
+        for field in self.form_filler.fields:
             self.all_scores[field] = []
             self.index_log[field] = []
             self.choice_log[field] = []

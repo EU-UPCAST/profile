@@ -25,7 +25,8 @@ def call_inference(
         raw_xml_paper_text = None,
         paper_path = None,
         paper_url = None,
-        use_adaptive_form_filler=False,
+        graph_traverser=None,
+        return_dict_with_context=True,
         **kwargs):
     """
     Fill out the schema for one or several papers.
@@ -56,7 +57,7 @@ def call_inference(
     args.save=False
 
     # load stuff
-    prepared_kwargs = load_modules(args, inference_schema = schema, use_adaptive_form_filler=use_adaptive_form_filler)
+    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser)
     ff_iterator = FormFillingIterator(args, **prepared_kwargs)
 
     # make the argument into dictionary
@@ -89,20 +90,21 @@ def call_inference(
             raise ValueError
 
         # fill form
-        outputs[key] =ff_iterator.fill_single_form(key="", paper_text=paper_text, pydantic_form=schema, return_dict_with_context=True)
+        outputs[key] =ff_iterator.fill_single_form(key="", paper_text=paper_text, pydantic_form=schema, return_dict_with_context=return_dict_with_context)
 
     return outputs
 
 
 def call_hf_acm_run():
     from hf_tag_graph import hftags_list
-    from metadata_schemas.acm_ccs import Traverser
+    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
 
 
     output = call_inference(
-            schema = Traverser,
+            schema = PathSchema,
             parsed_paper_text = hftags_list,
-            use_adaptive_form_filler = True,
+            graph_traverser = Traverser(CCS_HIERARCHY),
+            return_dict_with_context = False,
             # kwargs
             context_shortener = "full_paper",
             ff_model = "llama3.1I-8b-q4",

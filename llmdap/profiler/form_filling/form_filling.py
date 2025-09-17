@@ -55,6 +55,24 @@ Use only the context to reply. If the answer is not in the context directly, mak
     prompt += "Answer: {{{"
     return prompt
 
+def make_traversal_prompt(term, term_path, current_path, allowed_answers):
+    prompt = """Your task is to add a term to a taxonomy, by deciding the most appropriate node to be the parent of the term. 
+The task is done iteratively, in each step you will be given a subset of the taxonomy containing one parent node and all its child nodes.
+Your will decide which of these nodes are most appropriate parent node for the new term.
+If you choose one of the child nodes in the subset taxonomy, you will be given the oppurtunity to traverse further down the taxonomy in the next step.
+
+"""
+    prompt += f"term: {term}\n"
+    prompt += f"position of the term (in its old taxonomy, provided here for context): {term_path}\n"
+    prompt += f"current parent node: {current_path[-1]}\n"
+    prompt += f"parent nodes position in taxonomy: {'/'.join(current_path)}\n"
+    prompt += f"available child nodes: {allowed_answers}\n"
+    prompt += "Note: choosing the first one (the root of the subtree) stops the iteraration, by choosing any of the others you can choose from its child nodes in the next step\n"
+    
+    prompt += "\nPlease provide the most correct position of the new term below.\n"
+    prompt += "Answer: "
+
+    return prompt
 
 
 
@@ -88,13 +106,21 @@ class FieldFiller:
         self.listify = listify
         self.verbose = verbose
 
-    def forward(self, prompt_input, context, field_type):
+    def forward(self, prompt_input, field_type, prompt_function = make_FormFillPrompt):
 
         # generate answer
-        prompt_input["context"] = context
-        answer = self.answer_generator(make_FormFillPrompt(**prompt_input))
+        prompt = prompt_function(**prompt_input)
+        if self.verbose:
+            print("Prompt::::")
+            print(prompt)
+            print("::::")
+        answer = self.answer_generator(prompt)
+        if self.verbose:
+            print("Generated answer:", answer)
+
+
         #print("generated answer", answer, type(answer))
-        assert type(answer) is str
+        assert type(answer) is str, (answer, type(answer))
 
         if self.listify:
             assert answer[0] == "["
@@ -180,6 +206,7 @@ class SequentialFormFiller:
     def set_pydantic_form(self, pydantic_form):
         """ Prepares generator for each field typ in the pydantic form """
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
 
         self.outlines_generators = {}
 
@@ -187,9 +214,8 @@ class SequentialFormFiller:
             print("Generating regex generators...")
 
         # iterate through fields
-        fields = pydantic_form.__fields__
-        for fieldname in fields:
-            field_type, min_l, max_l = get_constraints_from_field(fields[fieldname])
+        for fieldname in self.fields:
+            field_type, min_l, max_l = get_constraints_from_field(self.fields[fieldname])
 
             # only make a new generator if it is not equal to one already generated
             if not (field_type, min_l, max_l) in self.outlines_generators:
@@ -210,9 +236,8 @@ class SequentialFormFiller:
 
     def prepare_field_fillers(self):
         self.field_fillers = {}
-        fields = self.pydantic_form.__fields__
-        for fieldname in fields:
-            field = fields[fieldname]
+        for fieldname in self.fields:
+            field = self.fields[fieldname]
             field_type, min_l, max_l = get_constraints_from_field(field)
             generator = self.outlines_generators[(field_type, min_l, max_l)]
             self.field_fillers[fieldname] = FieldFiller(
@@ -227,6 +252,7 @@ class SequentialFormFiller:
         if self.pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
 
 
     @weave.op()
@@ -234,15 +260,14 @@ class SequentialFormFiller:
 
         pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
 
-        fields = pydantic_form.__fields__
         output_dict = {}
         self.contexts = {}
 
         # iterate through fields
         if self.verbose:
             print("--INFO--:starting to iterate through fields")
-        for fieldname in fields:
-            field = fields[fieldname]
+        for fieldname in self.fields:
+            field = self.fields[fieldname]
             field_type = field.annotation
 
 
@@ -255,10 +280,11 @@ class SequentialFormFiller:
                            "listed_answer":self.listify_form,
                             }
             context = get_context(**prompt_input)
+            prompt_input["context"] = context
             self.contexts[fieldname] = context
 
             # generate output
-            output = self.field_fillers[fieldname].forward(prompt_input, context, field_type)
+            output = self.field_fillers[fieldname].forward(prompt_input, field_type)
 
             output_dict[fieldname] = output
 
@@ -279,11 +305,10 @@ class SequentialFormFiller:
                 output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
             except pydantic_ValidationError: # outlines seem to allow non-allowable strings in rare occasions. Workaround: just choose closest allowable answer
 
-                fields = pydantic_form.__fields__
                 output_dict = {name : val.__str__() for name, val in output_dict.items()}
                 for name, predicted_string in output_dict.items():
 
-                    field = fields[name]
+                    field = self.fields[name]
                     field_type = field.annotation
                     if typing.get_origin(field_type) == typing.Literal: # i have only seen this problem in Literal fields
                         allowed_answers = field_type.__args__
@@ -382,10 +407,9 @@ class OpenAIFormFiller:
 
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
@@ -525,10 +549,9 @@ class OpenAISequentialFormFiller:
 
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
@@ -614,10 +637,9 @@ class DirectKeywordSimilarityFiller:
             self.set_pydantic_form(pydantic_form)
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
 
     @weave.op()
@@ -722,6 +744,7 @@ class AdaptiveFormFiller:
                  outlines_llm,
                  outlines_sampler,
                  pydantic_form = None,
+                 graph_traverser = None,
                  listify_form = False,
                  answer_in_quotes = True,
                  max_tokens = 50,
@@ -731,55 +754,64 @@ class AdaptiveFormFiller:
         self.sampler = outlines_sampler
         self.verbose = verbose
         self.max_tokens = max_tokens
+        self.listify_form = listify_form
 
         self.answer_in_quotes=answer_in_quotes
-        self.graph_traverser = pydantic_form
+        self.pydantic_form = pydantic_form
+        self.graph_traverser = graph_traverser
+        self.fields = pydantic_form.__fields__ 
         self.field_fillers = {}
 
 
-    def prepare_field_filler(self, field):
+    def prepare_field_filler(self, field, current_path_string):
         field_type = field.annotation
 
         # only make a new generator if it is not equal to one already generated
-        if not field_type in self.field_fillers:
+        if not current_path_string in self.field_fillers:
             if self.verbose:
                 print("Generating regex generator...")
 
             outlines_generator = regex_handling.make_constrained_generator(
                     llm_model=self.llm_model,
                     field_type=field_type,
-                    min_l=1,
+                    min_l=None,
                     max_l=None,
                     answer_in_quotes=self.answer_in_quotes,
+                    listify_form = self.listify_form,
                     sampler = self.sampler)
-            #self.outlines_generators[field_type)] = outlines_generator
 
-            self.field_fillers[fieldname] = FieldFiller(
-                    answer_generator = generator,
+            self.field_fillers[current_path_string] = FieldFiller(
+                    answer_generator = outlines_generator,
                     verbose = self.verbose,
                     answer_in_quotes = self.answer_in_quotes,
                     )
             if self.verbose:
-                print("Finished generating regex generator.")
+                print("Finished generating regex generator:", current_path_string)
+
 
 
     @weave.op()
     def recursive_forward(self, get_context, exclude_fields = []):
         current_field = self.graph_traverser.get_next_field()
-        self.prepare_field_filler(current_field)
+        current_path = self.graph_traverser.current_path
+        current_path_string = "__".join(current_path)
+        self.prepare_field_filler(current_field, current_path_string)
+
+
+        term_path = get_context()
+        term = term_path.split("/")[-1]
 
         # make prompt input
         prompt_input = {
-                       "context":None,
-                       "answer_field_name":fieldname,
-                       "answer_field_description":field.description,
-                       "answer_field_type":str(field_type),
+                       "term":term,
+                       "term_path":term_path,
+                       "current_path":current_path,
+                       "allowed_answers":[*self.graph_traverser.get_child_nodes(), current_path[-1]],
                         }
-        context = get_context(**prompt_input)
-        self.contexts[fieldname] = context
 
         # generate output
-        output = self.field_fillers[fieldname].forward(prompt_input, context, field_type)
+        field_type = current_field.annotation
+        output = self.field_fillers[current_path_string].forward(prompt_input, field_type, prompt_function=make_traversal_prompt)
         assert type(output) is str 
 
         self.graph_traverser.set_next_step(output)
@@ -794,9 +826,13 @@ class AdaptiveFormFiller:
         self.graph_traverser.reset()
         
         try:
-            self.recursive_forward()
+            self.recursive_forward(get_context)
         except StopIteration:
             path = self.graph_traverser.current_path
+            #path = "/".join(path)
 
+        output_dict = {next(iter(self.fields.keys())) : path}
+        filled_form = self.pydantic_form(**output_dict)
         torch.cuda.empty_cache()
-        return path
+        print(f"finished traversing::: {get_context()} ---> {path}")
+        return filled_form

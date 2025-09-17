@@ -27,10 +27,12 @@ def remove_empty_fields(labels):
 
 
 @weave.op() # log args
-def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, use_adaptive_form_filler=False):
+def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, graph_traverser =None):
     """
     prepare arguments, then call fill_out_forms 
     preloaded_outlines_model can be inputted to avoid loading it in memory several times
+    inference_schema : for running inference, schema is provided here instead of through dataset.
+    adaptive_schema : for traversal, use one adaptive schema for each step, and use inference schema for field for full prediction.
     """
 
     # log arguments
@@ -215,10 +217,15 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
 
 
     # set form_filler
-    if use_adaptive_form_filler:
+    if not graph_traverser is None:
         form_filler = form_filling.AdaptiveFormFiller(
-                model_id=model_id,
+                outlines_llm,
+                outlines_sampler,
                 pydantic_form = pydantic_form,
+                graph_traverser = graph_traverser,
+                listify_form=args.listed_output,
+                answer_in_quotes=args.answer_in_quotes,
+                max_tokens = args.outlines_ff_max_tokens,
                 verbose=False)
     elif model_is_openai:
         if args.context_shortener=="full_paper":

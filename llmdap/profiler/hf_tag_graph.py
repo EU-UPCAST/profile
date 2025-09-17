@@ -60,7 +60,11 @@ current_broader = None
 hftags_list = []
 for string in hftags_string.split("\n"):
     if string.startswith("    "):
-        hftags_list.append(current_broader+"/"+string[4:])
+        hftags_list.append("(root)/"+current_broader+"/"+string[4:])
     else:
-        hftags_list.append(string)
+        hftags_list.append("(root)/"+string)
         current_broader=string
+
+
+if __name__ == "__main__":
+    print(hftags_list)
