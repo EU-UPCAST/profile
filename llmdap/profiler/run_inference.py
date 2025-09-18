@@ -107,9 +107,11 @@ def call_hf_acm_run():
             return_dict_with_context = False,
             # kwargs
             context_shortener = "full_paper",
-            ff_model = "llama3.1I-8b-q4",
+            #ff_model = "llama3.1I-8b-q4",
             #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
             #ff_model = "4om",
+            #ff_model = "41n",
+            ff_model = "5n",
             )
 
     
@@ -152,7 +154,7 @@ def test_call():
             #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
             #ff_model = "llama3.1I-8b-q4",
             #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
-            ff_model = "4om",
+            ff_model = "41n",
             )
 
     print("output:")

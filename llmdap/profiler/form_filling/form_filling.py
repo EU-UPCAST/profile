@@ -55,7 +55,12 @@ Use only the context to reply. If the answer is not in the context directly, mak
     prompt += "Answer: {{{"
     return prompt
 
-def make_traversal_prompt(term, term_path, current_path, allowed_answers):
+def make_traversal_prompt(term,
+                          term_path,
+                          current_path,
+                          allowed_answers,
+                          **kwargs
+                          ):
     prompt = """Your task is to add a term to a taxonomy, by deciding the most appropriate node to be the parent of the term. 
 The task is done iteratively, in each step you will be given a subset of the taxonomy containing one parent node and all its child nodes.
 Your will decide which of these nodes are most appropriate parent node for the new term.
@@ -457,7 +462,8 @@ class OpenAIFormFiller:
             print(completion.choices)
             quit()
         answer = completion.choices[0].message.content
-        print("------------called openai, model=", completion.model)
+        if verbose:
+            print("------------called openai, model=", completion.model)
 
 
         
@@ -482,21 +488,14 @@ class OpenAIFormFiller:
 
 @weave.op()
 def openAIFieldFiller(prompt_input, # used for retrieval and generation
-                      context,
-                      field_type,
                       model_id,
                       subschema, # used for generation, and NOT retrieval
+                      prompt_function=make_FormFillPrompt,
                       listify=False,
                       verbose=False
                       ):
 
-        # retireve chunks
-        if verbose:
-            print("    --INFO--: retrieving context")
-            print("              Form input    : ", prompt_input)
 
-        # prepare context
-        prompt_input["context"] = context
 
         # generate answer
         completion = openai.beta.chat.completions.parse(
@@ -504,7 +503,7 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
                                                         messages = [
                                                             {
                                                                 "role":"user",
-                                                                "content": make_FormFillPrompt(**prompt_input, listed_answer=listify),
+                                                                "content": prompt_function(**prompt_input, listed_answer=listify),
                                                             }
                                                         ],
                                                         response_format = subschema,
@@ -515,7 +514,8 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
             print(completion.choices)
             quit()
         answer = completion.choices[0].message.content
-        print("------------called openai, model=", completion.model)
+        if verbose:
+            print("------------called openai, model=", completion.model)
 
         if listify:
             raise NotImplementedError
@@ -578,8 +578,10 @@ class OpenAISequentialFormFiller:
                            "answer_field_type":str(field_type),
                             }
 
+            # prepare context
             context = get_context(**prompt_input)
             self.contexts[fieldname] = context
+            prompt_input["context"] = context
         
             all_other_fields = list(self.pydantic_form.__fields__.keys())
             all_other_fields.remove(fieldname)
@@ -588,8 +590,6 @@ class OpenAISequentialFormFiller:
             # generate output
             output = openAIFieldFiller(
                       prompt_input = prompt_input,
-                      context = context,
-                      field_type = field_type,
                       model_id = self.model_id,
                       subschema = subschema,
                       listify=self.listify_form,
@@ -741,8 +741,9 @@ class AdaptiveFormFiller:
     Class for traversing through a graph, and predict each step based on the previous.
     """
     def __init__(self,
-                 outlines_llm,
-                 outlines_sampler,
+                 openai_model_id = None,
+                 outlines_llm = None,
+                 outlines_sampler = None,
                  pydantic_form = None,
                  graph_traverser = None,
                  listify_form = False,
@@ -750,6 +751,7 @@ class AdaptiveFormFiller:
                  max_tokens = 50,
                  verbose = False
                  ):
+        self.openai_model_id = openai_model_id
         self.llm_model = outlines_llm
         self.sampler = outlines_sampler
         self.verbose = verbose
@@ -795,7 +797,6 @@ class AdaptiveFormFiller:
         current_field = self.graph_traverser.get_next_field()
         current_path = self.graph_traverser.current_path
         current_path_string = "__".join(current_path)
-        self.prepare_field_filler(current_field, current_path_string)
 
 
         term_path = get_context()
@@ -810,12 +811,27 @@ class AdaptiveFormFiller:
                         }
 
         # generate output
-        field_type = current_field.annotation
-        output = self.field_fillers[current_path_string].forward(prompt_input, field_type, prompt_function=make_traversal_prompt)
+        if self.openai_model_id is None: # use outlines model
+            self.prepare_field_filler(current_field, current_path_string)
+            field_type = current_field.annotation
+            output = self.field_fillers[current_path_string].forward(prompt_input, field_type, prompt_function=make_traversal_prompt)
+
+        else: # use openai
+            output = openAIFieldFiller(
+                      prompt_input = prompt_input,
+                      model_id = self.openai_model_id,
+                      subschema = self.graph_traverser.get_next_pydantic_form(),
+                      listify=self.listify_form,
+                      verbose=self.verbose,
+                      prompt_function=make_traversal_prompt
+                      )
+
+
         assert type(output) is str 
 
         self.graph_traverser.set_next_step(output)
         self.recursive_forward(get_context)
+
 
 
 
@@ -836,3 +852,5 @@ class AdaptiveFormFiller:
         torch.cuda.empty_cache()
         print(f"finished traversing::: {get_context()} ---> {path}")
         return filled_form
+
+

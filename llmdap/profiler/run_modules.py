@@ -280,12 +280,12 @@ class FormFillingIterator:
 
         if filled_form is None or filled_form == "skipped":
         
-            print("--------- setting document")
+            #print("--------- setting document")
             self.context_shortener.set_document(paper_text)
         
             # fill out the form
             try:
-                print("--------- generating")
+                #print("--------- generating")
                 if key == "29434615" and "full_paper" in self.argstring: # too long paper for context. isolating this to ensure its only this paper.
                     if not paper_labels is None:
                         for field in list(set(paper_labels.keys())-set(self.remove_fields(paper_labels))):
