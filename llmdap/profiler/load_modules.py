@@ -242,6 +242,8 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
                 **model_kwargs,
                 pydantic_form = pydantic_form,
                 graph_traverser = graph_traverser,
+                traversal_type = args.traversal_type,
+                traversal_max_steps = args.traversal_max_steps,
                 listify_form=args.listed_output,
                 answer_in_quotes=args.answer_in_quotes,
                 max_tokens = args.outlines_ff_max_tokens,

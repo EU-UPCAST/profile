@@ -55,7 +55,7 @@ Use only the context to reply. If the answer is not in the context directly, mak
     prompt += "Answer: {{{"
     return prompt
 
-def make_traversal_prompt(term,
+def make_downward_traversal_prompt(term,
                           term_path,
                           current_path,
                           allowed_answers,
@@ -79,6 +79,91 @@ If you choose one of the child nodes in the subset taxonomy, you will be given t
 
     return prompt
 
+
+def make_traversal_prompt(term,
+                          current_path,
+                          child_nodes,
+                          parent_nodes=None,
+                          sibling_nodes=None,
+                          term_path=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is to add a term to a taxonomy or ontology. You will do this in several steps.
+Your first task is to find the correct placement of the new term. This is done by iteratively traversing the ontology.
+At each iteration, you are given the name of the current node, as well as its """
+    if parent_nodes is None:
+        prompt+="child nodes."
+        assert sibling_nodes is None
+    elif sibling_nodes is None:
+        prompt+="parent and child nodes."
+    else:
+        prompt+="parent, sibling and child nodes."
+    prompt +="""
+You are also given the absolute position of the current node (i.e. the name of all its anscestors), for context.
+You must choose which of these are most relevant for the new term.
+- If you choose the current node, you will then move on to the next step, which is to decide if the new term represents the same concept as this node and should be merged with it, or if it should be added as a child of this node.
+- If you choose any of the other nodes """
+    if parent_nodes is None:
+        prompt+="child nodes"
+    elif sibling_nodes is None:
+        prompt+="other nodes (parent or child nodes)"
+    else:
+        prompt+="other nodes (parent, sibling or child nodes)"
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being the appropriate parent node or merged node to the new term.
+
+The concrete variables for the task are listed here:
+"""
+    prompt += f"New term: {term}\n"
+    if not term_path is None:
+        prompt += f"Position of the term in its old taxonomy, provided here for context): {term_path}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
+
+    if not sibling_nodes is None:
+        prompt += f"Parent node(s): {parent_nodes}\n"
+    if not sibling_nodes is None:
+        prompt += f"Sibling nodes: {sibling_nodes}\n"
+    prompt += f"Child nodes: {child_nodes}\n"
+    
+    prompt += "\nPlease provide the most correct position of the new term below.\n"
+    prompt += "Answer: "
+
+    print("::::")
+    print(prompt)
+    print("::::")
+
+    return prompt
+
+def make_merge_or_subnode_prompt(
+                          term,
+                          current_path,
+                          child_nodes=None,
+                          sibling_nodes=None,
+                          parent_nodes=None,
+                          term_path=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is to add a term to a taxonomy or ontology. You will do this in several steps.
+You have already chosen which node in the ontology to connect the term to. You must now decide if the new term should be a child node of the chosen node, or if it should be merged with the chosen node. If the new term represents the same concept as the chosen node, write "merge" in the field below. If it represents a more specific concept, write "child".
+These are the only two options, choose what is most appropriate. 
+For context; the goal is not the creation/extension of the ontology, but to standardize metadata for files, that are currently marked with tags that are not connected to the ontology. The decision will determine which tag from the (possibly expanded) ontology is used to describe files labeled with the new term.
+Thus, merging tags that are not exactly the same concept will not ruin the integrity of the ontology.
+
+The concrete variables for the task are listed here:
+"""
+    prompt += f"New term: {term}\n"
+    if not term_path is None:
+        prompt += f"Position of the term in its old taxonomy, provided here for context): {term_path}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Position of chosen node in the ontology: {'/'.join(current_path)}\n"
+    if child_nodes:
+        prompt += "\nTo give context of how the ontology is structured, we also provide the child, sibling and parent nodes of the chosen node:\n"
+        prompt += f"Child nodes: {child_nodes}\n"
+        prompt += f"Sibling nodes: {child_nodes}\n"
+        prompt += f"Parent node(s): {parent_nodes}\n"
+
+    prompt += """\nPlease provide the most correct choice of what to do with the term relative to the chosen node, either "child" or "merge", below.\n"""
+    prompt += "Answer: "
 
 
 def get_constraints_from_field(field):
@@ -746,6 +831,8 @@ class AdaptiveFormFiller:
                  outlines_sampler = None,
                  pydantic_form = None,
                  graph_traverser = None,
+                 traversal_type = None,
+                 traversal_max_steps = None,
                  listify_form = False,
                  answer_in_quotes = True,
                  max_tokens = 50,
@@ -757,6 +844,8 @@ class AdaptiveFormFiller:
         self.verbose = verbose
         self.max_tokens = max_tokens
         self.listify_form = listify_form
+        self.starting_traversal_type = traversal_type
+        self.traversal_max_steps = traversal_max_steps
 
         self.answer_in_quotes=answer_in_quotes
         self.pydantic_form = pydantic_form
@@ -794,7 +883,7 @@ class AdaptiveFormFiller:
 
     @weave.op()
     def recursive_forward(self, get_context, exclude_fields = []):
-        current_field = self.graph_traverser.get_next_field()
+        current_field = self.graph_traverser.get_field()
         current_path = self.graph_traverser.current_path
         current_path_string = "__".join(current_path)
 
@@ -808,7 +897,16 @@ class AdaptiveFormFiller:
                        "term_path":term_path,
                        "current_path":current_path,
                        "allowed_answers":[*self.graph_traverser.get_child_nodes(), current_path[-1]],
+                       "child_nodes":self.graph_traverser.get_child_nodes(),
                         }
+        if self.traversal_type in ["free", "vertical"]:
+            prompt_input.update({
+                "parent_nodes":self.graph_traverser.get_parent_nodes()
+                })
+        if self.traversal_type == "free":
+            prompt_input.update({
+                "sibling_nodes":self.graph_traverser.get_sibling_nodes(),
+                })
 
         # generate output
         if self.openai_model_id is None: # use outlines model
@@ -820,16 +918,26 @@ class AdaptiveFormFiller:
             output = openAIFieldFiller(
                       prompt_input = prompt_input,
                       model_id = self.openai_model_id,
-                      subschema = self.graph_traverser.get_next_pydantic_form(),
+                      subschema = self.graph_traverser.get_pydantic_form(),
                       listify=self.listify_form,
                       verbose=self.verbose,
-                      prompt_function=make_traversal_prompt
+                      prompt_function=make_traversal_prompt,
                       )
 
 
         assert type(output) is str 
+        print(output)
 
-        self.graph_traverser.set_next_step(output)
+        if output == self.graph_traverser.current_path[-1]:
+            return
+
+        direction = self.graph_traverser.move(output)
+        self.traversal_steps.append(direction+" "+output)
+
+        if len(self.traversal_steps) >= self.traversal_max_steps:
+            print("----Max travesal steps reached. Reverting to downward traversal.")
+            self.traversal_type = "down"
+            self.graph_traverser.set_traversal_type("down")
         self.recursive_forward(get_context)
 
 
@@ -839,13 +947,20 @@ class AdaptiveFormFiller:
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
-        self.graph_traverser.reset()
-        
-        try:
-            self.recursive_forward(get_context)
-        except StopIteration:
-            path = self.graph_traverser.current_path
-            #path = "/".join(path)
+        self.graph_traverser.reset_position() # can add another node to start from (from e.g. similarity match)
+        self.graph_traverser.set_traversal_type(self.starting_traversal_type)
+        self.traversal_steps = []
+        self.traversal_type = self.starting_traversal_type
+
+        # traverse recursively
+        self.recursive_forward(get_context)
+        path = self.graph_traverser.current_path
+        #path = "/".join(path)
+        print("---- finished traversal. Steps made:", self.traversal_steps)
+
+        # merge or child node
+        #raise NotImplementedError
+
 
         output_dict = {next(iter(self.fields.keys())) : path}
         filled_form = self.pydantic_form(**output_dict)

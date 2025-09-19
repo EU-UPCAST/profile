@@ -59,6 +59,14 @@ form_filler__outlines__sampler__multinomial__args:
     sampler_temp:
         default: 0.4
         help: "temperature"
+
+form_filler__traversal__args:
+    traversal_type:
+        default: "free"
+        choices: ["down", "vertical", "free"]
+    traversal_max_steps:
+        default: 10
+        help: "For vertical and free traversal. Max number of traversal steps to make before reverting to downward-only traversal (to avoid endless traversal)"
     
 
 
