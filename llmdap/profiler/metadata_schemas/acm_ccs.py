@@ -1,4 +1,4 @@
-
+import random
 CCS_HIERARCHY = {
     "Computing methodologies": {
         "Artificial intelligence": {
@@ -271,10 +271,11 @@ def find_child_nodes(tree, path):
         return subtree
 
 class Traverser:
-    def __init__(self, tree, start_path=["Computing methodologies"]):
+    def __init__(self, tree, start_path=["Computing methodologies"], shuffle_alternatives = True):
         self.TREE = tree
         self.start_path = start_path
         self.reset_position(start_path)
+        self.shuffle = shuffle_alternatives
 
     def set_traversal_type(self,traversal_type):
         if traversal_type == "down":
@@ -291,9 +292,12 @@ class Traverser:
 
 
     def get_child_nodes(self):
-        return find_child_nodes(self.TREE, self.current_path)
+        result = find_child_nodes(self.TREE, self.current_path)
+        if self.shuffle:
+            random.shuffle(result)
+        return  result
     def get_sibling_nodes(self):
-        siblings = find_child_nodes(self.TREE, self.current_path[:-1])
+        siblings = find_child_nodes(self.TREE, self.current_path[:-1]).copy()
         siblings.remove(self.current_path[-1])
         return siblings
     def get_parent_nodes(self):
@@ -323,6 +327,8 @@ class Traverser:
         if self.include_siblings:
             possible_values.extend(self.get_sibling_nodes())
         assert len(possible_values) == len(set(possible_values)), possible_values # Checks that there is no duplicate. otherwise llm output is ambiguous
+        if self.shuffle:
+            random.shuffle(possible_values)
 
         field_type = Literal[tuple(possible_values)]# make Literal dynamically by converting to tuple
     
@@ -350,24 +356,11 @@ if __name__ == "__main__":
 
     t.set_traversal_type("free")
     t.move("Artificial intelligence")
-    t.move("Natural language processing")
-    t.move("Information extraction")
+    t.move("Knowledge representation and reasoning")
+    t.move("Vagueness and fuzzy logic")
     print(t.get_child_nodes())
+    print(t.get_sibling_nodes())
     print(t.get_sibling_nodes())
     print(t.get_parent_nodes())
     quit()
 
-    print(t.current_path)
-    #print(t.get_child_nodes())
-    #print(t.get_sibling_nodes())
-    #print(t.get_parent_nodes())
-    t.move("Machine learning")
-    print(t.current_path)
-    t.move("Learning paradigms")
-    print(t.current_path)
-    t.reset_position()
-    print(t.current_path)
-    print(t.start_path)
-    #print(t.get_child_nodes())
-    #print(t.get_sibling_nodes())
-    #print(t.get_parent_nodes())
