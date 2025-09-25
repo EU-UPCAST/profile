@@ -27,7 +27,7 @@ def remove_empty_fields(labels):
 
 
 @weave.op() # log args
-def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, graph_traverser =None):
+def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, graph_traverser =None, traversal_problem_type=None):
     """
     prepare arguments, then call fill_out_forms 
     preloaded_outlines_model can be inputted to avoid loading it in memory several times
@@ -230,6 +230,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
 
     # set form_filler
     if not graph_traverser is None:
+        assert not traversal_problem_type is None
         if model_is_openai:
             model_kwargs = dict(openai_model_id = model_id)
             print("---------- using openai for graph traversal, with model=", model_id)
@@ -247,6 +248,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
                 listify_form=args.listed_output,
                 answer_in_quotes=args.answer_in_quotes,
                 max_tokens = args.outlines_ff_max_tokens,
+                problem_type=traversal_problem_type,
                 verbose=False)
     elif model_is_openai:
         if args.context_shortener=="full_paper":

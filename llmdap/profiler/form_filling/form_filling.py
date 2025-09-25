@@ -55,32 +55,7 @@ Use only the context to reply. If the answer is not in the context directly, mak
     prompt += "Answer: {{{"
     return prompt
 
-def make_downward_traversal_prompt(term,
-                          term_path,
-                          current_path,
-                          allowed_answers,
-                          **kwargs
-                          ):
-    prompt = """Your task is to add a term to a taxonomy, by deciding the most appropriate node to be the parent of the term. 
-The task is done iteratively, in each step you will be given a subset of the taxonomy containing one parent node and all its child nodes.
-Your will decide which of these nodes are most appropriate parent node for the new term.
-If you choose one of the child nodes in the subset taxonomy, you will be given the oppurtunity to traverse further down the taxonomy in the next step.
-
-"""
-    prompt += f"term: {term}\n"
-    prompt += f"position of the term (in its old taxonomy, provided here for context): {term_path}\n"
-    prompt += f"current parent node: {current_path[-1]}\n"
-    prompt += f"parent nodes position in taxonomy: {'/'.join(current_path)}\n"
-    prompt += f"available child nodes: {allowed_answers}\n"
-    prompt += "Note: choosing the first one (the root of the subtree) stops the iteraration, by choosing any of the others you can choose from its child nodes in the next step\n"
-    
-    prompt += "\nPlease provide the most correct position of the new term below.\n"
-    prompt += "Answer: "
-
-    return prompt
-
-
-def make_traversal_prompt(term,
+def make_graph2graph_traversal_prompt(term,
                           current_path,
                           child_nodes,
                           parent_nodes=None,
@@ -104,11 +79,11 @@ You must choose which of these are most relevant for the new term.
 - If you choose the current node, you will then move on to the next step, which is to decide if the new term represents the same concept as this node and should be merged with it, or if it should be added as a child of this node.
 - If you choose any of the other nodes """
     if parent_nodes is None:
-        prompt+="child nodes"
+        prompt+="(child nodes)"
     elif sibling_nodes is None:
-        prompt+="other nodes (parent or child nodes)"
+        prompt+="(parent or child nodes)"
     else:
-        prompt+="other nodes (parent, sibling or child nodes)"
+        prompt+="(parent, sibling or child nodes)"
     prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being the appropriate parent node or merged node to the new term.
 
 The concrete variables for the task are listed here:
@@ -128,9 +103,61 @@ The concrete variables for the task are listed here:
     prompt += "\nPlease provide the most correct position of the new term below.\n"
     prompt += "Answer: "
 
-    print("::::")
-    print(prompt)
-    print("::::")
+    #print("::::")
+    #print(prompt)
+    #print("::::")
+
+    return prompt
+
+
+def make_text2graph_traversal_prompt(text,
+                          current_path,
+                          child_nodes,
+                          parent_nodes=None,
+                          sibling_nodes=None,
+                          text_type=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is label a description of a research artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+At each iteration, you are given the name of the current node, as well as its """
+    if parent_nodes is None:
+        prompt+="child nodes."
+        assert sibling_nodes is None
+    elif sibling_nodes is None:
+        prompt+="parent and child nodes."
+    else:
+        prompt+="parent, sibling and child nodes."
+    prompt +="""
+You must choose which of these are most relevant for the research artifact.
+- If you choose the current node, the artiface is labeles with this term.
+- If you choose any of the other nodes """
+    if parent_nodes is None:
+        prompt+="(child nodes)"
+    elif sibling_nodes is None:
+        prompt+="(parent or child nodes)"
+    else:
+        prompt+="(parent, sibling or child nodes)"
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct.
+
+The concrete variables for the task are listed here:
+"""
+    if not text_type is None:
+        prompt += f"Type of research artifact description: {text_type}\n"
+    prompt += f"Research artifact description: {text}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
+    if not sibling_nodes is None:
+        prompt += f"Parent node(s): {parent_nodes}\n"
+    if not sibling_nodes is None:
+        prompt += f"Sibling nodes: {sibling_nodes}\n"
+    prompt += f"Child nodes: {child_nodes}\n"
+    
+    prompt += "\nPlease provide the most relevant label below:\n"
+    prompt += "Answer: "
+
+    #print("::::")
+    #print(prompt)
+    #print("::::")
 
     return prompt
 
@@ -836,7 +863,8 @@ class AdaptiveFormFiller:
                  listify_form = False,
                  answer_in_quotes = True,
                  max_tokens = 50,
-                 verbose = False
+                 verbose = False,
+                 problem_type = "text2graph"
                  ):
         self.openai_model_id = openai_model_id
         self.llm_model = outlines_llm
@@ -852,6 +880,7 @@ class AdaptiveFormFiller:
         self.graph_traverser = graph_traverser
         self.fields = pydantic_form.__fields__ 
         self.field_fillers = {}
+        self.problem_type = problem_type
 
 
     def prepare_field_filler(self, field, current_path_string):
@@ -888,13 +917,9 @@ class AdaptiveFormFiller:
         current_path_string = "__".join(current_path)
 
 
-        term_path = get_context()
-        term = term_path.split("/")[-1]
 
         # make prompt input
         prompt_input = {
-                       "term":term,
-                       "term_path":term_path,
                        "current_path":current_path,
                        "allowed_answers":[*self.graph_traverser.get_child_nodes(), current_path[-1]],
                        "child_nodes":self.graph_traverser.get_child_nodes(),
@@ -908,21 +933,42 @@ class AdaptiveFormFiller:
                 "sibling_nodes":self.graph_traverser.get_sibling_nodes(),
                 })
 
+
+        if self.problem_type == "text2graph":
+            text, text_type = get_context()
+            prompt_input.update({
+                           "term":text,
+                           "term_type":text_type,
+                })
+        elif self.problem_type == "graph2graph":
+            term_path = get_context()
+            term = term_path.split("/")[-1]
+            prompt_input.update({
+                           "term":term,
+                           "term_path":term_path,
+                })
+        else:
+            raise ValueError
+
         # generate output
         if self.openai_model_id is None: # use outlines model
             self.prepare_field_filler(current_field, current_path_string)
             field_type = current_field.annotation
-            output = self.field_fillers[current_path_string].forward(prompt_input, field_type, prompt_function=make_traversal_prompt)
+            output = self.field_fillers[current_path_string].forward(
+                    prompt_input, 
+                    field_type, 
+                    prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                    )
 
         else: # use openai
             output = openAIFieldFiller(
-                      prompt_input = prompt_input,
-                      model_id = self.openai_model_id,
-                      subschema = self.graph_traverser.get_pydantic_form(),
-                      listify=self.listify_form,
-                      verbose=self.verbose,
-                      prompt_function=make_traversal_prompt,
-                      )
+                    prompt_input = prompt_input,
+                    model_id = self.openai_model_id,
+                    subschema = self.graph_traverser.get_pydantic_form(),
+                    listify=self.listify_form,
+                    verbose=self.verbose,
+                    prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                    )
 
 
         assert type(output) is str 
@@ -934,7 +980,7 @@ class AdaptiveFormFiller:
         direction = self.graph_traverser.move(output)
         self.traversal_steps.append(direction+" "+output)
 
-        if len(self.traversal_steps) >= self.traversal_max_steps:
+        if len(self.traversal_steps) >= self.traversal_max_steps and self.traversal_type != "down":
             print("----Max travesal steps reached. Reverting to downward traversal.")
             self.traversal_type = "down"
             self.graph_traverser.set_traversal_type("down")
@@ -959,7 +1005,8 @@ class AdaptiveFormFiller:
         print("---- finished traversal. Steps made:", self.traversal_steps)
 
         # merge or child node
-        #raise NotImplementedError
+        if self.problem_type == "graph2graph":
+            raise NotImplementedError
 
 
         output_dict = {next(iter(self.fields.keys())) : path}

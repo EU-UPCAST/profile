@@ -27,6 +27,8 @@ def call_inference(
         paper_url = None,
         graph_traverser=None,
         return_dict_with_context=True,
+        traversal_problem_type = None,
+        
         **kwargs):
     """
     Fill out the schema for one or several papers.
@@ -57,7 +59,7 @@ def call_inference(
     args.save=False
 
     # load stuff
-    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser)
+    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser, traversal_problem_type=traversal_problem_type)
     ff_iterator = FormFillingIterator(args, **prepared_kwargs)
 
     # make the argument into dictionary
@@ -95,22 +97,38 @@ def call_inference(
     return outputs
 
 
-def call_hf_acm_run():
+def match_hf_acm_graphs():
     from hf_tag_graph import hftags_list
     from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
-
 
     output = call_inference(
             schema = PathSchema,
             parsed_paper_text = hftags_list,
             graph_traverser = Traverser(CCS_HIERARCHY),
             return_dict_with_context = False,
+            traversal_problem_type = "graph2graph",
             # kwargs
             context_shortener = "full_paper",
-            #ff_model = "llama3.1I-8b-q4",
-            #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
             #ff_model = "4om",
             ff_model = "41n",
+            #ff_model = "5n",
+            )
+
+def call_modelcard_to_acm_run():
+    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
+    import modelcards
+
+    output = call_inference(
+            schema = PathSchema,
+            parsed_paper_text = modelcards,
+            graph_traverser = Traverser(CCS_HIERARCHY),
+            return_dict_with_context = False,
+            traversal_problem_type = "text2graph",
+            # kwargs
+            context_shortener = "full_paper",
+            #ff_model = "4om",
+            ff_model = "41n",
+
             #ff_model = "5n",
             )
 
@@ -163,4 +181,4 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    call_hf_acm_run()
+    call_modelcard_to_acm_run()
