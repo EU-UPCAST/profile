@@ -17,3 +17,4 @@ keybert==0.8.5
 owlready2==0.47
 llama-index-retrievers-bm25==0.4.0
 # werkzeug==2.3.8
+datasets==4.1.1
