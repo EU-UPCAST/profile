@@ -62,7 +62,7 @@ form_filler__outlines__sampler__multinomial__args:
 
 form_filler__traversal__args:
     traversal_type:
-        default: "free"
+        default: "down"
         choices: ["down", "vertical", "free"]
     traversal_max_steps:
         default: 10

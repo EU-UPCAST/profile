@@ -1,9 +1,9 @@
-import dspy
+#import dspy
 import pprint
 import torch
 import typing
 
-from context_shortening import RAG
+#from context_shortening import RAG
 from context_shortening.chunking import chunk_by_headeres_and_clean
 from context_shortening import keybert_functions
 from context_shortening import get_ontology_descriptions
@@ -30,18 +30,18 @@ class FullPaperShortener(ContextShortener):
         return self.document
 
 
-class CreateRetrievalPromptSignature(dspy.Signature):
-    # dspy signature (prompt template) for sequential form filling (i.e. one field at a time), field-agnistic.
-    """
-    You are a RAG prompt engineer working on retrieving specific details for filling out a form, using scientific papers as the documents.
-    Make a retrieval prompt for finding the field described below
-    """ 
-
-    answer_field_name = dspy.InputField()
-    answer_field_description = dspy.InputField()
-    answer_field_examples = dspy.InputField()
-
-    answer = dspy.OutputField(desc="String to be used for retrieving the above info from the context")
+#class CreateRetrievalPromptSignature(dspy.Signature):
+#    # dspy signature (prompt template) for sequential form filling (i.e. one field at a time), field-agnistic.
+#    """
+#    You are a RAG prompt engineer working on retrieving specific details for filling out a form, using scientific papers as the documents.
+#    Make a retrieval prompt for finding the field described below
+#    """ 
+#
+#    answer_field_name = dspy.InputField()
+#    answer_field_description = dspy.InputField()
+#    answer_field_examples = dspy.InputField()
+#
+#    answer = dspy.OutputField(desc="String to be used for retrieving the above info from the context")
 
 class RAGShortener(ContextShortener):
     """ Retrieval implemented in the RAG.py file """

@@ -118,7 +118,7 @@ def make_text2graph_traversal_prompt(text,
                           text_type=None,
                           **kwargs
                           ):
-    prompt = """Your task is label a description of a research artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+    prompt = """Your task is label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
 At each iteration, you are given the name of the current node, as well as its """
     if parent_nodes is None:
         prompt+="child nodes."
@@ -128,8 +128,8 @@ At each iteration, you are given the name of the current node, as well as its ""
     else:
         prompt+="parent, sibling and child nodes."
     prompt +="""
-You must choose which of these are most relevant for the research artifact.
-- If you choose the current node, the artiface is labeles with this term.
+You must choose which of these are most relevant for the artifact.
+- If you choose the current node, the artifact is labeled with this term.
 - If you choose any of the other nodes """
     if parent_nodes is None:
         prompt+="(child nodes)"
@@ -142,8 +142,8 @@ You must choose which of these are most relevant for the research artifact.
 The concrete variables for the task are listed here:
 """
     if not text_type is None:
-        prompt += f"Type of research artifact description: {text_type}\n"
-    prompt += f"Research artifact description: {text}\n"
+        prompt += f"Type of artifact and description: {text_type}\n"
+    prompt += f"Artifact description: {text}\n"
     prompt += f"Current node: {current_path[-1]}\n"
     prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
     if not sibling_nodes is None:
@@ -155,9 +155,9 @@ The concrete variables for the task are listed here:
     prompt += "\nPlease provide the most relevant label below:\n"
     prompt += "Answer: "
 
-    #print("::::")
-    #print(prompt)
-    #print("::::")
+    print("::::")
+    print(prompt)
+    print("::::")
 
     return prompt
 
@@ -912,7 +912,6 @@ class AdaptiveFormFiller:
 
     @weave.op()
     def recursive_forward(self, get_context, exclude_fields = []):
-        current_field = self.graph_traverser.get_field()
         current_path = self.graph_traverser.current_path
         current_path_string = "__".join(current_path)
 
@@ -937,8 +936,8 @@ class AdaptiveFormFiller:
         if self.problem_type == "text2graph":
             text, text_type = get_context()
             prompt_input.update({
-                           "term":text,
-                           "term_type":text_type,
+                           "text":text,
+                           "text_type":text_type,
                 })
         elif self.problem_type == "graph2graph":
             term_path = get_context()
@@ -951,24 +950,28 @@ class AdaptiveFormFiller:
             raise ValueError
 
         # generate output
-        if self.openai_model_id is None: # use outlines model
-            self.prepare_field_filler(current_field, current_path_string)
-            field_type = current_field.annotation
-            output = self.field_fillers[current_path_string].forward(
-                    prompt_input, 
-                    field_type, 
-                    prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
-                    )
+        try:
+            if self.openai_model_id is None: # use outlines model
+                current_field = self.graph_traverser.get_field()
+                self.prepare_field_filler(current_field, current_path_string)
+                field_type = current_field.annotation
+                output = self.field_fillers[current_path_string].forward(
+                        prompt_input, 
+                        field_type, 
+                        prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                        )
 
-        else: # use openai
-            output = openAIFieldFiller(
-                    prompt_input = prompt_input,
-                    model_id = self.openai_model_id,
-                    subschema = self.graph_traverser.get_pydantic_form(),
-                    listify=self.listify_form,
-                    verbose=self.verbose,
-                    prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
-                    )
+            else: # use openai
+                output = openAIFieldFiller(
+                        prompt_input = prompt_input,
+                        model_id = self.openai_model_id,
+                        subschema = self.graph_traverser.get_pydantic_form(),
+                        listify=self.listify_form,
+                        verbose=self.verbose,
+                        prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                        )
+        except StopIteration:
+            return
 
 
         assert type(output) is str 

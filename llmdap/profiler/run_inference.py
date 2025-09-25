@@ -2,8 +2,6 @@ import argparse
 import yaml
 from types import SimpleNamespace
 
-from load_modules import load_modules
-from run_modules import FormFillingIterator
 
 
 
@@ -51,12 +49,13 @@ def call_inference(
     dictionary with the filled form and used contexts for each paper.
 
     """
+    from load_modules import load_modules
+    from run_modules import FormFillingIterator
 
     # prepare arguments
     parameters = add_defaults(kwargs)
     args=SimpleNamespace(**parameters)
-    args.load=False
-    args.save=False
+    print(args)
 
     # load stuff
     prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser, traversal_problem_type=traversal_problem_type)
@@ -92,7 +91,9 @@ def call_inference(
             raise ValueError
 
         # fill form
-        outputs[key] =ff_iterator.fill_single_form(key="", paper_text=paper_text, pydantic_form=schema, return_dict_with_context=return_dict_with_context)
+        outputs[key] =ff_iterator.fill_single_form(key=key, paper_text=paper_text, pydantic_form=schema, return_dict_with_context=return_dict_with_context)
+        #if len(outputs)>10:
+        #    break
 
     return outputs
 
@@ -114,23 +115,37 @@ def match_hf_acm_graphs():
             #ff_model = "5n",
             )
 
-def call_modelcard_to_acm_run():
+def call_arxhf_to_acm_run(n=1):
     from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
-    import modelcards
 
-    output = call_inference(
-            schema = PathSchema,
-            parsed_paper_text = modelcards,
-            graph_traverser = Traverser(CCS_HIERARCHY),
-            return_dict_with_context = False,
-            traversal_problem_type = "text2graph",
-            # kwargs
-            context_shortener = "full_paper",
-            #ff_model = "4om",
-            ff_model = "41n",
+    from dataset_loader import Arxiv_HF_datasets
+    ahd = Arxiv_HF_datasets()
+    ahd.prepare()
 
-            #ff_model = "5n",
-            )
+    hf, arx = ahd.get_dict_format(n)
+
+    hf_description_type = "Huggingface model, described by tags and model card"
+    arx_description_type = "Arxiv paper, described by title and abstract"
+    hf = {key: (val, hf_description_type) for key, val in hf.items()}
+    arx = {key: (val, arx_description_type) for key, val in arx.items()}
+
+
+
+    for dataset in [hf, arx]:
+        output = call_inference(
+                schema = PathSchema,
+                parsed_paper_text = dataset,
+                graph_traverser = Traverser(CCS_HIERARCHY),
+                return_dict_with_context = False,
+                traversal_problem_type = "text2graph",
+                # kwargs
+                save = True,
+                load = True,
+                context_shortener = "full_paper",
+                #ff_model = "4om",
+                ff_model = "41n",
+                #ff_model = "5n",
+                )
 
     
 def test_call():
@@ -181,4 +196,4 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    call_modelcard_to_acm_run()
+    call_arxhf_to_acm_run(25)
