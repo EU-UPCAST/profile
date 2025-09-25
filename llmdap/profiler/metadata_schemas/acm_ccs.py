@@ -60,16 +60,6 @@ CCS_HIERARCHY = {
                 "Cooperation and coordination"
             ],
             "Computer vision": {
-                "Computer vision tasks": [
-                    "Biometrics",
-                    "Scene understanding",
-                    "Activity recognition and understanding",
-                    "Video summarization",
-                    "Visual content-based indexing and retrieval",
-                    "Visual inspection",
-                    "Vision for robotics",
-                    "Scene anomaly detection"
-                ],
                 "Image and video acquisition": [
                     "Camera calibration",
                     "Epipolar geometry",
@@ -96,116 +86,129 @@ CCS_HIERARCHY = {
                     "Tracking",
                     "Reconstruction",
                     "Matching"
+                    "Biometrics",
+                    "Scene understanding",
+                    "Activity recognition and understanding",
+                    "Video summarization",
+                    "Visual content-based indexing and retrieval",
+                    "Visual inspection",
+                    "Vision for robotics",
+                    "Scene anomaly detection"
                 ]
-            }
+            },
+            "Machine learning": {
+                "Learning paradigms": {
+                    "Supervised learning": [
+                        "Ranking",
+                        "Learning to rank",
+                        "Supervised learning by classification",
+                        "Supervised learning by regression",
+                        "Structured outputs",
+                        "Cost-sensitive learning"
+                    ],
+                    "Unsupervised learning": [
+                        "Cluster analysis",
+                        "Anomaly detection",
+                        "Mixture modeling",
+                        "Topic modeling",
+                        "Source separation",
+                        "Motif discovery",
+                        "Dimensionality reduction and manifold learning"
+                    ],
+                    "Reinforcement learning": [
+                        "Sequential decision making",
+                        "Inverse reinforcement learning",
+                        "Apprenticeship learning",
+                        "Multi-agent reinforcement learning",
+                        "Adversarial learning"
+                    ],
+                    "Multi-task learning": [
+                        "Transfer learning",
+                        "Lifelong machine learning",
+                        "Learning under covariate shift"
+                    ]
+                },
+                "Learning settings": [
+                    "Batch learning",
+                    "Online learning settings",
+                    "Learning from demonstrations",
+                    "Learning from critiques",
+                    "Learning from implicit feedback",
+                    "Active learning settings",
+                    "Semi-supervised learning settings"
+                ],
+                "Machine learning approaches": {
+                    "Classification and regression trees": [],
+                    "Kernel methods": [
+                        "Support vector machines",
+                        "Gaussian processes"
+                    ],
+                    "Neural networks": [],
+                    "Logical and relational learning": [
+                        "Inductive logic learning",
+                        "Statistical relational learning"
+                    ],
+                    "Learning in probabilistic graphical models": [
+                        "Maximum likelihood modeling",
+                        "Maximum entropy modeling",
+                        "Maximum a posteriori modeling",
+                        "Mixture models",
+                        "Latent variable models",
+                        "Bayesian network models"
+                    ],
+                    "Learning linear models": [
+                        "Perceptron algorithm"
+                    ],
+                    "Factorization methods": [
+                        "Non-negative matrix factorization",
+                        "Factor analysis",
+                        "Principal component analysis",
+                        "Canonical correlation analysis",
+                        "Latent Dirichlet allocation"
+                    ],
+                    "Rule learning": [],
+                    "Instance-based learning": [],
+                    "Markov decision processes": [],
+                    "Partially-observable Markov decision processes": [],
+                    "Stochastic games": [],
+                    "Learning latent representations": [
+                        "Deep belief networks"
+                    ],
+                    "Bio-inspired approaches": [
+                        "Artificial life",
+                        "Evolvable hardware",
+                        "Genetic algorithms",
+                        "Genetic programming",
+                        "Evolutionary robotics",
+                        "Generative and developmental approaches"
+                    ],
+                    "Dynamic programming for Markov decision processes": [
+                        "Value iteration",
+                        "Q-learning",
+                        "Policy iteration",
+                        "Temporal difference learning",
+                        "Approximate dynamic programming methods"
+                    ],
+                    "Ensemble methods": [
+                        "Boosting",
+                        "Bagging"
+                    ],
+                    "Spectral methods": [],
+                    "Feature selection": [],
+                    "Regularization": []
+                },
+                "Cross-validation": []
+            },
         },
-        "Machine learning": {
-            "Learning paradigms": {
-                "Supervised learning": [
-                    "Ranking",
-                    "Learning to rank",
-                    "Supervised learning by classification",
-                    "Supervised learning by regression",
-                    "Structured outputs",
-                    "Cost-sensitive learning"
-                ],
-                "Unsupervised learning": [
-                    "Cluster analysis",
-                    "Anomaly detection",
-                    "Mixture modeling",
-                    "Topic modeling",
-                    "Source separation",
-                    "Motif discovery",
-                    "Dimensionality reduction and manifold learning"
-                ],
-                "Reinforcement learning": [
-                    "Sequential decision making",
-                    "Inverse reinforcement learning",
-                    "Apprenticeship learning",
-                    "Multi-agent reinforcement learning",
-                    "Adversarial learning"
-                ],
-                "Multi-task learning": [
-                    "Transfer learning",
-                    "Lifelong machine learning",
-                    "Learning under covariate shift"
-                ]
-            },
-            "Learning settings": [
-                "Batch learning",
-                "Online learning settings",
-                "Learning from demonstrations",
-                "Learning from critiques",
-                "Learning from implicit feedback",
-                "Active learning settings",
-                "Semi-supervised learning settings"
-            ],
-            "Machine learning approaches": {
-                "Classification and regression trees": [],
-                "Kernel methods": [
-                    "Support vector machines",
-                    "Gaussian processes"
-                ],
-                "Neural networks": [],
-                "Logical and relational learning": [
-                    "Inductive logic learning",
-                    "Statistical relational learning"
-                ],
-                "Learning in probabilistic graphical models": [
-                    "Maximum likelihood modeling",
-                    "Maximum entropy modeling",
-                    "Maximum a posteriori modeling",
-                    "Mixture models",
-                    "Latent variable models",
-                    "Bayesian network models"
-                ],
-                "Learning linear models": [
-                    "Perceptron algorithm"
-                ],
-                "Factorization methods": [
-                    "Non-negative matrix factorization",
-                    "Factor analysis",
-                    "Principal component analysis",
-                    "Canonical correlation analysis",
-                    "Latent Dirichlet allocation"
-                ],
-                "Rule learning": [],
-                "Instance-based learning": [],
-                "Markov decision processes": [],
-                "Partially-observable Markov decision processes": [],
-                "Stochastic games": [],
-                "Learning latent representations": [
-                    "Deep belief networks"
-                ],
-                "Bio-inspired approaches": [
-                    "Artificial life",
-                    "Evolvable hardware",
-                    "Genetic algorithms",
-                    "Genetic programming",
-                    "Evolutionary robotics",
-                    "Generative and developmental approaches"
-                ]
-            },
-            "Machine learning algorithms": {
-                "Dynamic programming for Markov decision processes": [
-                    "Value iteration",
-                    "Q-learning",
-                    "Policy iteration",
-                    "Temporal difference learning",
-                    "Approximate dynamic programming methods"
-                ],
-                "Ensemble methods": [
-                    "Boosting",
-                    "Bagging"
-                ],
-                "Spectral methods": [],
-                "Feature selection": [],
-                "Regularization": []
-            },
-            "Cross-validation": []
-        }
+        "Other": []
     }
 }
+
+# Changes:
+# Added other under computing methodologies (to not force non-AI papers into something its not
+# moved machine learnging to Artificial intelligence (ML is part of AI)
+# Merged machine learning algorithms with machine learning approaches (its the same thing)
+# merged computer vision tasts with computer vision problems (its the same thing)
 
 
 from pydantic import BaseModel, Field, create_model
@@ -327,6 +330,9 @@ class Traverser:
         if self.include_siblings:
             possible_values.extend(self.get_sibling_nodes())
         assert len(possible_values) == len(set(possible_values)), possible_values # Checks that there is no duplicate. otherwise llm output is ambiguous
+        if len(possible_values) == 1: # no reason to keep generating if there is only one possibility
+            assert possible_values[0] == self.current_path[-1]
+            raise StopIteration
         if self.shuffle:
             random.shuffle(possible_values)
 
