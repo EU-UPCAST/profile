@@ -1,4 +1,15 @@
 import random
+
+
+# Changes to the taxnomomy:
+# it is restricted to only AI and ML, 
+# as well as some adjustments:
+# Added other under computing methodologies (to not force non-AI papers into something its not
+# moved machine learnging to Artificial intelligence (ML is part of AI)
+# Merged machine learning algorithms with machine learning approaches (its the same thing)
+# merged computer vision tasts with computer vision problems (its the same thing)
+
+
 CCS_HIERARCHY = {
     "Computing methodologies": {
         "Artificial intelligence": {
@@ -204,11 +215,6 @@ CCS_HIERARCHY = {
     }
 }
 
-# Changes:
-# Added other under computing methodologies (to not force non-AI papers into something its not
-# moved machine learnging to Artificial intelligence (ML is part of AI)
-# Merged machine learning algorithms with machine learning approaches (its the same thing)
-# merged computer vision tasts with computer vision problems (its the same thing)
 
 
 from pydantic import BaseModel, Field, create_model
