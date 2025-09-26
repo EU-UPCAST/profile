@@ -27,10 +27,12 @@ def remove_empty_fields(labels):
 
 
 @weave.op() # log args
-def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None):
+def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, graph_traverser =None, traversal_problem_type=None):
     """
     prepare arguments, then call fill_out_forms 
     preloaded_outlines_model can be inputted to avoid loading it in memory several times
+    inference_schema : for running inference, schema is provided here instead of through dataset.
+    adaptive_schema : for traversal, use one adaptive schema for each step, and use inference schema for field for full prediction.
     """
 
     # log arguments
@@ -44,11 +46,21 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     if args.ff_model == "4om": # openai model
         model_id = "gpt-4o-mini"
         model_is_openai = True
-        set_openai_api_key()
     elif args.ff_model == "4o": # openai model
         model_id = "gpt-4o"
         model_is_openai = True
-        set_openai_api_key()
+    elif args.ff_model == "5m": # openai model
+        model_id = "gpt-5-mini"
+        model_is_openai = True
+    elif args.ff_model == "5n": # openai model
+        model_id = "gpt-5-nano"
+        model_is_openai = True
+    elif args.ff_model == "41m": # openai model
+        model_id = "gpt-4.1-mini"
+        model_is_openai = True
+    elif args.ff_model == "41n": # openai model
+        model_id = "gpt-4.1-nano"
+        model_is_openai = True
     elif args.ff_model == "best_choice":
         use_best_choice_generator = True
     elif args.ff_model == "None": # do not load any model (used for retrieval evaluation)
@@ -83,6 +95,8 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
         else:
             raise ValueError
 
+    if model_is_openai:
+        set_openai_api_key()
 
     if not inference_schema is None: # inference mode:
         pydantic_form = inference_schema
@@ -214,7 +228,29 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
         raise ValueError
 
 
-    if model_is_openai:
+    # set form_filler
+    if not graph_traverser is None:
+        assert not traversal_problem_type is None
+        if model_is_openai:
+            model_kwargs = dict(openai_model_id = model_id)
+            print("---------- using openai for graph traversal, with model=", model_id)
+        else:
+            model_kwargs = dict(
+                outlines_llm = outlines_llm,
+                outlines_sampler = outlines_sampler,
+                )
+        form_filler = form_filling.AdaptiveFormFiller(
+                **model_kwargs,
+                pydantic_form = pydantic_form,
+                graph_traverser = graph_traverser,
+                traversal_type = args.traversal_type,
+                traversal_max_steps = args.traversal_max_steps,
+                listify_form=args.listed_output,
+                answer_in_quotes=args.answer_in_quotes,
+                max_tokens = args.outlines_ff_max_tokens,
+                problem_type=traversal_problem_type,
+                verbose=False)
+    elif model_is_openai:
         if args.context_shortener=="full_paper":
             form_filler = form_filling.OpenAIFormFiller(
                     model_id=model_id,

@@ -2,8 +2,6 @@ import argparse
 import yaml
 from types import SimpleNamespace
 
-from load_modules import load_modules
-from run_modules import FormFillingIterator
 
 
 
@@ -25,6 +23,10 @@ def call_inference(
         raw_xml_paper_text = None,
         paper_path = None,
         paper_url = None,
+        graph_traverser=None,
+        return_dict_with_context=True,
+        traversal_problem_type = None,
+        
         **kwargs):
     """
     Fill out the schema for one or several papers.
@@ -47,15 +49,16 @@ def call_inference(
     dictionary with the filled form and used contexts for each paper.
 
     """
+    from load_modules import load_modules
+    from run_modules import FormFillingIterator
 
     # prepare arguments
     parameters = add_defaults(kwargs)
     args=SimpleNamespace(**parameters)
-    args.load=False
-    args.save=False
+    print(args)
 
     # load stuff
-    prepared_kwargs = load_modules(args, inference_schema = schema)
+    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser, traversal_problem_type=traversal_problem_type)
     ff_iterator = FormFillingIterator(args, **prepared_kwargs)
 
     # make the argument into dictionary
@@ -88,15 +91,65 @@ def call_inference(
             raise ValueError
 
         # fill form
-        outputs[key] =ff_iterator.fill_single_form(key="", paper_text=paper_text, pydantic_form=schema, return_dict_with_context=True)
+        outputs[key] =ff_iterator.fill_single_form(key=key, paper_text=paper_text, pydantic_form=schema, return_dict_with_context=return_dict_with_context)
+        #if len(outputs)>10:
+        #    break
 
     return outputs
 
 
+def match_hf_acm_graphs():
+    from hf_tag_graph import hftags_list
+    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
 
-if __name__ == "__main__":
+    output = call_inference(
+            schema = PathSchema,
+            parsed_paper_text = hftags_list,
+            graph_traverser = Traverser(CCS_HIERARCHY),
+            return_dict_with_context = False,
+            traversal_problem_type = "graph2graph",
+            # kwargs
+            context_shortener = "full_paper",
+            #ff_model = "4om",
+            ff_model = "41n",
+            #ff_model = "5n",
+            )
+
+def call_arxhf_to_acm_run(n=1):
+    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
+
+    from dataset_loader import Arxiv_HF_datasets
+    ahd = Arxiv_HF_datasets()
+    ahd.prepare()
+
+    hf, arx = ahd.get_dict_format(n)
+
+    hf_description_type = "Huggingface model, described by tags and model card"
+    arx_description_type = "Arxiv paper, described by title and abstract"
+    hf = {key: (val, hf_description_type) for key, val in hf.items()}
+    arx = {key: (val, arx_description_type) for key, val in arx.items()}
+
+
+
+    for dataset in [hf, arx]:
+        output = call_inference(
+                schema = PathSchema,
+                parsed_paper_text = dataset,
+                graph_traverser = Traverser(CCS_HIERARCHY),
+                return_dict_with_context = False,
+                traversal_problem_type = "text2graph",
+                # kwargs
+                save = True,
+                load = True,
+                context_shortener = "full_paper",
+                #ff_model = "4om",
+                ff_model = "41n",
+                #ff_model = "5n",
+                )
 
     
+def test_call():
+
     path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
     path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
     import dataset_loader
@@ -130,14 +183,17 @@ if __name__ == "__main__":
             similarity_k = 2,
             field_info_to_compare = "choices",
             #field_info_to_compare = "description",
-            #context_shortener = "full_paper",
+            context_shortener = "full_paper",
             #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
             #ff_model = "llama3.1I-8b-q4",
             #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
-            ff_model = "4om",
+            ff_model = "41n",
             )
 
     print("output:")
     import pprint
     pprint.pprint(output)
 
+if __name__ == "__main__":
+    #test_call()
+    call_arxhf_to_acm_run(25)

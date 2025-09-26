@@ -55,7 +55,142 @@ Use only the context to reply. If the answer is not in the context directly, mak
     prompt += "Answer: {{{"
     return prompt
 
+def make_graph2graph_traversal_prompt(term,
+                          current_path,
+                          child_nodes,
+                          parent_nodes=None,
+                          sibling_nodes=None,
+                          term_path=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is to add a term to a taxonomy or ontology. You will do this in several steps.
+Your first task is to find the correct placement of the new term. This is done by iteratively traversing the ontology.
+At each iteration, you are given the name of the current node, as well as its """
+    if parent_nodes is None:
+        prompt+="child nodes."
+        assert sibling_nodes is None
+    elif sibling_nodes is None:
+        prompt+="parent and child nodes."
+    else:
+        prompt+="parent, sibling and child nodes."
+    prompt +="""
+You are also given the absolute position of the current node (i.e. the name of all its anscestors), for context.
+You must choose which of these are most relevant for the new term.
+- If you choose the current node, you will then move on to the next step, which is to decide if the new term represents the same concept as this node and should be merged with it, or if it should be added as a child of this node.
+- If you choose any of the other nodes """
+    if parent_nodes is None:
+        prompt+="(child nodes)"
+    elif sibling_nodes is None:
+        prompt+="(parent or child nodes)"
+    else:
+        prompt+="(parent, sibling or child nodes)"
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being the appropriate parent node or merged node to the new term.
 
+The concrete variables for the task are listed here:
+"""
+    prompt += f"New term: {term}\n"
+    if not term_path is None:
+        prompt += f"Position of the term in its old taxonomy, provided here for context): {term_path}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
+
+    if not sibling_nodes is None:
+        prompt += f"Parent node(s): {parent_nodes}\n"
+    if not sibling_nodes is None:
+        prompt += f"Sibling nodes: {sibling_nodes}\n"
+    prompt += f"Child nodes: {child_nodes}\n"
+    
+    prompt += "\nPlease provide the most correct position of the new term below.\n"
+    prompt += "Answer: "
+
+    #print("::::")
+    #print(prompt)
+    #print("::::")
+
+    return prompt
+
+
+def make_text2graph_traversal_prompt(text,
+                          current_path,
+                          child_nodes,
+                          parent_nodes=None,
+                          sibling_nodes=None,
+                          text_type=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+At each iteration, you are given the name of the current node, as well as its """
+    if parent_nodes is None:
+        prompt+="child nodes."
+        assert sibling_nodes is None
+    elif sibling_nodes is None:
+        prompt+="parent and child nodes."
+    else:
+        prompt+="parent, sibling and child nodes."
+    prompt +="""
+You must choose which of these are most relevant for the artifact.
+- If you choose the current node, the artifact is labeled with this term.
+- If you choose any of the other nodes """
+    if parent_nodes is None:
+        prompt+="(child nodes)"
+    elif sibling_nodes is None:
+        prompt+="(parent or child nodes)"
+    else:
+        prompt+="(parent, sibling or child nodes)"
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct.
+
+The concrete variables for the task are listed here:
+"""
+    if not text_type is None:
+        prompt += f"Type of artifact and description: {text_type}\n"
+    prompt += f"Artifact description: {text}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
+    if not sibling_nodes is None:
+        prompt += f"Parent node(s): {parent_nodes}\n"
+    if not sibling_nodes is None:
+        prompt += f"Sibling nodes: {sibling_nodes}\n"
+    prompt += f"Child nodes: {child_nodes}\n"
+    
+    prompt += "\nPlease provide the most relevant label below:\n"
+    prompt += "Answer: "
+
+    print("::::")
+    print(prompt)
+    print("::::")
+
+    return prompt
+
+def make_merge_or_subnode_prompt(
+                          term,
+                          current_path,
+                          child_nodes=None,
+                          sibling_nodes=None,
+                          parent_nodes=None,
+                          term_path=None,
+                          **kwargs
+                          ):
+    prompt = """Your task is to add a term to a taxonomy or ontology. You will do this in several steps.
+You have already chosen which node in the ontology to connect the term to. You must now decide if the new term should be a child node of the chosen node, or if it should be merged with the chosen node. If the new term represents the same concept as the chosen node, write "merge" in the field below. If it represents a more specific concept, write "child".
+These are the only two options, choose what is most appropriate. 
+For context; the goal is not the creation/extension of the ontology, but to standardize metadata for files, that are currently marked with tags that are not connected to the ontology. The decision will determine which tag from the (possibly expanded) ontology is used to describe files labeled with the new term.
+Thus, merging tags that are not exactly the same concept will not ruin the integrity of the ontology.
+
+The concrete variables for the task are listed here:
+"""
+    prompt += f"New term: {term}\n"
+    if not term_path is None:
+        prompt += f"Position of the term in its old taxonomy, provided here for context): {term_path}\n"
+    prompt += f"Current node: {current_path[-1]}\n"
+    prompt += f"Position of chosen node in the ontology: {'/'.join(current_path)}\n"
+    if child_nodes:
+        prompt += "\nTo give context of how the ontology is structured, we also provide the child, sibling and parent nodes of the chosen node:\n"
+        prompt += f"Child nodes: {child_nodes}\n"
+        prompt += f"Sibling nodes: {child_nodes}\n"
+        prompt += f"Parent node(s): {parent_nodes}\n"
+
+    prompt += """\nPlease provide the most correct choice of what to do with the term relative to the chosen node, either "child" or "merge", below.\n"""
+    prompt += "Answer: "
 
 
 def get_constraints_from_field(field):
@@ -88,13 +223,21 @@ class FieldFiller:
         self.listify = listify
         self.verbose = verbose
 
-    def forward(self, prompt_input, context, field_type):
+    def forward(self, prompt_input, field_type, prompt_function = make_FormFillPrompt):
 
         # generate answer
-        prompt_input["context"] = context
-        answer = self.answer_generator(make_FormFillPrompt(**prompt_input))
+        prompt = prompt_function(**prompt_input)
+        if self.verbose:
+            print("Prompt::::")
+            print(prompt)
+            print("::::")
+        answer = self.answer_generator(prompt)
+        if self.verbose:
+            print("Generated answer:", answer)
+
+
         #print("generated answer", answer, type(answer))
-        assert type(answer) is str
+        assert type(answer) is str, (answer, type(answer))
 
         if self.listify:
             assert answer[0] == "["
@@ -180,6 +323,7 @@ class SequentialFormFiller:
     def set_pydantic_form(self, pydantic_form):
         """ Prepares generator for each field typ in the pydantic form """
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
 
         self.outlines_generators = {}
 
@@ -187,9 +331,8 @@ class SequentialFormFiller:
             print("Generating regex generators...")
 
         # iterate through fields
-        fields = pydantic_form.__fields__
-        for fieldname in fields:
-            field_type, min_l, max_l = get_constraints_from_field(fields[fieldname])
+        for fieldname in self.fields:
+            field_type, min_l, max_l = get_constraints_from_field(self.fields[fieldname])
 
             # only make a new generator if it is not equal to one already generated
             if not (field_type, min_l, max_l) in self.outlines_generators:
@@ -210,9 +353,8 @@ class SequentialFormFiller:
 
     def prepare_field_fillers(self):
         self.field_fillers = {}
-        fields = self.pydantic_form.__fields__
-        for fieldname in fields:
-            field = fields[fieldname]
+        for fieldname in self.fields:
+            field = self.fields[fieldname]
             field_type, min_l, max_l = get_constraints_from_field(field)
             generator = self.outlines_generators[(field_type, min_l, max_l)]
             self.field_fillers[fieldname] = FieldFiller(
@@ -227,6 +369,7 @@ class SequentialFormFiller:
         if self.pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
 
 
     @weave.op()
@@ -234,15 +377,14 @@ class SequentialFormFiller:
 
         pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
 
-        fields = pydantic_form.__fields__
         output_dict = {}
         self.contexts = {}
 
         # iterate through fields
         if self.verbose:
             print("--INFO--:starting to iterate through fields")
-        for fieldname in fields:
-            field = fields[fieldname]
+        for fieldname in self.fields:
+            field = self.fields[fieldname]
             field_type = field.annotation
 
 
@@ -255,10 +397,11 @@ class SequentialFormFiller:
                            "listed_answer":self.listify_form,
                             }
             context = get_context(**prompt_input)
+            prompt_input["context"] = context
             self.contexts[fieldname] = context
 
             # generate output
-            output = self.field_fillers[fieldname].forward(prompt_input, context, field_type)
+            output = self.field_fillers[fieldname].forward(prompt_input, field_type)
 
             output_dict[fieldname] = output
 
@@ -279,11 +422,10 @@ class SequentialFormFiller:
                 output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
             except pydantic_ValidationError: # outlines seem to allow non-allowable strings in rare occasions. Workaround: just choose closest allowable answer
 
-                fields = pydantic_form.__fields__
                 output_dict = {name : val.__str__() for name, val in output_dict.items()}
                 for name, predicted_string in output_dict.items():
 
-                    field = fields[name]
+                    field = self.fields[name]
                     field_type = field.annotation
                     if typing.get_origin(field_type) == typing.Literal: # i have only seen this problem in Literal fields
                         allowed_answers = field_type.__args__
@@ -382,10 +524,9 @@ class OpenAIFormFiller:
 
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
@@ -433,7 +574,8 @@ class OpenAIFormFiller:
             print(completion.choices)
             quit()
         answer = completion.choices[0].message.content
-        print("------------called openai, model=", completion.model)
+        if verbose:
+            print("------------called openai, model=", completion.model)
 
 
         
@@ -458,21 +600,14 @@ class OpenAIFormFiller:
 
 @weave.op()
 def openAIFieldFiller(prompt_input, # used for retrieval and generation
-                      context,
-                      field_type,
                       model_id,
                       subschema, # used for generation, and NOT retrieval
+                      prompt_function=make_FormFillPrompt,
                       listify=False,
                       verbose=False
                       ):
 
-        # retireve chunks
-        if verbose:
-            print("    --INFO--: retrieving context")
-            print("              Form input    : ", prompt_input)
 
-        # prepare context
-        prompt_input["context"] = context
 
         # generate answer
         completion = openai.beta.chat.completions.parse(
@@ -480,7 +615,7 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
                                                         messages = [
                                                             {
                                                                 "role":"user",
-                                                                "content": make_FormFillPrompt(**prompt_input, listed_answer=listify),
+                                                                "content": prompt_function(**prompt_input, listed_answer=listify),
                                                             }
                                                         ],
                                                         response_format = subschema,
@@ -491,7 +626,8 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
             print(completion.choices)
             quit()
         answer = completion.choices[0].message.content
-        print("------------called openai, model=", completion.model)
+        if verbose:
+            print("------------called openai, model=", completion.model)
 
         if listify:
             raise NotImplementedError
@@ -525,10 +661,9 @@ class OpenAISequentialFormFiller:
 
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
     @weave.op()
     def forward(self, get_context, exclude_fields = []):
@@ -555,8 +690,10 @@ class OpenAISequentialFormFiller:
                            "answer_field_type":str(field_type),
                             }
 
+            # prepare context
             context = get_context(**prompt_input)
             self.contexts[fieldname] = context
+            prompt_input["context"] = context
         
             all_other_fields = list(self.pydantic_form.__fields__.keys())
             all_other_fields.remove(fieldname)
@@ -565,8 +702,6 @@ class OpenAISequentialFormFiller:
             # generate output
             output = openAIFieldFiller(
                       prompt_input = prompt_input,
-                      context = context,
-                      field_type = field_type,
                       model_id = self.model_id,
                       subschema = subschema,
                       listify=self.listify_form,
@@ -614,10 +749,9 @@ class DirectKeywordSimilarityFiller:
             self.set_pydantic_form(pydantic_form)
     def set_pydantic_form(self, pydantic_form):
         self.pydantic_form = pydantic_form
+        self.fields = pydantic_form.__fields__ 
     def re_set_pydantic_form(self, pydantic_form):
-        if self.pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-        self.pydantic_form = pydantic_form
+        self.set_pydantic_form(pydantic_form)
 
 
     @weave.op()
@@ -712,5 +846,176 @@ class DirectKeywordSimilarityFiller:
         return am
 
 
+
+
+class AdaptiveFormFiller:
+    """
+    Class for traversing through a graph, and predict each step based on the previous.
+    """
+    def __init__(self,
+                 openai_model_id = None,
+                 outlines_llm = None,
+                 outlines_sampler = None,
+                 pydantic_form = None,
+                 graph_traverser = None,
+                 traversal_type = None,
+                 traversal_max_steps = None,
+                 listify_form = False,
+                 answer_in_quotes = True,
+                 max_tokens = 50,
+                 verbose = False,
+                 problem_type = "text2graph"
+                 ):
+        self.openai_model_id = openai_model_id
+        self.llm_model = outlines_llm
+        self.sampler = outlines_sampler
+        self.verbose = verbose
+        self.max_tokens = max_tokens
+        self.listify_form = listify_form
+        self.starting_traversal_type = traversal_type
+        self.traversal_max_steps = traversal_max_steps
+
+        self.answer_in_quotes=answer_in_quotes
+        self.pydantic_form = pydantic_form
+        self.graph_traverser = graph_traverser
+        self.fields = pydantic_form.__fields__ 
+        self.field_fillers = {}
+        self.problem_type = problem_type
+
+
+    def prepare_field_filler(self, field, current_path_string):
+        field_type = field.annotation
+
+        # only make a new generator if it is not equal to one already generated
+        if not current_path_string in self.field_fillers:
+            if self.verbose:
+                print("Generating regex generator...")
+
+            outlines_generator = regex_handling.make_constrained_generator(
+                    llm_model=self.llm_model,
+                    field_type=field_type,
+                    min_l=None,
+                    max_l=None,
+                    answer_in_quotes=self.answer_in_quotes,
+                    listify_form = self.listify_form,
+                    sampler = self.sampler)
+
+            self.field_fillers[current_path_string] = FieldFiller(
+                    answer_generator = outlines_generator,
+                    verbose = self.verbose,
+                    answer_in_quotes = self.answer_in_quotes,
+                    )
+            if self.verbose:
+                print("Finished generating regex generator:", current_path_string)
+
+
+
+    @weave.op()
+    def recursive_forward(self, get_context, exclude_fields = []):
+        current_path = self.graph_traverser.current_path
+        current_path_string = "__".join(current_path)
+
+
+
+        # make prompt input
+        prompt_input = {
+                       "current_path":current_path,
+                       "allowed_answers":[*self.graph_traverser.get_child_nodes(), current_path[-1]],
+                       "child_nodes":self.graph_traverser.get_child_nodes(),
+                        }
+        if self.traversal_type in ["free", "vertical"]:
+            prompt_input.update({
+                "parent_nodes":self.graph_traverser.get_parent_nodes()
+                })
+        if self.traversal_type == "free":
+            prompt_input.update({
+                "sibling_nodes":self.graph_traverser.get_sibling_nodes(),
+                })
+
+
+        if self.problem_type == "text2graph":
+            text, text_type = get_context()
+            prompt_input.update({
+                           "text":text,
+                           "text_type":text_type,
+                })
+        elif self.problem_type == "graph2graph":
+            term_path = get_context()
+            term = term_path.split("/")[-1]
+            prompt_input.update({
+                           "term":term,
+                           "term_path":term_path,
+                })
+        else:
+            raise ValueError
+
+        # generate output
+        try:
+            if self.openai_model_id is None: # use outlines model
+                current_field = self.graph_traverser.get_field()
+                self.prepare_field_filler(current_field, current_path_string)
+                field_type = current_field.annotation
+                output = self.field_fillers[current_path_string].forward(
+                        prompt_input, 
+                        field_type, 
+                        prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                        )
+
+            else: # use openai
+                output = openAIFieldFiller(
+                        prompt_input = prompt_input,
+                        model_id = self.openai_model_id,
+                        subschema = self.graph_traverser.get_pydantic_form(),
+                        listify=self.listify_form,
+                        verbose=self.verbose,
+                        prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
+                        )
+        except StopIteration:
+            return
+
+
+        assert type(output) is str 
+        print(output)
+
+        if output == self.graph_traverser.current_path[-1]:
+            return
+
+        direction = self.graph_traverser.move(output)
+        self.traversal_steps.append(direction+" "+output)
+
+        if len(self.traversal_steps) >= self.traversal_max_steps and self.traversal_type != "down":
+            print("----Max travesal steps reached. Reverting to downward traversal.")
+            self.traversal_type = "down"
+            self.graph_traverser.set_traversal_type("down")
+        self.recursive_forward(get_context)
+
+
+
+
+
+
+    @weave.op()
+    def forward(self, get_context, exclude_fields = []):
+        self.graph_traverser.reset_position() # can add another node to start from (from e.g. similarity match)
+        self.graph_traverser.set_traversal_type(self.starting_traversal_type)
+        self.traversal_steps = []
+        self.traversal_type = self.starting_traversal_type
+
+        # traverse recursively
+        self.recursive_forward(get_context)
+        path = self.graph_traverser.current_path
+        #path = "/".join(path)
+        print("---- finished traversal. Steps made:", self.traversal_steps)
+
+        # merge or child node
+        if self.problem_type == "graph2graph":
+            raise NotImplementedError
+
+
+        output_dict = {next(iter(self.fields.keys())) : path}
+        filled_form = self.pydantic_form(**output_dict)
+        torch.cuda.empty_cache()
+        print(f"finished traversing::: {get_context()} ---> {path}")
+        return filled_form
 
 

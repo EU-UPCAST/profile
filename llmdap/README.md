@@ -6,6 +6,18 @@
 
 # UPCAST profiling
 
+## trend analysis related files:
+- `profiler/hf_trends.csv`: huggingface models, timestamps and predicted label.
+- `profiler/arxiv_trencs.csv`: arxiv papers with predicted labels.
+- `profiler/metadata_schemas/acm_ccs.py`: the acm-ccs taxonomy (with some changes explained at the top), + traverser class used for prediction.
+- `profiler/trend_results.ipynb`: some initial visualizations
+
+
+# old readme (for Biomed paper/dataset project):
+
+
+
+
 This is the upcast profiling tool, that aims to profile biomedical datasets based on the papers/documents presenting the datasets.
 
 
@@ -76,22 +88,7 @@ Some missing files (in .gitignore)
 - This results in 14860 metadata json files, for one dataset each, and the XMLs for their papers.
 - These json files are quite big, include both information on the whole dataset and each sample, and which fields are in the json vary from dataset to dataset. Example: https://www.ebi.ac.uk/biostudies/files/E-MTAB-8097/E-MTAB-8097.json
 
-#### Consolidating to a usable dataset
-- (in data/make_somple_json.count_fields():) Iterate through the jsons, finding all unique fields, count the number of times they appear, note some examples and if they are ontology terms, and save this info
-- Next, I disregarded any fields with less than 2000 appearances, and manually chose interesting candidates among the other, choosing only those 
-  - with valuable information about the dataset (disregarding e.g. sample-specific fields)
-  - that can likely be found in the paper (disregarding e.g. file names)
-  - where there value is somewhat predictable (disregarding e.g. titles and descriptions).
-  - NOTE: the majority of the fields were removed, leaving 23 candidates
-  - NOTE: this step should perhaps be redone with more well-defined criteria?
-- The 23 candidates are analysed in [this notebook](data/visualize_fields.ipynb)
-  - Only fields with reasonably distributed values were selected (disregarding e.g. developmental stage and strain where most of the values are unique, and software, where most values are the same) 
-  - This resulted in the fields found in the metadata schema.
-  - Fields where all/most occurances have a small set of values, were set as Literal fields (i.e. multiple choice/categorization) (with values like "other" for values outside the selected allowable ones), the others as free text (still limited by length to avoid full sentece answers etc).
-- (in the remainder of data/make_somple_json) The jsons were then merged into one json with the selected fields. In cases where a paper is connected to several datasets, all the values are used.
 
-#### Further restrictions upon loading the data
-- On the profiler pipeline, for now, all fields with more than one value is ignored.
 
 ### Restricted prediction
 - When generating answers for the field, we use restricted output.

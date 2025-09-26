@@ -122,12 +122,11 @@ class FormFillingIterator:
         self.argstring = str(sorted(args.items()))
 
         self.dataset_name = args["dataset"]
-        self.field_names = self.form_filler.pydantic_form.__fields__ 
 
         self.all_scores = {}
         self.index_log = {}
         self.choice_log = {}
-        for field in self.field_names:
+        for field in self.form_filler.fields:
             self.all_scores[field] = []
             self.index_log[field] = []
             self.choice_log[field] = []
@@ -281,12 +280,12 @@ class FormFillingIterator:
 
         if filled_form is None or filled_form == "skipped":
         
-            print("--------- setting document")
+            #print("--------- setting document")
             self.context_shortener.set_document(paper_text)
         
             # fill out the form
             try:
-                print("--------- generating")
+                #print("--------- generating")
                 if key == "29434615" and "full_paper" in self.argstring: # too long paper for context. isolating this to ensure its only this paper.
                     if not paper_labels is None:
                         for field in list(set(paper_labels.keys())-set(self.remove_fields(paper_labels))):
