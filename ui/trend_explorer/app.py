@@ -218,8 +218,18 @@ def render_topic_overview(selected_path: TopicPath, df: pd.DataFrame, counts: Di
         display_df = papers[["id", "submission_date", "categories", "predicted_tag"]].copy()
         display_df.sort_values("submission_date", ascending=False, inplace=True)
         display_df["predicted_tag"] = display_df["predicted_tag"].apply(lambda tags: " / ".join(tags))
+        display_df["submission_date"] = display_df["submission_date"].dt.date
+        display_df["arxiv_link"] = display_df["id"].apply(lambda paper_id: f"https://arxiv.org/abs/{paper_id}")
+        display_df = display_df[["id", "submission_date", "categories", "predicted_tag", "arxiv_link"]]
         st.write("Matching papers")
-        st.dataframe(display_df, use_container_width=True)
+        st.dataframe(
+            display_df,
+            width="stretch",
+            hide_index=True,
+            column_config={
+                "arxiv_link": st.column_config.LinkColumn("arXiv", display_text="Open"),
+            },
+        )
     else:
         st.info("No papers mapped to this topic in the dataset.")
 
@@ -260,7 +270,7 @@ def render_sunburst(counts: Dict[TopicPath, int], highlight_path: Optional[Topic
 
     fig.update_layout(margin=dict(t=30, l=0, r=0, b=0))
     st.subheader("Hierarchy overview")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, config={"responsive": True})
 
 
 def main() -> None:
