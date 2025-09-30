@@ -118,7 +118,7 @@ def make_text2graph_traversal_prompt(text,
                           text_type=None,
                           **kwargs
                           ):
-    prompt = """Your task is label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+    prompt = """Your task is to label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
 At each iteration, you are given the name of the current node, as well as its """
     if parent_nodes is None:
         prompt+="child nodes."
