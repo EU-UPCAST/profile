@@ -1,7 +1,7 @@
 llmdap/**/__pycache__/
 llmdap/profiler/wandb/
 llmdap/profiler/openai_key.py
-llmdap/profiler/all_results/**.json
+llmdap/profiler/all_results**
 llmdap/profiler/output_log.txt
 llmdap/ontologies/efo.owl
 llmdap/ontologies/bto.owl

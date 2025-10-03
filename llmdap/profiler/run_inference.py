@@ -115,8 +115,11 @@ def match_hf_acm_graphs():
             #ff_model = "5n",
             )
 
-def call_arxhf_to_acm_run(n=1):
-    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
+def call_arxhf_to_acm_run(n=1, v2=False):
+    if v2:
+        from metadata_schemas.acm_ccs_v2 import Traverser, CCS_HIERARCHY, PathSchema
+    else:
+        from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
 
     from dataset_loader import Arxiv_HF_datasets
     ahd = Arxiv_HF_datasets()
@@ -196,4 +199,4 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    call_arxhf_to_acm_run(100)
+    call_arxhf_to_acm_run(25, v2=True)
