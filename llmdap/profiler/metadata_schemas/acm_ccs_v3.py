@@ -70,12 +70,6 @@ CCS_HIERARCHY = {
                 "Neural rendering pipelines"
             ]
         },
-        "Large-scale AI systems": [
-            "Large language models",
-            "Multimodal foundation models",
-            "Vision-language models",
-            "Retrieval-augmented generation"
-        ]
     },
     "AI problem": {
         "Not relevant": [],
