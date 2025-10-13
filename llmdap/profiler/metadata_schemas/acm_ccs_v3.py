@@ -71,65 +71,81 @@ CCS_HIERARCHY = {
             ]
         },
     },
-    "AI problem": {
-        "Not relevant": [],
-        "Natural language processing": {
-            "Core understanding": [
-                "Question answering",
-                "Information extraction",
-                "Semantic parsing",
-                "Commonsense reasoning"
-            ],
-            "Generation and interaction": [
-                "Machine translation",
-                "Summarization",
-                "Dialogue systems",
-                "Human-AI co-writing",
-                "Speech recognition and synthesis"
-            ],
-            "Knowledge-enhanced": [
-                "Knowledge graph construction",
-                "Grounded language understanding"
-            ]
-        },
-        "Computer vision": {
-            "Perception": [
-                "Image and video classification",
-                "Object detection",
-                "Segmentation",
-                "Pose estimation",
-                "Tracking"
-            ],
-            "3D and spatial": [
-                "3D reconstruction",
-                "Scene understanding",
-                "Simultaneous localization and mapping"
-            ],
-            "Generative vision": [
-                "Text-to-image generation",
-                "Image-to-image translation",
-                "Video generation",
-                "Neural rendering"
-            ]
-        },
-        "Multimodal and embodied": [
+    "AI problem type": {
+        "Natural language processing": [
+            "Question answering",
+            "Information extraction",
+            "Semantic parsing",
+            "Commonsense reasoning",
+            "Machine translation",
+            "Summarization",
+            "Dialogue systems",
+            "Human-AI co-writing",
+            "Knowledge graph construction",
+            "Grounded language understanding",
+            "Information retrieval and search",
+            "Retrieval-augmented generation"
+        ],
+        "Speech and audio": [
+            "Speech recognition",
+            "Speech synthesis",
+            "Speaker diarization",
+            "Audio event detection",
+            "Music understanding",
+            "Audio/music generation"
+        ],
+        "Computer vision": [
+            "Image classification",
+            "Video classification",
+            "Object detection",
+            "Segmentation",
+            "Pose estimation",
+            "Tracking",
+            "3D reconstruction",
+            "Scene understanding",
+            "Simultaneous localization and mapping",
+            "Text-to-image generation",
+            "Image-to-image translation",
+            "Video generation",
+            "Neural rendering"
+        ],
+        "Multimodal": [
             "Vision-language understanding",
             "Audio-visual learning",
             "Cross-modal retrieval",
-            "Embodied AI"
+            "Multimodal generation"
         ],
-        "Decision-making and robotics": [
+        "Recommendation and personalization": [
+            "Recommender systems",
+            "Learning-to-rank",
+            "Contextual bandits for recommendations"
+        ],
+        "Time-series and forecasting": [
+            "Forecasting",
+            "Anomaly detection",
+            "Event prediction",
+            "Demand and energy forecasting",
+            "Financial forecasting"
+        ],
+        "Graph and relational": [
+            "Node/edge/graph prediction",
+            "Link prediction",
+            "Community detection",
+            "Graph clustering"
+        ],
+        "Decision-making and control": [
+            "Reinforcement learning",
+            "Planning and scheduling",
             "Robot manipulation",
             "Autonomous navigation",
             "Human-robot interaction",
             "Sim-to-real transfer"
         ],
-        "Applied domains": [
-            "Healthcare AI",
-            "Scientific machine learning",
-            "Climate and sustainability AI",
-            "Financial AI",
-            "Creative AI applications"
+        "Structured and tabular": [
+            "Classification",
+            "Regression",
+            "Survival analysis",
+            "Risk scoring"
         ]
     },
     "Learning paradigm": {
@@ -207,6 +223,144 @@ CCS_HIERARCHY = {
             "AutoML",
             "Curriculum learning",
             "Knowledge distillation"
+        ]
+    },
+    "Application domain": {
+        "Healthcare and life sciences": [
+            "Clinical decision support",
+            "Medical imaging analysis",
+            "EHR summarization and coding",
+            "Patient triage and symptom checking",
+            "Drug discovery and design",
+            "Genomics and proteomics",
+            "Healthcare operations optimization"
+        ],
+        "Finance and fintech": [
+            "Fraud detection",
+            "Anti-money laundering and KYC",
+            "Risk scoring and underwriting",
+            "Algorithmic trading",
+            "Portfolio optimization",
+            "Document processing and extraction",
+            "Customer service automation"
+        ],
+        "Insurance": [
+            "Claims triage and processing",
+            "Fraud detection",
+            "Underwriting and pricing",
+            "Policy servicing automation",
+            "Risk modeling and catastrophe modeling"
+        ],
+        "Retail and e-commerce": [
+            "Product search and recommendation",
+            "Personalization",
+            "Dynamic pricing and promotions",
+            "Inventory and demand forecasting",
+            "Review moderation and sentiment",
+            "Visual search and try-on"
+        ],
+        "Marketing and advertising": [
+            "Audience segmentation",
+            "Creative generation and copywriting",
+            "Campaign optimization",
+            "Attribution modeling",
+            "Brand monitoring and social listening"
+        ],
+        "Manufacturing and industrial": [
+            "Predictive maintenance",
+            "Quality inspection (vision)",
+            "Process optimization",
+            "Supply chain planning",
+            "Digital twins and simulation"
+        ],
+        "Energy and utilities": [
+            "Demand and load forecasting",
+            "Grid optimization",
+            "Renewable generation forecasting",
+            "Asset health and fault detection",
+            "Metering and customer analytics"
+        ],
+        "Transportation and logistics": [
+            "Route and network optimization",
+            "ETA prediction",
+            "Fleet and asset management",
+            "Autonomous driving and ADAS",
+            "Warehouse automation"
+        ],
+        "Telecommunications": [
+            "Network planning and optimization",
+            "Churn prediction and retention",
+            "Fault detection and root cause",
+            "Customer care automation",
+            "Traffic forecasting"
+        ],
+        "Media and entertainment": [
+            "Content recommendation",
+            "Content moderation",
+            "Subtitle and translation",
+            "Content generation",
+            "Rights and metadata management"
+        ],
+        "Government and public sector": [
+            "Document analysis and processing",
+            "Citizen services assistants",
+            "Fraud, waste, and abuse detection",
+            "Threat intelligence and analysis",
+            "Smart city analytics"
+        ],
+        "Education": [
+            "Intelligent tutoring and feedback",
+            "Automated grading",
+            "Curriculum and content generation",
+            "Student risk prediction",
+            "Accessibility (ASR and TTS)"
+        ],
+        "Legal": [
+            "Contract analysis and review",
+            "E-discovery",
+            "Legal research assistance",
+            "Drafting and summarization",
+            "Compliance monitoring"
+        ],
+        "Real estate and construction": [
+            "Property valuation and appraisal",
+            "Document processing",
+            "Site monitoring (vision)",
+            "Energy modeling",
+            "BIM and project analytics"
+        ],
+        "Agriculture": [
+            "Crop and soil monitoring",
+            "Yield forecasting",
+            "Pest and disease detection",
+            "Precision agriculture",
+            "Supply and pricing analytics"
+        ],
+        "Cybersecurity": [
+            "Threat detection and intelligence",
+            "User and entity anomaly detection",
+            "Malware and phishing analysis",
+            "Incident response copilots",
+            "Security posture analytics"
+        ],
+        "Human resources and people ops": [
+            "Candidate screening and matching",
+            "Interview assistance",
+            "Attrition and performance prediction",
+            "Employee support assistants",
+            "Skills mapping and mobility"
+        ],
+        "Aerospace and defense": [
+            "Predictive maintenance",
+            "Mission planning and simulation",
+            "Sensor fusion and tracking",
+            "Autonomous systems"
+        ],
+        "Gaming": [
+            "Player analytics",
+            "Procedural content generation",
+            "NPC agents and behavior",
+            "Anti-cheat and moderation"
         ]
     }
 }
@@ -314,12 +468,14 @@ class v3_Schema(BaseModel):
     arch : list[str] = Field(description = "Model architecture")
     prob : list[str] = Field(description = "AI problem type")
     para : list[str] = Field(description = "Learning paradigm")
+    appl : list[str] = Field(description = "Application domain")
 
 def get_v3_traverser_dict():
     traversers = {
             "arch": Traverser(CCS_HIERARCHY, ["Model architecture"]),
-            "prob": Traverser(CCS_HIERARCHY, ["AI problem"]),
-            "para": Traverser(CCS_HIERARCHY, ["Learning paradigm"])
+            "prob": Traverser(CCS_HIERARCHY, ["AI problem type"]),
+            "para": Traverser(CCS_HIERARCHY, ["Learning paradigm"]),
+            "appl": Traverser(CCS_HIERARCHY, ["Application domain"]),
             }
     return traversers
 
@@ -332,7 +488,7 @@ if __name__ == "__main__":
     t.move("Neural/deep learning architectures")
     print(t.get_child_nodes())
 
-    t.reset_position(["AI problem"])
+    t.reset_position(["AI problem type"])
     print(t.get_child_nodes())
     t.move("Applied domains")
     print(t.get_child_nodes())

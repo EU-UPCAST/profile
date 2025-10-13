@@ -118,7 +118,7 @@ def make_text2graph_traversal_prompt(text,
                           text_type=None,
                           **kwargs
                           ):
-    prompt = """Your task is to label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+    prompt = """Your task is to label a textual document with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
 At each iteration, you are given the name of the current node, as well as its """
     if parent_nodes is None:
         prompt+="child nodes."
@@ -128,8 +128,8 @@ At each iteration, you are given the name of the current node, as well as its ""
     else:
         prompt+="parent, sibling and child nodes."
     prompt +="""
-You must choose which of these are most relevant for the artifact.
-- If you choose the current node, the artifact is labeled with this term.
+You must choose which of these are most relevant for the document.
+- If you choose the current node, the document is labeled with this term.
 - If you choose any of the other nodes """
     if parent_nodes is None:
         prompt+="(child nodes)"
@@ -137,13 +137,17 @@ You must choose which of these are most relevant for the artifact.
         prompt+="(parent or child nodes)"
     else:
         prompt+="(parent, sibling or child nodes)"
-    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct.
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct (just choose the current node if none of the child nodes are appropriate)."""
+    if "Not relevant" in child_nodes:
+        prompt += f" If the ontology ({current_path[0]}) is not relevant to the document, please use the 'Not relevant' option."
+    
+    prompt +="""
 
 The concrete variables for the task are listed here:
 """
     if not text_type is None:
-        prompt += f"Type of artifact and description: {text_type}\n"
-    prompt += f"Artifact description: {text}\n"
+        prompt += f"Type of document: {text_type}\n"
+    prompt += f"Document: \n{text}\n(document finished)\n"
     prompt += f"Current node: {current_path[-1]}\n"
     prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
     if not sibling_nodes is None:
@@ -155,9 +159,9 @@ The concrete variables for the task are listed here:
     prompt += "\nPlease provide the most relevant label below:\n"
     prompt += "Answer: "
 
-    print("::::")
-    print(prompt)
-    print("::::")
+    #print("::::")
+    #print(prompt)
+    #print("::::")
 
     return prompt
 
@@ -918,8 +922,7 @@ class AdaptiveFormFiller:
 
 
         # make prompt input
-        prompt_input = {
-                       "current_path":current_path,
+        prompt_input = { "current_path":current_path,
                        "allowed_answers":[*self.current_traverser.get_child_nodes(), current_path[-1]],
                        "child_nodes":self.current_traverser.get_child_nodes(),
                         }
@@ -1010,7 +1013,6 @@ class AdaptiveFormFiller:
         # merge or child node
         if self.problem_type == "graph2graph":
             raise NotImplementedError
-        print(f"finished traversing::: {get_context()} ---> {path}")
         return path
 
 
@@ -1031,6 +1033,11 @@ class AdaptiveFormFiller:
             self.current_traverser = self.graph_traversers
             path = self.single_traverser_forward(get_context, exclude_fields)
             output_dict = {next(iter(self.fields.keys())) : path}
+
+        print(f"finished traversing::: ")
+        print(get_context()[0])
+        print("generated dict:")
+        print(output_dict)
         filled_form = self.pydantic_form(**output_dict)
         torch.cuda.empty_cache()
         return filled_form

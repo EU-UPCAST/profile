@@ -127,8 +127,8 @@ def call_arxhf_to_acm_run(n=1, v2=False):
 
     hf, arx = ahd.get_dict_format(n)
 
-    hf_description_type = "Huggingface model, described by tags and model card"
-    arx_description_type = "Arxiv paper, described by title and abstract"
+    hf_description_type = "tags and model card of a Huggingface model"
+    arx_description_type = "title and abstract of an arXiv paper"
     hf = {key: (val, hf_description_type) for key, val in hf.items()}
     arx = {key: (val, arx_description_type) for key, val in arx.items()}
 
@@ -139,6 +139,43 @@ def call_arxhf_to_acm_run(n=1, v2=False):
                 schema = PathSchema,
                 parsed_paper_text = dataset,
                 graph_traversers = Traverser(CCS_HIERARCHY),
+                return_dict_with_context = False,
+                traversal_problem_type = "text2graph",
+                # kwargs
+                save = True,
+                load = True,
+                context_shortener = "full_paper",
+                #ff_model = "4om",
+                ff_model = "41n",
+                #ff_model = "5n",
+                )
+
+def call_news_run(n=1):
+    from metadata_schemas.acm_ccs_v3 import Traverser, CCS_HIERARCHY, v3_Schema, get_v3_traverser_dict
+    from dataset_loader import Arxiv_HF_Newsletters_datasets
+    ahd = Arxiv_HF_Newsletters_datasets()
+    ahd.prepare()
+
+    hf, arx, newsletters = ahd.get_dict_format(n)
+
+    hf_description_type = "tags and model card of a Huggingface model"
+    arx_description_type = "title and abstract of an arXiv paper"
+    nl_description_type = "Newsletter item/blurb"
+
+    hf = {key: (val, hf_description_type) for key, val in hf.items()}
+    arx = {key: (val, arx_description_type) for key, val in arx.items()}
+
+    nls = {}
+    for nl in newsletters:
+        nls.update({key: (val, nl_description_type) for key, val in nl.items()})
+
+
+    traversers = get_v3_traverser_dict() 
+    for dataset in [nls]: # simply add hf and arx if doing all
+        output = call_inference(
+                schema = v3_Schema,
+                parsed_paper_text = dataset,
+                graph_traversers = traversers,
                 return_dict_with_context = False,
                 traversal_problem_type = "text2graph",
                 # kwargs
@@ -231,4 +268,5 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    call_ccsv3_run(10)
+    #call_ccsv3_run(25)
+    call_news_run(10)
