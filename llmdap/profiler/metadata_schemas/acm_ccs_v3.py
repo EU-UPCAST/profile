@@ -63,12 +63,15 @@ CCS_HIERARCHY = {
                 "Graph VAEs",
                 "Graph GANs"
             ],
-            "Specialized hybrids": [
-                "Mixture-of-experts",
+            "Physics-inspired and continuous models": [
+                "Neural ODEs",
+                "Hamiltonian neural networks",
+                "Physics-informed neural networks"
+            ],
+            "Neuro-symbolic models": [
                 "Neural-symbolic systems",
-                "Neural differential equation models",
-                "Neural rendering pipelines"
-            ]
+                "Differentiable logic layers"
+            ],
         },
     },
     "AI problem type": {
@@ -197,6 +200,7 @@ CCS_HIERARCHY = {
                 "Prefix / prompt tuning",
                 "BitFit and bias-only tuning"
             ],
+            "Knowledge distillation": []
         },
         "Reinforcement learning": [
             "Model-based RL",
@@ -218,150 +222,216 @@ CCS_HIERARCHY = {
             "Secure multi-party learning",
             "Continual and lifelong learning"
         ],
-        "Automation and optimization": [
-            "Hyperparameter optimization",
-            "AutoML",
+        "Training regimes": [
             "Curriculum learning",
-            "Knowledge distillation"
-        ]
+            "Self-paced learning",
+            "Hard example mining"
+        ],
+        "Meta-ML and model selection": [
+            "Hyperparameter optimization",
+            "AutoML (pipeline/search)",
+            "Neural architecture search"
+        ],
+
     },
-    "Application domain": {
-        "Healthcare and life sciences": [
-            "Clinical decision support",
-            "Medical imaging analysis",
-            "EHR summarization and coding",
-            "Patient triage and symptom checking",
-            "Drug discovery and design",
-            "Genomics and proteomics",
-            "Healthcare operations optimization"
-        ],
-        "Finance and fintech": [
-            "Fraud detection",
-            "Anti-money laundering and KYC",
-            "Risk scoring and underwriting",
-            "Algorithmic trading",
-            "Portfolio optimization",
-            "Document processing and extraction",
-            "Customer service automation"
-        ],
-        "Insurance": [
-            "Claims triage and processing",
-            "Fraud detection",
-            "Underwriting and pricing",
-            "Policy servicing automation",
-            "Risk modeling and catastrophe modeling"
-        ],
-        "Retail and e-commerce": [
-            "Product search and recommendation",
-            "Personalization",
-            "Dynamic pricing and promotions",
-            "Inventory and demand forecasting",
-            "Review moderation and sentiment",
-            "Visual search and try-on"
-        ],
-        "Marketing and advertising": [
-            "Audience segmentation",
-            "Creative generation and copywriting",
-            "Campaign optimization",
-            "Attribution modeling",
-            "Brand monitoring and social listening"
-        ],
-        "Manufacturing and industrial": [
-            "Predictive maintenance",
-            "Quality inspection (vision)",
-            "Process optimization",
-            "Supply chain planning",
-            "Digital twins and simulation"
-        ],
-        "Energy and utilities": [
-            "Demand and load forecasting",
-            "Grid optimization",
-            "Renewable generation forecasting",
-            "Asset health and fault detection",
-            "Metering and customer analytics"
-        ],
-        "Transportation and logistics": [
-            "Route and network optimization",
-            "ETA prediction",
-            "Fleet and asset management",
-            "Autonomous driving and ADAS",
-            "Warehouse automation"
-        ],
-        "Telecommunications": [
-            "Network planning and optimization",
-            "Churn prediction and retention",
-            "Fault detection and root cause",
-            "Customer care automation",
-            "Traffic forecasting"
-        ],
-        "Media and entertainment": [
-            "Content recommendation",
-            "Content moderation",
-            "Subtitle and translation",
-            "Content generation",
-            "Rights and metadata management"
-        ],
-        "Government and public sector": [
-            "Document analysis and processing",
-            "Citizen services assistants",
-            "Fraud, waste, and abuse detection",
-            "Threat intelligence and analysis",
-            "Smart city analytics"
-        ],
-        "Education": [
-            "Intelligent tutoring and feedback",
-            "Automated grading",
-            "Curriculum and content generation",
-            "Student risk prediction",
-            "Accessibility (ASR and TTS)"
-        ],
-        "Legal": [
-            "Contract analysis and review",
-            "E-discovery",
-            "Legal research assistance",
-            "Drafting and summarization",
-            "Compliance monitoring"
-        ],
-        "Real estate and construction": [
-            "Property valuation and appraisal",
-            "Document processing",
-            "Site monitoring (vision)",
-            "Energy modeling",
-            "BIM and project analytics"
-        ],
-        "Agriculture": [
-            "Crop and soil monitoring",
-            "Yield forecasting",
-            "Pest and disease detection",
-            "Precision agriculture",
-            "Supply and pricing analytics"
-        ],
-        "Cybersecurity": [
-            "Threat detection and intelligence",
-            "User and entity anomaly detection",
-            "Malware and phishing analysis",
-            "Incident response copilots",
-            "Security posture analytics"
-        ],
-        "Human resources and people ops": [
-            "Candidate screening and matching",
-            "Interview assistance",
-            "Attrition and performance prediction",
-            "Employee support assistants",
-            "Skills mapping and mobility"
-        ],
-        "Aerospace and defense": [
-            "Predictive maintenance",
-            "Mission planning and simulation",
-            "Sensor fusion and tracking",
-            "Autonomous systems"
-        ],
-        "Gaming": [
-            "Player analytics",
-            "Procedural content generation",
-            "NPC agents and behavior",
-            "Anti-cheat and moderation"
-        ]
+    "Application": {
+        "General-purpose applications": {
+            "Assistants and chat": {
+                "Chatbots": [
+                    "Open-domain/social chatbots",
+                    "Task-oriented/transactional chatbots",
+                    "Customer service chatbots",
+                    "Domain-specific chatbots",
+                    "Entertainment/roleplay chatbots",
+                    "Research-oriented chatbots"
+                ],
+                "Customer support assistants":[],
+                "Search assistants":[],
+                "Personal assistants”:[],
+                "Knowledge management assistants”:[],
+                "General-purpose computer-use agents": [
+                    "Browser automation agents",          // form filling, web navigation, scraping, shopping
+                    "Desktop automation agents",          // file editing, spreadsheet manipulation, document handling
+                    "Enterprise RPA-style agents",        // workflow automation across business apps (SAP, Salesforce)
+                    "Developer/technical automation agents", // running scripts, config edits, system monitoring
+                    "Multi-app orchestration agents",     // coordinating tasks across tools (email + calendar + docs)
+                    "Autonomous task loop agents"         // plan–act–reflect loops for complex goals
+                ],
+            },
+            "Productivity and office": [
+                "Document summarization tools",
+                "Meeting assistants",
+                "Email drafting",
+                "Note-taking and transcription",
+                "Presentation/slide generation"
+            ],
+            "Developer and coding tools": [
+                "Code completion",
+                "Code explanation and refactoring",
+                "Bug detection",
+                "Test generation",
+                "SQL/query assistants"
+            ],
+            "Creative tools": [
+                "Image generation",
+                "Video generation",
+                "Music generation",
+                "Story/poetry writing",
+                "Design and prototyping"
+            ],
+            "Search and retrieval": [
+                "Enterprise search",
+                "Semantic search",
+                "RAG-based assistants"
+            ],
+            "Analytics and decision support": [
+                "Data analysis copilots",
+                "Business intelligence augmentation",
+                "Forecasting dashboards",
+                "Simulation and scenario planning"
+            ]
+        },
+        "Industry-specific applications": {
+            "Healthcare and life sciences": {
+                "Healthcare": [
+                    "Clinical care and hospital operations",
+                    "Medical imaging",
+                    "Electronic health records",
+                    "Public health and epidemiology"
+                ],
+                "Life sciences": [
+                    "Drug discovery",
+                    "Biotechnology",
+                    "Genomics and proteomics"
+                ]
+            },
+        
+            "Finance, business and legal": {
+                "Finance and fintech": [
+                    "Banking and payments",
+                    "Insurance",
+                    "Investment and trading",
+                    "Risk and compliance"
+                ],
+                "Legal and compliance": [
+                    "Legal practice",
+                    "E-discovery",
+                    "Contract management",
+                    "Regulatory compliance"
+                ],
+                "Business operations": [
+                    "Human resources",
+                    "Marketing and advertising",
+                    "Customer service"
+                ]
+            },
+        
+            "Industry, manufacturing and infrastructure": {
+                "Manufacturing": [
+                    "Automotive",
+                    "Electronics and hardware production",
+                    "Chemicals and materials",
+                    "Process industries"
+                ],
+                "Energy": {
+                    "Oil and gas": [],
+                    "Electricity": {
+                        "Production": [
+                            "Fossil",
+                            "Nuclear",
+                            "Solar",
+                            "Wind",
+                            "Hydro"
+                        ],
+                        "Grid and distribution": []
+                    }
+                },
+                "Construction and real estate": [
+                    "Architecture and design",
+                    "Building operations",
+                    "Real estate management"
+                ],
+                "Transportation and logistics": [
+                    "Shipping and freight",
+                    "Aviation",
+                    "Rail",
+                    "Autonomous vehicles"
+                ],
+                "Data centers and cloud computing": [
+                    "Hyperscale cloud",
+                    "Enterprise IT",
+                    "Edge computing"
+                ]
+            },
+        
+            "Media, education and culture": {
+                "Media and entertainment": [
+                    "Film and video",
+                    "Music",
+                    "Publishing",
+                    "Games"
+                ],
+                "Education": [
+                    "Schools and universities",
+                    "Online learning",
+                    "Tutoring and assessment"
+                ],
+                "Culture and creative industries": [
+                    "Art and design",
+                    "Fashion",
+                    "Heritage and museums"
+                ]
+            },
+        
+            "Technology platforms and ecosystems": {
+                "Telecommunications": [
+                    "Network infrastructure",
+                    "Mobile operators",
+                    "Satellite communications"
+                ],
+                "Mobile devices and ecosystems": [
+                    "Smartphones",
+                    "Wearables",
+                    "IoT devices"
+                ],
+                "Operating systems and platforms": [
+                    "Desktop OS",
+                    "Mobile OS",
+                    "Cloud platforms"
+                ]
+            },
+        
+            "Public sector, defense and security": {
+                "Government": [
+                    "Citizen services",
+                    "Administration",
+                    "Smart cities"
+                ],
+                "Defense and aerospace": [
+                    "Military systems",
+                    "Space exploration",
+                    "Aerospace engineering"
+                ],
+                "Cybersecurity": [
+                    "Threat detection",
+                    "Incident response",
+                    "Infrastructure protection"
+                ]
+            },
+        
+            "Agriculture and environment": {
+                "Agriculture": [
+                    "Crop production",
+                    "Livestock",
+                    "Precision agriculture"
+                ],
+                "Environment and sustainability": [
+                    "Climate science",
+                    "Conservation",
+                    "Sustainable resource management"
+                ]
+            }
+        }
     }
 }
 
@@ -408,7 +478,10 @@ class Traverser:
         result = find_child_nodes(self.TREE, self.current_path)
         if self.shuffle:
             random.shuffle(result)
-        return  result
+        if not "Not relevant" in result:
+            result.append("Other")
+        return result
+
     def get_sibling_nodes(self):
         siblings = find_child_nodes(self.TREE, self.current_path[:-1]).copy()
         siblings.remove(self.current_path[-1])
