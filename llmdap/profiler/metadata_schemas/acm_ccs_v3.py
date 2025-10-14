@@ -50,10 +50,8 @@ CCS_HIERARCHY = {
                     "Diffusion transformers":[],
                     "Adversarial transformers":[],
                 },
-                "Other sequence models": [
-                    "Temporal CNNs",
-                    "State-space models"
-                ]
+                "Temporal CNNs":[],
+                "State-space models":[],
             },
             "Graph and relational": [
                 "Graph neural networks",
@@ -165,13 +163,11 @@ CCS_HIERARCHY = {
                 "Multi-output regression",
                 "Ordinal regression"
             ],
-            "Other supervised tasks": [
-                "Ranking",
-                "Structured prediction",
-                "Sequence labeling",
-                "Imbalanced learning",
-                "Cost-sensitive learning"
-            ]
+            "Ranking":[],
+            "Structured prediction":[],
+            "Sequence labeling":[],
+            "Imbalanced learning":[],
+            "Cost-sensitive learning":[]
         },
         "Unsupervised learning": [
             "Contrastive learning",
@@ -234,7 +230,7 @@ CCS_HIERARCHY = {
         ],
 
     },
-    "Application": {
+    "Application domain": {
         "General-purpose applications": {
             "Assistants and chat": {
                 "Chatbots": [
@@ -247,15 +243,15 @@ CCS_HIERARCHY = {
                 ],
                 "Customer support assistants":[],
                 "Search assistants":[],
-                "Personal assistants”:[],
-                "Knowledge management assistants”:[],
+                "Personal assistants":[],
+                "Knowledge management assistants":[],
                 "General-purpose computer-use agents": [
-                    "Browser automation agents",          // form filling, web navigation, scraping, shopping
-                    "Desktop automation agents",          // file editing, spreadsheet manipulation, document handling
-                    "Enterprise RPA-style agents",        // workflow automation across business apps (SAP, Salesforce)
-                    "Developer/technical automation agents", // running scripts, config edits, system monitoring
-                    "Multi-app orchestration agents",     // coordinating tasks across tools (email + calendar + docs)
-                    "Autonomous task loop agents"         // plan–act–reflect loops for complex goals
+                    "Browser automation agents",
+                    "Desktop automation agents",
+                    "Enterprise RPA-style agents",
+                    "Developer/technical automation agents",
+                    "Multi-app orchestration agents",
+                    "Autonomous task loop agents"
                 ],
             },
             "Productivity and office": [
@@ -475,10 +471,12 @@ class Traverser:
 
 
     def get_child_nodes(self):
-        result = find_child_nodes(self.TREE, self.current_path)
+        if self.current_path[-1] == "Other":
+            raise ValueError
+        result = find_child_nodes(self.TREE, self.current_path).copy()
         if self.shuffle:
             random.shuffle(result)
-        if not "Not relevant" in result:
+        if not "Not relevant" in result and len(result): # only add other option if there is no "not relevant" and its not already a leaf node
             result.append("Other")
         return result
 

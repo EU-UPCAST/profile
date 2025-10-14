@@ -986,6 +986,9 @@ class AdaptiveFormFiller:
         direction = self.current_traverser.move(output)
         self.traversal_steps.append(direction+" "+output)
 
+        if output == "Other":
+            return
+
         if len(self.traversal_steps) >= self.traversal_max_steps and self.traversal_type != "down":
             print("----Max travesal steps reached. Reverting to downward traversal.")
             self.traversal_type = "down"

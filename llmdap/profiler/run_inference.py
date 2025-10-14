@@ -269,4 +269,4 @@ def test_call():
 if __name__ == "__main__":
     #test_call()
     #call_ccsv3_run(25)
-    call_news_run(10)
+    call_news_run(1)
