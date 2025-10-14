@@ -333,8 +333,7 @@ def download_latest_arxiv_data():
     return path
 
 def update_arxiv_file():
-    #path = download_latest_arxiv_data()
-    path = "../../../.cache/kagglehub/datasets/Cornell-University/arxiv/versions/252"
+    path = download_latest_arxiv_data()
     path += "/arxiv-metadata-oai-snapshot.json"
 
     arxiv_data = []  # create empty list
@@ -361,6 +360,11 @@ def update_arxiv_file():
 
     df["submission_date"] = pd.to_datetime(df["submission_date"])
     df.to_csv("/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv")
+
+def update_HF_dataset():
+    from datasets import load_dataset
+    ds = load_dataset("librarian-bots/model_cards_with_metadata")
+    ds.save_to_disk("/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/")
 
 
 def _load_hf_timeline(hf_data_path: str = "/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/train") -> "pd.DataFrame":
@@ -621,6 +625,7 @@ def test_arxhf_sampler():
 
 
     print("tests passed")
+
 
 
 
