@@ -73,6 +73,7 @@ CCS_HIERARCHY = {
         },
     },
     "AI problem type": {
+        "Not relevant": [],
         "Natural language processing": [
             "Question answering",
             "Information extraction",
@@ -231,6 +232,7 @@ CCS_HIERARCHY = {
 
     },
     "Application domain": {
+        "Not relevant": [],
         "General-purpose applications": {
             "Assistants and chat": {
                 "Chatbots": [
@@ -380,6 +382,22 @@ CCS_HIERARCHY = {
             },
         
             "Technology platforms and ecosystems": {
+                "AI and data platforms": [
+                    "Foundation model providers",
+                    "Model hosting and inference platforms",
+                    "Vector databases and embeddings providers",
+                    "MLOps and LLMOps platforms",
+                    "Prompt/agent frameworks",
+                    "Evaluation and observability",
+                    "Synthetic data and labeling platforms",
+                    "Feature stores and data platforms"
+                ],
+                "Open source ecosystems": [
+                    "Model hubs and communities",
+                    "Open model projects",
+                    "Tooling and libraries",
+                    "Open research resources"
+                ],
                 "Telecommunications": [
                     "Network infrastructure",
                     "Mobile operators",
