@@ -136,12 +136,13 @@ CCS_HIERARCHY = {
             "Graph clustering"
         ],
         "Decision-making and control": [
-            "Reinforcement learning",
             "Planning and scheduling",
             "Robot manipulation",
             "Autonomous navigation",
             "Human-robot interaction",
             "Sim-to-real transfer"
+            "Multi-agent decision-making",
+            "Safe and robust control",
         ],
         "Structured and tabular": [
             "Classification",
