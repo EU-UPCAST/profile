@@ -98,60 +98,9 @@ def call_inference(
     return outputs
 
 
-def match_hf_acm_graphs():
-    from hf_tag_graph import hftags_list
-    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
-
-    output = call_inference(
-            schema = PathSchema,
-            parsed_paper_text = hftags_list,
-            graph_traversers = Traverser(CCS_HIERARCHY),
-            return_dict_with_context = False,
-            traversal_problem_type = "graph2graph",
-            # kwargs
-            context_shortener = "full_paper",
-            #ff_model = "4om",
-            ff_model = "41n",
-            #ff_model = "5n",
-            )
-
-def call_arxhf_to_acm_run(n=1, v2=False):
-    if v2:
-        from metadata_schemas.acm_ccs_v2 import Traverser, CCS_HIERARCHY, PathSchema
-    else:
-        from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
-
-    from dataset_loader import Arxiv_HF_datasets
-    ahd = Arxiv_HF_datasets()
-    ahd.prepare()
-
-    hf, arx = ahd.get_dict_format(n)
-
-    hf_description_type = "tags and model card of a Huggingface model"
-    arx_description_type = "title and abstract of an arXiv paper"
-    hf = {key: (val, hf_description_type) for key, val in hf.items()}
-    arx = {key: (val, arx_description_type) for key, val in arx.items()}
-
-
-
-    for dataset in [hf, arx]:
-        output = call_inference(
-                schema = PathSchema,
-                parsed_paper_text = dataset,
-                graph_traversers = Traverser(CCS_HIERARCHY),
-                return_dict_with_context = False,
-                traversal_problem_type = "text2graph",
-                # kwargs
-                save = True,
-                load = True,
-                context_shortener = "full_paper",
-                #ff_model = "4om",
-                ff_model = "41n",
-                #ff_model = "5n",
-                )
 
 def call_news_run(n=1):
-    from metadata_schemas.acm_ccs_v3 import Traverser, CCS_HIERARCHY, v3_Schema, get_v3_traverser_dict
+    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
     from dataset_loader import Arxiv_HF_Newsletters_datasets
     ahd = Arxiv_HF_Newsletters_datasets()
     ahd.prepare()
@@ -188,7 +137,7 @@ def call_news_run(n=1):
                 )
 
 def call_ccsv3_run(n=1):
-    from metadata_schemas.acm_ccs_v3 import Traverser, CCS_HIERARCHY, v3_Schema, get_v3_traverser_dict
+    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
     from dataset_loader import Arxiv_HF_datasets
     ahd = Arxiv_HF_datasets()
     ahd.prepare()
@@ -273,4 +222,4 @@ if __name__ == "__main__":
     #test_call()
     #call_ccsv3_run(5)
     call_ccsv3_run(10)
-    call_news_run(10)
+    #call_news_run(10)
