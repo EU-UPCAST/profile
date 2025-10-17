@@ -140,7 +140,7 @@ CCS_HIERARCHY = {
             "Robot manipulation",
             "Autonomous navigation",
             "Human-robot interaction",
-            "Sim-to-real transfer"
+            "Sim-to-real transfer",
             "Multi-agent decision-making",
             "Safe and robust control",
         ],

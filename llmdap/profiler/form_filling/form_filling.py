@@ -614,16 +614,17 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
 
 
         # generate answer
-        completion = openai.beta.chat.completions.parse(
-                                                        model = model_id,
-                                                        messages = [
-                                                            {
-                                                                "role":"user",
-                                                                "content": prompt_function(**prompt_input, listed_answer=listify),
-                                                            }
-                                                        ],
-                                                        response_format = subschema,
-                                                        )
+        generation_kwargs = dict(model = model_id,
+                                 messages = [{"role":"user", "content": prompt_function(**prompt_input, listed_answer=listify)}],
+                                 response_format = subschema)
+        try:
+            completion = openai.beta.chat.completions.parse(**generation_kwargs)
+        except openai.RateLimitError:
+            import time
+            print("\n ... sleeping a bit to avoid OpenAI rate limit) ...")
+            time.sleep(15)
+            completion = openai.beta.chat.completions.parse(**generation_kwargs)
+
         if len(completion.choices) > 1:
             print(completion)
             print(completion.model_dump)

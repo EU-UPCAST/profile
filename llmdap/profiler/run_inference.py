@@ -163,7 +163,7 @@ def call_news_run(n=1):
     nl_description_type = "Newsletter item/blurb"
 
     hf = {key: (val, hf_description_type) for key, val in hf.items()}
-    arx = {key: (val, arx_description_type) for key, val in arx.items()}
+    #arx = {key: (val, arx_description_type) for key, val in arx.items()}
 
     nls = {}
     for nl in newsletters:
@@ -203,7 +203,10 @@ def call_ccsv3_run(n=1):
 
 
     traversers = get_v3_traverser_dict() 
-    for dataset in [hf, arx]:
+    for dataset in [
+            hf, 
+            arx
+            ]:
         output = call_inference(
                 schema = v3_Schema,
                 parsed_paper_text = dataset,
@@ -268,5 +271,6 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    #call_ccsv3_run(25)
+    #call_ccsv3_run(5)
+    call_ccsv3_run(10)
     call_news_run(10)
