@@ -333,8 +333,7 @@ def download_latest_arxiv_data():
     return path
 
 def update_arxiv_file():
-    #path = download_latest_arxiv_data()
-    path = "../../../.cache/kagglehub/datasets/Cornell-University/arxiv/versions/252"
+    path = download_latest_arxiv_data()
     path += "/arxiv-metadata-oai-snapshot.json"
 
     arxiv_data = []  # create empty list
@@ -361,6 +360,11 @@ def update_arxiv_file():
 
     df["submission_date"] = pd.to_datetime(df["submission_date"])
     df.to_csv("/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv")
+
+def update_HF_dataset():
+    from datasets import load_dataset
+    ds = load_dataset("librarian-bots/model_cards_with_metadata")
+    ds.save_to_disk("/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/")
 
 
 def _load_hf_timeline(hf_data_path: str = "/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/train") -> "pd.DataFrame":
@@ -402,6 +406,18 @@ def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_t
     return df
 
 
+def _load_newsletter_timelines(csv_paths  = [
+            "/mnt/data/upcast/data/import_ai_stories.csv",
+            "/mnt/data/upcast/data/tldr_ai_stories.csv"
+            ]):
+    import pandas as pd
+
+    dfs = []
+    for path in csv_paths:
+        df = pd.read_csv(path, index_col=0, low_memory=False)
+        df["date"] = pd.to_datetime(df["date"], utc=True).dt.tz_convert(None)
+        dfs.append(df)
+    return dfs
 
 
 
@@ -426,6 +442,94 @@ def find_longest_true_sebseq(series, debug = False):
     assert all(series)
 
     return series
+
+
+class Arxiv_HF_Newsletters_datasets:
+    def __init__(self):
+        self.full_arx = _load_arxiv_timeline()
+        self.full_hf = _load_hf_timeline()
+        self.full_nls = _load_newsletter_timelines()
+
+    def prepare(self, m=1, threshold=1103):
+        self.threshold = threshold
+        self.arx = self.full_arx.copy()
+        self.hf = self.full_hf.copy()
+        self.nls = [nl.copy() for nl in self.full_nls]
+
+        self.group_dfs_in_months(m)
+
+        # find longest range of groups with plenty of examples. This only considers arxiv and HF
+        period = self.find_commonly_plentiful_subseries(threshold)
+        period = find_longest_true_sebseq(period)
+        bin_range = period.index.min(), period.index.max()
+
+        # restrict to range
+        self.arx = self.arx[self.arx["bin"]>=bin_range[0]][self.arx["bin"]<=bin_range[1]]
+        self.hf = self.hf[self.hf["bin"]>=bin_range[0]][self.hf["bin"]<=bin_range[1]]
+        restricted_nls = []
+        for nl in self.nls:
+            nl = nl[nl["bin"]>=bin_range[0]][nl["bin"]<=bin_range[1]]
+            restricted_nls.append(nl)
+        self.nls = restricted_nls
+
+    def sample_subsets(self, n):
+        n = min(n, self.threshold)
+        RANDOM_STATE = 123
+
+        hfsubset=self.hf.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
+        arxsubset=self.arx.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
+
+        nl_subsets = []
+        for nl in self.nls:
+            min_group = nl.groupby(["bin"]).count()["text"].min()
+            nl = nl.groupby(["bin"]).sample(n=min(n,min_group), random_state = RANDOM_STATE)
+            nl_subsets.append(nl)
+
+        return hfsubset, arxsubset, nl_subsets
+
+    def get_dict_format(self, n):
+        hf, arx, nl_subsets= self.sample_subsets(n)
+
+        abstracts = arx["abstract"].to_dict()
+        titles= arx["title"].to_dict()
+        papers = {}
+        for key in titles:
+            papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
+
+        card = hf["card"].to_dict()
+        tags = hf["tags"].to_dict()
+        ptag = hf["pipeline_tag"].to_dict()
+        mid = hf["modelId"].to_dict()
+        hfmodels = {}
+        for key in card:
+            hfmodels[mid[key].replace("/","__")] = f"ModelId: {mid[key]}\n\nTags: {tags[key]}\n\npipeline_tag: {ptag[key]}\n\nModel card:\n{card[key]}"
+
+        newsletters = []
+        for nl in nl_subsets:
+            newsletters.append(nl["text"].to_dict())
+
+        return hfmodels, papers, newsletters
+
+
+    def find_commonly_plentiful_subseries(self, threshold = 2000):
+
+        arxiv_plentiful_months = self.arx.groupby(["bin"]).count()["title"] >= threshold
+        hf_plentiful_months = self.hf.groupby(["bin"]).count()["modelId"] >= threshold
+
+        both_plentify_months = arxiv_plentiful_months & hf_plentiful_months
+
+        start = both_plentify_months[both_plentify_months==True].index.min()
+        end = both_plentify_months[both_plentify_months==True].index.max()
+
+        period = both_plentify_months.loc[start:end]
+
+        return period
+
+    def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
+        self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
+        self.hf["bin"] = ((self.hf["createdAt"].dt.month+m-1)//m)/100 + self.hf["createdAt"].dt.year
+        for nl in self.nls:
+            nl.loc[:,"bin"] = ((nl["date"].dt.month+m-1)//m)/100 + nl["date"].dt.year
 
 class Arxiv_HF_datasets:
     def __init__(self):
@@ -521,6 +625,7 @@ def test_arxhf_sampler():
 
 
     print("tests passed")
+
 
 
 

@@ -23,7 +23,7 @@ def call_inference(
         raw_xml_paper_text = None,
         paper_path = None,
         paper_url = None,
-        graph_traverser=None,
+        graph_traversers=None,
         return_dict_with_context=True,
         traversal_problem_type = None,
         
@@ -58,7 +58,7 @@ def call_inference(
     print(args)
 
     # load stuff
-    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traverser = graph_traverser, traversal_problem_type=traversal_problem_type)
+    prepared_kwargs = load_modules(args, inference_schema = schema, graph_traversers = graph_traversers, traversal_problem_type=traversal_problem_type)
     ff_iterator = FormFillingIterator(args, **prepared_kwargs)
 
     # make the argument into dictionary
@@ -92,32 +92,52 @@ def call_inference(
 
         # fill form
         outputs[key] =ff_iterator.fill_single_form(key=key, paper_text=paper_text, pydantic_form=schema, return_dict_with_context=return_dict_with_context)
-        #if len(outputs)>10:
+        #if len(outputs)>2:
         #    break
 
     return outputs
 
 
-def match_hf_acm_graphs():
-    from hf_tag_graph import hftags_list
-    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
 
-    output = call_inference(
-            schema = PathSchema,
-            parsed_paper_text = hftags_list,
-            graph_traverser = Traverser(CCS_HIERARCHY),
-            return_dict_with_context = False,
-            traversal_problem_type = "graph2graph",
-            # kwargs
-            context_shortener = "full_paper",
-            #ff_model = "4om",
-            ff_model = "41n",
-            #ff_model = "5n",
-            )
+def call_news_run(n=1):
+    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
+    from dataset_loader import Arxiv_HF_Newsletters_datasets
+    ahd = Arxiv_HF_Newsletters_datasets()
+    ahd.prepare()
 
-def call_arxhf_to_acm_run(n=1):
-    from metadata_schemas.acm_ccs import Traverser, CCS_HIERARCHY, PathSchema
+    hf, arx, newsletters = ahd.get_dict_format(n)
 
+    hf_description_type = "tags and model card of a Huggingface model"
+    arx_description_type = "title and abstract of an arXiv paper"
+    nl_description_type = "Newsletter item/blurb"
+
+    hf = {key: (val, hf_description_type) for key, val in hf.items()}
+    #arx = {key: (val, arx_description_type) for key, val in arx.items()}
+
+    nls = {}
+    for nl in newsletters:
+        nls.update({key: (val, nl_description_type) for key, val in nl.items()})
+
+
+    traversers = get_v3_traverser_dict() 
+    for dataset in [nls]: # simply add hf and arx if doing all
+        output = call_inference(
+                schema = v3_Schema,
+                parsed_paper_text = dataset,
+                graph_traversers = traversers,
+                return_dict_with_context = False,
+                traversal_problem_type = "text2graph",
+                # kwargs
+                save = True,
+                load = True,
+                context_shortener = "full_paper",
+                #ff_model = "4om",
+                ff_model = "41n",
+                #ff_model = "5n",
+                )
+
+def call_ccsv3_run(n=1):
+    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
     from dataset_loader import Arxiv_HF_datasets
     ahd = Arxiv_HF_datasets()
     ahd.prepare()
@@ -131,11 +151,15 @@ def call_arxhf_to_acm_run(n=1):
 
 
 
-    for dataset in [hf, arx]:
+    traversers = get_v3_traverser_dict() 
+    for dataset in [
+            hf, 
+            arx
+            ]:
         output = call_inference(
-                schema = PathSchema,
+                schema = v3_Schema,
                 parsed_paper_text = dataset,
-                graph_traverser = Traverser(CCS_HIERARCHY),
+                graph_traversers = traversers,
                 return_dict_with_context = False,
                 traversal_problem_type = "text2graph",
                 # kwargs
@@ -196,4 +220,6 @@ def test_call():
 
 if __name__ == "__main__":
     #test_call()
-    call_arxhf_to_acm_run(100)
+    #call_ccsv3_run(5)
+    call_ccsv3_run(10)
+    #call_news_run(10)

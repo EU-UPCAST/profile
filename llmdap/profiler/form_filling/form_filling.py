@@ -118,7 +118,7 @@ def make_text2graph_traversal_prompt(text,
                           text_type=None,
                           **kwargs
                           ):
-    prompt = """Your task is to label a resource/artifact with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
+    prompt = """Your task is to label a textual document with a tag from a taxonomy or ontology. This is done by iteratively traversing the ontology.
 At each iteration, you are given the name of the current node, as well as its """
     if parent_nodes is None:
         prompt+="child nodes."
@@ -128,8 +128,8 @@ At each iteration, you are given the name of the current node, as well as its ""
     else:
         prompt+="parent, sibling and child nodes."
     prompt +="""
-You must choose which of these are most relevant for the artifact.
-- If you choose the current node, the artifact is labeled with this term.
+You must choose which of these are most relevant for the document.
+- If you choose the current node, the document is labeled with this term.
 - If you choose any of the other nodes """
     if parent_nodes is None:
         prompt+="(child nodes)"
@@ -137,13 +137,17 @@ You must choose which of these are most relevant for the artifact.
         prompt+="(parent or child nodes)"
     else:
         prompt+="(parent, sibling or child nodes)"
-    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct.
+    prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct (just choose the current node if none of the child nodes are appropriate)."""
+    if "Not relevant" in child_nodes:
+        prompt += f" If the ontology ({current_path[0]}) is not relevant to the document, please use the 'Not relevant' option."
+    
+    prompt +="""
 
 The concrete variables for the task are listed here:
 """
     if not text_type is None:
-        prompt += f"Type of artifact and description: {text_type}\n"
-    prompt += f"Artifact description: {text}\n"
+        prompt += f"Type of document: {text_type}\n"
+    prompt += f"Document: \n{text}\n(document finished)\n"
     prompt += f"Current node: {current_path[-1]}\n"
     prompt += f"Absolute position of current node: {'/'.join(current_path)}\n"
     if not sibling_nodes is None:
@@ -155,9 +159,9 @@ The concrete variables for the task are listed here:
     prompt += "\nPlease provide the most relevant label below:\n"
     prompt += "Answer: "
 
-    print("::::")
-    print(prompt)
-    print("::::")
+    #print("::::")
+    #print(prompt)
+    #print("::::")
 
     return prompt
 
@@ -610,16 +614,17 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
 
 
         # generate answer
-        completion = openai.beta.chat.completions.parse(
-                                                        model = model_id,
-                                                        messages = [
-                                                            {
-                                                                "role":"user",
-                                                                "content": prompt_function(**prompt_input, listed_answer=listify),
-                                                            }
-                                                        ],
-                                                        response_format = subschema,
-                                                        )
+        generation_kwargs = dict(model = model_id,
+                                 messages = [{"role":"user", "content": prompt_function(**prompt_input, listed_answer=listify)}],
+                                 response_format = subschema)
+        try:
+            completion = openai.beta.chat.completions.parse(**generation_kwargs)
+        except openai.RateLimitError:
+            import time
+            print("\n ... sleeping a bit to avoid OpenAI rate limit) ...")
+            time.sleep(15)
+            completion = openai.beta.chat.completions.parse(**generation_kwargs)
+
         if len(completion.choices) > 1:
             print(completion)
             print(completion.model_dump)
@@ -857,7 +862,7 @@ class AdaptiveFormFiller:
                  outlines_llm = None,
                  outlines_sampler = None,
                  pydantic_form = None,
-                 graph_traverser = None,
+                 graph_traversers = None,
                  traversal_type = None,
                  traversal_max_steps = None,
                  listify_form = False,
@@ -877,7 +882,7 @@ class AdaptiveFormFiller:
 
         self.answer_in_quotes=answer_in_quotes
         self.pydantic_form = pydantic_form
-        self.graph_traverser = graph_traverser
+        self.graph_traversers = graph_traversers
         self.fields = pydantic_form.__fields__ 
         self.field_fillers = {}
         self.problem_type = problem_type
@@ -912,24 +917,23 @@ class AdaptiveFormFiller:
 
     @weave.op()
     def recursive_forward(self, get_context, exclude_fields = []):
-        current_path = self.graph_traverser.current_path
+        current_path = self.current_traverser.current_path
         current_path_string = "__".join(current_path)
 
 
 
         # make prompt input
-        prompt_input = {
-                       "current_path":current_path,
-                       "allowed_answers":[*self.graph_traverser.get_child_nodes(), current_path[-1]],
-                       "child_nodes":self.graph_traverser.get_child_nodes(),
+        prompt_input = { "current_path":current_path,
+                       "allowed_answers":[*self.current_traverser.get_child_nodes(), current_path[-1]],
+                       "child_nodes":self.current_traverser.get_child_nodes(),
                         }
         if self.traversal_type in ["free", "vertical"]:
             prompt_input.update({
-                "parent_nodes":self.graph_traverser.get_parent_nodes()
+                "parent_nodes":self.current_traverser.get_parent_nodes()
                 })
         if self.traversal_type == "free":
             prompt_input.update({
-                "sibling_nodes":self.graph_traverser.get_sibling_nodes(),
+                "sibling_nodes":self.current_traverser.get_sibling_nodes(),
                 })
 
 
@@ -952,7 +956,7 @@ class AdaptiveFormFiller:
         # generate output
         try:
             if self.openai_model_id is None: # use outlines model
-                current_field = self.graph_traverser.get_field()
+                current_field = self.current_traverser.get_field()
                 self.prepare_field_filler(current_field, current_path_string)
                 field_type = current_field.annotation
                 output = self.field_fillers[current_path_string].forward(
@@ -965,7 +969,7 @@ class AdaptiveFormFiller:
                 output = openAIFieldFiller(
                         prompt_input = prompt_input,
                         model_id = self.openai_model_id,
-                        subschema = self.graph_traverser.get_pydantic_form(),
+                        subschema = self.current_traverser.get_pydantic_form(),
                         listify=self.listify_form,
                         verbose=self.verbose,
                         prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
@@ -977,16 +981,19 @@ class AdaptiveFormFiller:
         assert type(output) is str 
         print(output)
 
-        if output == self.graph_traverser.current_path[-1]:
+        if output == self.current_traverser.current_path[-1]:
             return
 
-        direction = self.graph_traverser.move(output)
+        direction = self.current_traverser.move(output)
         self.traversal_steps.append(direction+" "+output)
+
+        if output == "Other":
+            return
 
         if len(self.traversal_steps) >= self.traversal_max_steps and self.traversal_type != "down":
             print("----Max travesal steps reached. Reverting to downward traversal.")
             self.traversal_type = "down"
-            self.graph_traverser.set_traversal_type("down")
+            self.current_traverser.set_traversal_type("down")
         self.recursive_forward(get_context)
 
 
@@ -995,27 +1002,46 @@ class AdaptiveFormFiller:
 
 
     @weave.op()
-    def forward(self, get_context, exclude_fields = []):
-        self.graph_traverser.reset_position() # can add another node to start from (from e.g. similarity match)
-        self.graph_traverser.set_traversal_type(self.starting_traversal_type)
+    def single_traverser_forward(self, get_context, exclude_fields = []):
+        self.current_traverser.reset_position() # can add another node to start from (from e.g. similarity match)
+        self.current_traverser.set_traversal_type(self.starting_traversal_type)
         self.traversal_steps = []
         self.traversal_type = self.starting_traversal_type
 
         # traverse recursively
         self.recursive_forward(get_context)
-        path = self.graph_traverser.current_path
+        path = self.current_traverser.current_path
         #path = "/".join(path)
         print("---- finished traversal. Steps made:", self.traversal_steps)
 
         # merge or child node
         if self.problem_type == "graph2graph":
             raise NotImplementedError
+        return path
 
 
-        output_dict = {next(iter(self.fields.keys())) : path}
+
+
+    @weave.op()
+    def forward(self, get_context, exclude_fields = []):
+        if type(self.graph_traversers) == dict:
+            output_dict = {}
+            for key in self.graph_traversers:
+                self.current_traverser = self.graph_traversers[key]
+                output_dict[key] = self.single_traverser_forward(get_context, exclude_fields)
+
+
+
+
+        else:
+            self.current_traverser = self.graph_traversers
+            path = self.single_traverser_forward(get_context, exclude_fields)
+            output_dict = {next(iter(self.fields.keys())) : path}
+
+        print(f"finished traversing::: ")
+        print(get_context()[0])
+        print("generated dict:")
+        print(output_dict)
         filled_form = self.pydantic_form(**output_dict)
         torch.cuda.empty_cache()
-        print(f"finished traversing::: {get_context()} ---> {path}")
         return filled_form
-
-
