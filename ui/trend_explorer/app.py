@@ -1,4 +1,4 @@
-"""Standalone Streamlit UI for exploring ACM CCS trends."""
+"""Standalone Streamlit UI for exploring AI taxonomy trends."""
 
 from __future__ import annotations
 
@@ -12,21 +12,41 @@ from typing import Dict, Iterable, List, Optional, Tuple
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ARXIV_DATA_PATH = REPO_ROOT / "llmdap" / "profiler" / "arxiv_trends.csv.bz2"
-HF_DATA_PATH = REPO_ROOT / "llmdap" / "profiler" / "hf_trends.csv.bz2"
-ROOT_NODE = "Computing methodologies"
+PROFILER_DIR = REPO_ROOT / "llmdap" / "profiler"
+TAXONOMY_PATH = PROFILER_DIR / "metadata_schemas" / "ai_taxonomy.yaml"
 TopicPath = Tuple[str, ...]
 
-try:
-    from llmdap.profiler.metadata_schemas.acm_ccs import CCS_HIERARCHY
-except ModuleNotFoundError:
-    import sys
+BRANCH_DEFINITIONS: Tuple[Tuple[str, str], ...] = (
+    ("Model architecture", "architecture"),
+    ("AI problem type", "problem"),
+    ("Learning paradigm", "paradigm"),
+    ("Application domain", "application"),
+)
+BRANCH_KEY_MAP: Dict[str, str] = {branch: key for branch, key in BRANCH_DEFINITIONS}
 
-    if str(REPO_ROOT) not in sys.path:
-        sys.path.insert(0, str(REPO_ROOT))
-    from llmdap.profiler.metadata_schemas.acm_ccs import CCS_HIERARCHY
+
+def load_ai_taxonomy(path: Path) -> Dict:
+    if not path.exists():
+        raise FileNotFoundError(f"Cannot find AI taxonomy at {path}")
+    with path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle)
+    taxonomy = data.get("AI_Taxonomy", data)
+    if not isinstance(taxonomy, dict):
+        raise ValueError("Loaded taxonomy has unexpected structure.")
+    return taxonomy
+
+
+AI_TAXONOMY = load_ai_taxonomy(TAXONOMY_PATH)
+ROOT_NODE = "AI Taxonomy"
+TAXONOMY_TREE: Dict[str, Dict] = {ROOT_NODE: AI_TAXONOMY}
+TOP_LEVEL_BRANCHES: Tuple[str, ...] = tuple(AI_TAXONOMY.keys())
+ARXIV_DATA_PATH = PROFILER_DIR / "arxiv_trends.csv.bz2"
+HF_DATA_PATH = PROFILER_DIR / "hf_trends.csv.bz2"
+IMP_DATA_PATH = PROFILER_DIR / "imp_trends.csv.bz2"
+TLDR_DATA_PATH = PROFILER_DIR / "tldr_trends.csv.bz2"
 
 
 @dataclass(frozen=True)
@@ -39,64 +59,398 @@ class TopicSummary:
         return " / ".join(self.path)
 
 
-def _iter_paths(tree: Dict | List | str, prefix: TopicPath = ()) -> Iterable[TopicPath]:
+@dataclass(frozen=True)
+class DataSourceConfig:
+    key: str
+    label: str
+    path: Path
+    id_column: str
+    primary_date_column: str
+    parse_dates: Tuple[str, ...]
+    entity_label: str
+    rename_columns: Dict[str, str] = None
+    secondary_date_column: Optional[str] = None
+    link_template: Optional[str] = None
+    link_label: Optional[str] = None
+    link_text: str = "Open"
+
+    def resolved_rename_map(self) -> Dict[str, str]:
+        return self.rename_columns or {}
+
+
+@dataclass
+class SourceView:
+    key: str
+    config: DataSourceConfig
+    full_df: pd.DataFrame
+    filtered_df: pd.DataFrame
+    branch_column: str
+    overall_counts: Dict[TopicPath, int]
+    filtered_counts: Dict[TopicPath, int]
+    monthly_counts: pd.DataFrame
+
+
+DATA_SOURCES: Dict[str, DataSourceConfig] = {
+    "arxiv": DataSourceConfig(
+        key="arxiv",
+        label="arXiv",
+        path=ARXIV_DATA_PATH,
+        id_column="id",
+        primary_date_column="submission_date",
+        parse_dates=("submission_date",),
+        entity_label="Papers",
+        link_template="https://arxiv.org/abs/{id}",
+        link_label="arXiv",
+    ),
+    "hf": DataSourceConfig(
+        key="hf",
+        label="Hugging Face",
+        path=HF_DATA_PATH,
+        id_column="modelId",
+        primary_date_column="createdAt",
+        parse_dates=("createdAt", "last_modified"),
+        entity_label="Models",
+        secondary_date_column="last_modified",
+        link_template="https://huggingface.co/{modelId}",
+        link_label="Hub",
+    ),
+    "imp": DataSourceConfig(
+        key="imp",
+        label="IMP",
+        path=IMP_DATA_PATH,
+        id_column="record_id",
+        primary_date_column="date",
+        parse_dates=("date",),
+        entity_label="Entries",
+        rename_columns={"Unnamed: 0": "record_id"},
+    ),
+    "tldr": DataSourceConfig(
+        key="tldr",
+        label="TL;DR",
+        path=TLDR_DATA_PATH,
+        id_column="record_id",
+        primary_date_column="date",
+        parse_dates=("date",),
+        entity_label="Summaries",
+        rename_columns={"Unnamed: 0": "record_id"},
+    ),
+}
+
+EXTRA_TABLE_COLUMNS: Dict[str, List[str]] = {
+    "arxiv": ["categories"],
+    "hf": [],
+    "imp": [],
+    "tldr": [],
+}
+
+
+def _iter_paths(tree: Dict | List | str | None, prefix: TopicPath = ()) -> Iterable[TopicPath]:
     if isinstance(tree, dict):
         for key, child in tree.items():
             new_prefix = prefix + (key,)
             yield new_prefix
+            if child is None:
+                continue
             yield from _iter_paths(child, new_prefix)
     elif isinstance(tree, list):
         for item in tree:
             new_prefix = prefix + (item,)
             yield new_prefix
+    elif tree is None:
+        return
     else:
         raise TypeError(f"Unsupported tree node type: {type(tree)}")
 
 
-def _get_subtree(tree: Dict | List, path: TopicPath) -> Dict | List:
+def _get_subtree(tree: Dict | List | None, path: TopicPath) -> Dict | List | None:
     subtree = tree
     for key in path:
         if isinstance(subtree, dict):
+            if key not in subtree:
+                raise KeyError(f"Node '{key}' not found under path {' / '.join(path[:-1])}")
             subtree = subtree[key]
         elif isinstance(subtree, list):
             if key not in subtree:
                 raise KeyError(f"Leaf '{key}' not found under path {' / '.join(path[:-1])}")
-            subtree = key
+            subtree = None
+        elif subtree is None:
+            raise KeyError(f"Cannot descend beyond leaf at {' / '.join(path)}")
         else:
             raise KeyError(f"Cannot descend into node at {' / '.join(path)}")
     return subtree
 
 
 def list_all_topic_paths() -> List[TopicPath]:
-    return [path for path in _iter_paths(CCS_HIERARCHY)]
+    return [path for path in _iter_paths(TAXONOMY_TREE)]
 
 
-@st.cache_data(show_spinner=False)
-def load_arxiv_trend_data(csv_path: Path = ARXIV_DATA_PATH) -> pd.DataFrame:
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Cannot find trend data at {csv_path}")
+def branch_path_column(branch: str) -> str:
+    if branch not in BRANCH_KEY_MAP:
+        raise KeyError(f"Unknown branch '{branch}'")
+    return f"{BRANCH_KEY_MAP[branch]}_path"
 
-    df = pd.read_csv(csv_path, compression="bz2", parse_dates=["submission_date"])
-    df["predicted_tag"] = df["predicted_tag"].apply(ast.literal_eval).apply(tuple)
-    df["topic_path"] = df["predicted_tag"]
+
+def determine_branch(selected_path: TopicPath) -> str:
+    if len(selected_path) >= 2 and selected_path[1] in BRANCH_KEY_MAP:
+        return selected_path[1]
+    return BRANCH_DEFINITIONS[0][0]
+
+
+def normalise_selected_path(selected_path: TopicPath) -> TopicPath:
+    if not selected_path:
+        default_branch = BRANCH_DEFINITIONS[0][0]
+        return (ROOT_NODE, default_branch)
+    if selected_path[0] != ROOT_NODE:
+        return (ROOT_NODE,) + selected_path
+    if len(selected_path) == 1:
+        default_branch = BRANCH_DEFINITIONS[0][0]
+        return (ROOT_NODE, default_branch)
+    return selected_path
+
+
+def normalise_predicted_tag(raw_tags: object) -> Tuple[str, ...]:
+    if isinstance(raw_tags, (list, tuple)):
+        return tuple(raw_tags)
+    if isinstance(raw_tags, str):
+        try:
+            parsed = ast.literal_eval(raw_tags)
+        except (ValueError, SyntaxError):
+            return tuple()
+        if isinstance(parsed, (list, tuple)):
+            return tuple(parsed)
+    return tuple()
+
+
+def segment_branch_paths(tags: Tuple[str, ...]) -> Dict[str, TopicPath]:
+    branch_paths: Dict[str, TopicPath] = {}
+    current_branch: Optional[str] = None
+    current_path: List[str] = []
+
+    for label in tags:
+        if label in BRANCH_KEY_MAP:
+            if current_branch is not None and current_path:
+                branch_paths[current_branch] = tuple(current_path)
+            current_branch = label
+            current_path = [ROOT_NODE, label]
+        else:
+            if current_branch is None:
+                continue
+            current_path.append(label)
+
+    if current_branch is not None and current_path:
+        branch_paths[current_branch] = tuple(current_path)
+
+    for branch in BRANCH_KEY_MAP:
+        branch_paths.setdefault(branch, (ROOT_NODE, branch))
+
+    return branch_paths
+
+
+def filter_by_branch_path(df: pd.DataFrame, branch: str, target_path: TopicPath) -> pd.DataFrame:
+    adjusted_path = normalise_selected_path(target_path)
+    column_name = branch_path_column(branch)
+    prefix_len = len(adjusted_path)
+    if prefix_len <= 2:
+        return df.copy()
+    mask = df[column_name].apply(lambda topic: topic[:prefix_len] == adjusted_path)
+    return df[mask].copy()
+
+
+def prepare_source_views(selected_path: TopicPath, branch: str, sources: Dict[str, pd.DataFrame]) -> Dict[str, SourceView]:
+    adjusted_path = normalise_selected_path(selected_path)
+    views: Dict[str, SourceView] = {}
+    column_name = branch_path_column(branch)
+
+    for key, df in sources.items():
+        config = DATA_SOURCES[key]
+        branch_paths = tuple(df[column_name])
+        overall_counts = compute_topic_counts(branch_paths)
+
+        filtered_df = filter_by_branch_path(df, branch, adjusted_path)
+        if filtered_df.empty:
+            filtered_counts: Dict[TopicPath, int] = {}
+            monthly_counts = pd.DataFrame(columns=["month", "count"])
+        else:
+            filtered_counts = compute_topic_counts(tuple(filtered_df[column_name]))
+            monthly_counts = compute_monthly_counts(filtered_df, config.primary_date_column, config.id_column)
+
+        views[key] = SourceView(
+            key=key,
+            config=config,
+            full_df=df,
+            filtered_df=filtered_df,
+            branch_column=column_name,
+            overall_counts=overall_counts,
+            filtered_counts=filtered_counts,
+            monthly_counts=monthly_counts,
+        )
+
+    return views
+
+
+def build_display_table(view: SourceView, branch: str) -> Tuple[pd.DataFrame, Dict[str, st.column_config.Column]]:
+    df = view.filtered_df.copy()
+    if df.empty:
+        return df, {}
+
+    config = view.config
+    display_columns: List[str] = [config.id_column, config.primary_date_column]
+
+    if config.secondary_date_column and config.secondary_date_column in df.columns:
+        display_columns.append(config.secondary_date_column)
+
+    for column in EXTRA_TABLE_COLUMNS.get(view.key, []):
+        if column in df.columns:
+            display_columns.append(column)
+
+    path_display_column = f"{BRANCH_KEY_MAP[branch]}_path_display"
+    df[path_display_column] = df[view.branch_column].apply(format_branch_path)
+    display_columns.append(path_display_column)
+
+    column_config: Dict[str, st.column_config.Column] = {
+        path_display_column: st.column_config.TextColumn("Taxonomy path"),
+    }
+
+    if config.link_template:
+        link_column = f"{view.key}_link"
+        df[link_column] = df[config.id_column].apply(
+            lambda value: config.link_template.format(**{config.id_column: value})
+            if pd.notna(value)
+            else ""
+        )
+        display_columns.append(link_column)
+        column_config[link_column] = st.column_config.LinkColumn(
+            config.link_label or config.label,
+            display_text=config.link_text,
+        )
+
+    if pd.api.types.is_datetime64_any_dtype(df[config.primary_date_column]):
+        df[config.primary_date_column] = df[config.primary_date_column].dt.date
+
+    if config.secondary_date_column and config.secondary_date_column in df.columns:
+        if pd.api.types.is_datetime64_any_dtype(df[config.secondary_date_column]):
+            df[config.secondary_date_column] = df[config.secondary_date_column].dt.date
+
+    df = df[display_columns]
+    df.sort_values(config.primary_date_column, ascending=False, inplace=True)
+
+    readable_names = {
+        config.id_column: config.id_column.replace("_", " ").title(),
+        config.primary_date_column: config.primary_date_column.replace("_", " ").title(),
+    }
+    if config.secondary_date_column and config.secondary_date_column in df.columns:
+        readable_names[config.secondary_date_column] = config.secondary_date_column.replace("_", " ").title()
+    if config.key in EXTRA_TABLE_COLUMNS:
+        for column in EXTRA_TABLE_COLUMNS[config.key]:
+            if column in df.columns:
+                readable_names[column] = column.replace("_", " ").title()
+    readable_names[path_display_column] = "Taxonomy path"
+
+    df.rename(columns=readable_names, inplace=True)
+
+    return df, column_config
+
+
+def render_source_view_tab(view: SourceView, branch: str, selected_path: TopicPath) -> None:
+    config = view.config
+    entity_label = config.entity_label
+    filtered_df = view.filtered_df
+
+    st.metric(entity_label, len(filtered_df))
+
+    if filtered_df.empty:
+        st.info(f"No {entity_label.lower()} mapped to this topic in {config.label}.")
+        render_sunburst(view.overall_counts, highlight_path=selected_path, dataset_label=config.label)
+        return
+
+    primary_dates = filtered_df[config.primary_date_column]
+    first_date = primary_dates.min()
+    last_date = primary_dates.max()
+    if pd.notna(first_date) and pd.notna(last_date):
+        st.caption(f"Time span: {first_date.date()} → {last_date.date()}")
+
+    if config.secondary_date_column and config.secondary_date_column in filtered_df.columns:
+        secondary_dates = filtered_df[config.secondary_date_column].dropna()
+        if not secondary_dates.empty:
+            latest_secondary = secondary_dates.max()
+            label = config.secondary_date_column.replace("_", " ").title()
+            st.caption(f"Latest {label}: {latest_secondary.date()}")
+
+    if view.monthly_counts.empty:
+        st.caption("No monthly activity to display.")
+    else:
+        st.write("Monthly activity")
+        trend_fig = px.line(
+            view.monthly_counts,
+            x="month",
+            y="count",
+            markers=True,
+            labels={"month": "Month", "count": f"{entity_label} per month"},
+        )
+        trend_fig.update_layout(hovermode="x unified")
+        trend_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+        st.plotly_chart(trend_fig, use_container_width=True)
+
+    child_summaries = child_topic_summaries(selected_path, view.filtered_counts)
+    if child_summaries:
+        child_df = pd.DataFrame(
+            {
+                "Topic": [format_branch_path(summary.path) for summary in child_summaries],
+                entity_label: [summary.paper_count for summary in child_summaries],
+            }
+        )
+        st.write(f"Immediate subtopics ({entity_label.lower()})")
+        st.table(child_df)
+
+    render_sunburst(view.overall_counts, highlight_path=selected_path, dataset_label=config.label)
+
+    display_df, column_config = build_display_table(view, branch)
+    if not display_df.empty:
+        st.write("Matching items")
+        st.dataframe(
+            display_df,
+            width="stretch",
+            hide_index=True,
+            column_config=column_config,
+        )
+
+
+def _load_single_source(config: DataSourceConfig) -> pd.DataFrame:
+    if not config.path.exists():
+        raise FileNotFoundError(f"Cannot find trend data for {config.label} at {config.path}")
+
+    parse_dates = list(config.parse_dates)
+    df = pd.read_csv(config.path, compression="bz2", parse_dates=parse_dates)
+    rename_map = config.resolved_rename_map()
+    if rename_map:
+        df.rename(columns=rename_map, inplace=True)
+
+    df["predicted_tag"] = df["predicted_tag"].apply(normalise_predicted_tag)
+    branch_mappings = df["predicted_tag"].apply(segment_branch_paths)
+
+    for branch, key in BRANCH_DEFINITIONS:
+        column_name = f"{key}_path"
+        df[column_name] = branch_mappings.apply(lambda mapping, branch_name=branch: mapping[branch_name])
+
+    df["source_key"] = config.key
+    df["source_label"] = config.label
+    df["entity_label"] = config.entity_label
+    df["link_template"] = config.link_template
+    df["link_label"] = config.link_label or config.label
+    df["link_text"] = config.link_text
+
     return df
 
 
 @st.cache_data(show_spinner=False)
-def load_hf_trend_data(csv_path: Path = HF_DATA_PATH) -> pd.DataFrame:
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Cannot find trend data at {csv_path}")
-
-    df = pd.read_csv(csv_path, compression="bz2", parse_dates=["createdAt", "last_modified"])
-    df["predicted_tag"] = df["predicted_tag"].apply(ast.literal_eval).apply(tuple)
-    df["topic_path"] = df["predicted_tag"]
-    return df
+def load_all_sources() -> Dict[str, pd.DataFrame]:
+    return {key: _load_single_source(config) for key, config in DATA_SOURCES.items()}
 
 
 @st.cache_data(show_spinner=False)
-def compute_topic_counts(df: pd.DataFrame) -> Dict[TopicPath, int]:
+def compute_topic_counts(paths: Iterable[TopicPath]) -> Dict[TopicPath, int]:
     counts: Dict[TopicPath, int] = defaultdict(int)
-    for path in df["topic_path"]:
+    for path in tuple(paths):
         if not path:
             continue
         for depth in range(1, len(path) + 1):
@@ -119,32 +473,24 @@ def compute_monthly_counts(df: pd.DataFrame, date_column: str, id_column: str) -
     return monthly_counts
 
 
-def build_combined_monthly_trends(arxiv_monthly: pd.DataFrame, hf_monthly: pd.DataFrame) -> pd.DataFrame:
-    series: List[pd.DataFrame] = []
-    if not arxiv_monthly.empty:
-        series.append(arxiv_monthly.assign(dataset="arXiv"))
-    if not hf_monthly.empty:
-        series.append(hf_monthly.assign(dataset="Hugging Face"))
+def build_combined_monthly_trends(series: List[Tuple[str, pd.DataFrame]]) -> pd.DataFrame:
+    frames: List[pd.DataFrame] = []
+    for label, monthly in series:
+        if monthly.empty:
+            continue
+        frames.append(monthly.assign(dataset=label))
 
-    if not series:
+    if not frames:
         return pd.DataFrame(columns=["month", "count", "dataset"])
 
-    combined = pd.concat(series, ignore_index=True)
+    combined = pd.concat(frames, ignore_index=True)
     combined.sort_values("month", inplace=True)
     return combined
 
 
-def filter_by_path(df: pd.DataFrame, path: TopicPath) -> pd.DataFrame:
-    if not path:
-        return df
-    prefix_len = len(path)
-    mask = df["topic_path"].apply(lambda topic: topic[:prefix_len] == path)
-    return df[mask].copy()
-
-
 def child_topic_summaries(path: TopicPath, counts: Dict[TopicPath, int]) -> List[TopicSummary]:
     try:
-        subtree = _get_subtree(CCS_HIERARCHY, path)
+        subtree = _get_subtree(TAXONOMY_TREE, path)
     except KeyError:
         return []
 
@@ -152,6 +498,8 @@ def child_topic_summaries(path: TopicPath, counts: Dict[TopicPath, int]) -> List
         child_names = subtree.keys()
     elif isinstance(subtree, list):
         child_names = subtree
+    elif subtree is None:
+        return []
     else:
         return []
 
@@ -185,11 +533,22 @@ def format_path(path: TopicPath) -> str:
     return " / ".join(path)
 
 
-def topic_selector() -> TopicPath:
-    st.sidebar.subheader("Topic Navigator")
+def format_branch_path(path: TopicPath) -> str:
+    if not path:
+        return ""
+    if path[0] == ROOT_NODE:
+        return " / ".join(path[1:])
+    return " / ".join(path)
 
-    path: List[str] = [ROOT_NODE]
-    current_node = CCS_HIERARCHY[ROOT_NODE]
+
+def topic_selector() -> TopicPath:
+    st.sidebar.subheader("Taxonomy Navigator")
+
+    branch_options = [branch for branch, _ in BRANCH_DEFINITIONS]
+    branch = st.sidebar.radio("Axis", branch_options, index=0, key="branch_selector")
+
+    path: List[str] = [ROOT_NODE, branch]
+    current_node = AI_TAXONOMY.get(branch, {})
     depth = 0
 
     while True:
@@ -200,12 +559,12 @@ def topic_selector() -> TopicPath:
                 label,
                 options,
                 format_func=lambda option: f"Stay at {path[-1]}" if option is None else option,
-                key=f"selector_{depth}_{'_'.join(path).replace(' ', '_')}"
+                key=f"{branch}_selector_{depth}_{'_'.join(path).replace(' ', '_')}"
             )
             if selection is None:
-                return tuple(path)
+                break
             path.append(selection)
-            current_node = current_node[selection]
+            current_node = current_node.get(selection)
             depth += 1
         elif isinstance(current_node, list):
             leaf_options: List[Optional[str]] = [None] + sorted(current_node)
@@ -213,167 +572,18 @@ def topic_selector() -> TopicPath:
                 label,
                 leaf_options,
                 format_func=lambda option: f"Stay at {path[-1]}" if option is None else option,
-                key=f"selector_leaf_{depth}_{'_'.join(path).replace(' ', '_')}"
+                key=f"{branch}_selector_leaf_{depth}_{'_'.join(path).replace(' ', '_')}"
             )
             if selection is None:
-                return tuple(path)
+                break
             path.append(selection)
-            return tuple(path)
+            break
+        elif current_node is None:
+            break
         else:
-            return tuple(path)
+            break
 
-
-def render_topic_overview(
-    selected_path: TopicPath,
-    arxiv_df: pd.DataFrame,
-    arxiv_counts: Dict[TopicPath, int],
-    hf_df: pd.DataFrame,
-    hf_counts: Dict[TopicPath, int],
-) -> None:
-    st.header(format_path(selected_path))
-
-    arxiv_papers = filter_by_path(arxiv_df, selected_path)
-    hf_models = filter_by_path(hf_df, selected_path)
-    arxiv_monthly = compute_monthly_counts(arxiv_papers, "submission_date", "id")
-    hf_monthly = compute_monthly_counts(hf_models, "createdAt", "modelId")
-    combined_monthly = build_combined_monthly_trends(arxiv_monthly, hf_monthly)
-
-    if not combined_monthly.empty:
-        st.subheader("Monthly activity trend")
-        trend_fig = px.line(
-            combined_monthly,
-            x="month",
-            y="count",
-            color="dataset",
-            markers=True,
-            labels={"month": "Month", "count": "Items per month", "dataset": "Dataset"},
-        )
-        trend_fig.update_layout(hovermode="x unified")
-        trend_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
-        st.plotly_chart(trend_fig, use_container_width=True)
-
-    st.subheader("arXiv Papers")
-    total_papers = len(arxiv_papers)
-    st.metric("Papers", total_papers)
-
-    if total_papers:
-        col1, col2 = st.columns(2)
-        with col1:
-            first_date = arxiv_papers["submission_date"].min()
-            last_date = arxiv_papers["submission_date"].max()
-            st.caption(f"Time span: {first_date.date()} → {last_date.date()}")
-
-            arxiv_breakdown = arxiv_papers["categories"].value_counts().head(5)
-            st.write("Top arXiv categories")
-            st.bar_chart(arxiv_breakdown)
-
-        with col2:
-            if arxiv_monthly.empty:
-                st.caption("No monthly submission activity to display.")
-            else:
-                st.write("Monthly submissions")
-                monthly_fig = px.line(
-                    arxiv_monthly,
-                    x="month",
-                    y="count",
-                    markers=True,
-                    labels={"month": "Month", "count": "Papers per month"},
-                )
-                monthly_fig.update_layout(hovermode="x unified")
-                monthly_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
-                st.plotly_chart(monthly_fig, use_container_width=True)
-
-        child_summaries = child_topic_summaries(selected_path, arxiv_counts)
-        if child_summaries:
-            child_df = pd.DataFrame(
-                {
-                    "Topic": [summary.label for summary in child_summaries],
-                    "Papers": [summary.paper_count for summary in child_summaries],
-                }
-            )
-            st.write("Immediate subtopics (papers)")
-            st.table(child_df)
-
-        display_df = arxiv_papers[["id", "submission_date", "categories", "predicted_tag"]].copy()
-        display_df.sort_values("submission_date", ascending=False, inplace=True)
-        display_df["predicted_tag"] = display_df["predicted_tag"].apply(lambda tags: " / ".join(tags))
-        display_df["submission_date"] = display_df["submission_date"].dt.date
-        display_df["arxiv_link"] = display_df["id"].apply(lambda paper_id: f"https://arxiv.org/abs/{paper_id}")
-        display_df = display_df[["id", "submission_date", "categories", "predicted_tag", "arxiv_link"]]
-        st.write("Matching papers")
-        st.dataframe(
-            display_df,
-            width="stretch",
-            hide_index=True,
-            column_config={
-                "arxiv_link": st.column_config.LinkColumn("arXiv", display_text="Open"),
-            },
-        )
-    else:
-        st.info("No papers mapped to this topic in the dataset.")
-
-    st.divider()
-
-    st.subheader("Hugging Face Models")
-    total_models = len(hf_models)
-    st.metric("Models", total_models)
-
-    if total_models:
-        col1, col2 = st.columns(2)
-        with col1:
-            first_created = hf_models["createdAt"].min()
-            last_created = hf_models["createdAt"].max()
-            st.caption(f"Creation span: {first_created.date()} → {last_created.date()}")
-
-            if hf_models["last_modified"].notna().any():
-                latest_update = hf_models["last_modified"].max()
-                st.caption(f"Latest modification: {latest_update.date()}")
-
-        with col2:
-            if hf_monthly.empty:
-                st.caption("No monthly model activity to display.")
-            else:
-                st.write("Monthly model additions")
-                hf_trend_fig = px.line(
-                    hf_monthly,
-                    x="month",
-                    y="count",
-                    markers=True,
-                    labels={"month": "Month", "count": "Models per month"},
-                )
-                hf_trend_fig.update_layout(hovermode="x unified")
-                hf_trend_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
-                st.plotly_chart(hf_trend_fig, use_container_width=True)
-
-        model_child_summaries = child_topic_summaries(selected_path, hf_counts)
-        if model_child_summaries:
-            child_df = pd.DataFrame(
-                {
-                    "Topic": [summary.label for summary in model_child_summaries],
-                    "Models": [summary.paper_count for summary in model_child_summaries],
-                }
-            )
-            st.write("Immediate subtopics (models)")
-            st.table(child_df)
-
-        display_df = hf_models[["modelId", "createdAt", "last_modified", "predicted_tag"]].copy()
-        display_df.sort_values("last_modified", ascending=False, inplace=True)
-        display_df["predicted_tag"] = display_df["predicted_tag"].apply(lambda tags: " / ".join(tags))
-        display_df["createdAt"] = display_df["createdAt"].dt.date
-        display_df["last_modified"] = display_df["last_modified"].dt.date
-        display_df["hf_link"] = display_df["modelId"].apply(lambda model_id: f"https://huggingface.co/{model_id}")
-        display_df = display_df[["modelId", "createdAt", "last_modified", "predicted_tag", "hf_link"]]
-        st.write("Matching models")
-        st.dataframe(
-            display_df,
-            width="stretch",
-            hide_index=True,
-            column_config={
-                "hf_link": st.column_config.LinkColumn("Hugging Face", display_text="Open"),
-            },
-        )
-    else:
-        st.info("No models mapped to this topic in the dataset.")
+    return tuple(path)
 
 
 def render_sunburst(
@@ -419,24 +629,49 @@ def render_sunburst(
     st.plotly_chart(fig, config={"responsive": True})
 
 
+def render_branch_overview(selected_path: TopicPath, views: Dict[str, SourceView], branch: str) -> None:
+    st.header(format_branch_path(selected_path))
+
+    combined_series = [
+        (view.config.label, view.monthly_counts) for view in views.values()
+    ]
+    combined_monthly = build_combined_monthly_trends(combined_series)
+
+    if not combined_monthly.empty:
+        st.subheader("Monthly activity across all sources")
+        combined_fig = px.line(
+            combined_monthly,
+            x="month",
+            y="count",
+            color="dataset",
+            markers=True,
+            labels={"month": "Month", "count": "Items per month", "dataset": "Source"},
+        )
+        combined_fig.update_layout(hovermode="x unified")
+        combined_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+        st.plotly_chart(combined_fig, use_container_width=True)
+    else:
+        st.info("No activity found for this topic across the available sources.")
+
+    tabs = st.tabs([view.config.label for view in views.values()])
+    for tab, view in zip(tabs, views.values()):
+        with tab:
+            render_source_view_tab(view, branch, selected_path)
+
+
 def main() -> None:
-    st.set_page_config(page_title="ACM AI Trend Explorer", layout="wide")
-    st.title("ACM AI Trend Explorer")
-    st.caption("Explore arXiv papers and Hugging Face models mapped to the customized ACM CCS hierarchy.")
+    st.set_page_config(page_title="AI Taxonomy Trend Explorer", layout="wide")
+    st.title("AI Taxonomy Trend Explorer")
+    st.caption(
+        "Explore AI taxonomy topics across arXiv, Hugging Face, IMP, and TL;DR with unified monthly trends."
+    )
 
-    arxiv_df = load_arxiv_trend_data()
-    arxiv_counts = compute_topic_counts(arxiv_df)
-    hf_df = load_hf_trend_data()
-    hf_counts = compute_topic_counts(hf_df)
+    sources = load_all_sources()
+    selected_path = normalise_selected_path(topic_selector())
+    branch = determine_branch(selected_path)
+    views = prepare_source_views(selected_path, branch, sources)
 
-    selector_col, overview_col = st.columns([1, 2])
-    with selector_col:
-        selected_path = topic_selector()
-        render_sunburst(arxiv_counts, selected_path, dataset_label="arXiv")
-        render_sunburst(hf_counts, selected_path, dataset_label="Hugging Face")
-
-    with overview_col:
-        render_topic_overview(selected_path, arxiv_df, arxiv_counts, hf_df, hf_counts)
+    render_branch_overview(selected_path, views, branch)
 
 
 if __name__ == "__main__":

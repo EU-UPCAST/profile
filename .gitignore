@@ -9,3 +9,4 @@ llmdap/data/ai_news_2022_2025.csv
 *.swp
 *.pt
 .venv*
+*.DS_Store
