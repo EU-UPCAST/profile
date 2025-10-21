@@ -171,6 +171,36 @@ def call_ccsv3_run(n=1):
                 #ff_model = "5n",
                 )
 
+def call_5_nhrf_papers():
+    import os
+    folder = "../data/nhrf_papers/"
+    dataset = {}
+    for file in os.listdir(folder):
+        pmid = file[:-4]
+        with open(folder+file, "r") as f:
+            dataset[pmid] = f.read()
+
+
+    from metadata_schemas.arxpr2_schema import Metadata_form as schema
+    from metadata_schemas.arxpr2_schema import get_shuffled_form_generator
+    schema = get_shuffled_form_generator(25, v3=True)()
+    #from metadata_schemas.nhrf_qa_schema import Metadata_form as schema
+
+    output = call_inference(
+            schema,
+            parsed_paper_text = dataset,
+            #
+            load=False,
+            similarity_k = 3,
+            field_info_to_compare = "choices",
+            ff_model = "5n",
+            )
+
+    print("output:")
+    import pprint
+    pprint.pprint(output, width=160)
+    print(output)
+
     
 def test_call():
 
@@ -216,10 +246,12 @@ def test_call():
 
     print("output:")
     import pprint
-    pprint.pprint(output)
+    pprint.pprint(output, width=160)
 
 if __name__ == "__main__":
     #test_call()
     #call_ccsv3_run(5)
-    call_ccsv3_run(10)
+    #call_ccsv3_run(10)
     #call_news_run(10)
+    call_5_nhrf_papers()
+

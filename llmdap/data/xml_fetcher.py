@@ -10,6 +10,7 @@ def save_xml(pmid, folder = "/mnt/data/upcast/data/all_xmls", encoding="ascii", 
     if filename in os.listdir(folder): # avoid requesting again
         return 1
     url = f"https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/{source}.cgi/BioC_xml/{pmid}/{encoding}"
+    print(url)
     try:
         page = requests.get(url)
         text = page.text
@@ -26,5 +27,13 @@ def save_xml(pmid, folder = "/mnt/data/upcast/data/all_xmls", encoding="ascii", 
         return 0
 
 if __name__ == "__main__":
-    for pmid in [33495476, 35810190, 33789117, 35368039]: # nhrf examples
-        save_xml(pmid)
+    #for pmid in [33495476, 35810190, 33789117, 35368039]: # nhrf examples
+    #    save_xml(pmid)
+    for pmid in [
+            30809322,
+            33385518,
+            36765773,
+            36835157,
+            39876058]: # 5 papers for plugin test # no text for any of these...
+        save_xml(pmid)  
+
