@@ -444,6 +444,38 @@ def find_longest_true_sebseq(series, debug = False):
     return series
 
 
+class Arxiv_Longterm_Dataset:
+    def __init__(self, period=[2013.0, 2022.02]):
+        self.full_arx = _load_arxiv_timeline()
+        self.period = period
+
+    def prepare(self, m=1):
+        self.arx = self.full_arx.copy()
+
+        self.group_dfs_in_months(m)
+
+        # restrict to range
+        self.arx = self.arx[self.arx["bin"]>=self.period[0]][self.arx["bin"]<=self.period[1]]
+
+    def sample_subsets(self, n):
+        RANDOM_STATE = 123
+        arxsubset=self.arx.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
+        return arxsubset
+
+    def get_dict_format(self, n):
+        arx = self.sample_subsets(n)
+
+        abstracts = arx["abstract"].to_dict()
+        titles= arx["title"].to_dict()
+        papers = {}
+        for key in titles:
+            papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
+        return papers
+
+    def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
+        self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
+
+
 class Arxiv_HF_Newsletters_datasets:
     def __init__(self):
         self.full_arx = _load_arxiv_timeline()
