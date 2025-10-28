@@ -99,92 +99,64 @@ def call_inference(
 
 
 
-def call_news_run(n=1):
-    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
-    from dataset_loader import Arxiv_HF_Newsletters_datasets
-    ahd = Arxiv_HF_Newsletters_datasets()
-    ahd.prepare()
+class Call_ccsv3_run:
+    def __init__(self,):
+        self.hf_description_type = "Tags and model card of a Huggingface model"
+        self.arx_description_type = "Title and abstract of an arXiv paper"
+        self.nl_description_type = "Newsletter item/blurb"
 
-    hf, arx, newsletters = ahd.get_dict_format(n)
+    def load_data(self,n=1):
+        from dataset_loader import Arxiv_HF_Newsletters_datasets
+        ahd = Arxiv_HF_Newsletters_datasets()
+        ahd.prepare()
 
-    hf_description_type = "tags and model card of a Huggingface model"
-    arx_description_type = "title and abstract of an arXiv paper"
-    nl_description_type = "Newsletter item/blurb"
+        hf, arx, newsletters = ahd.get_dict_format(n)
 
-    hf = {key: (val, hf_description_type) for key, val in hf.items()}
-    #arx = {key: (val, arx_description_type) for key, val in arx.items()}
+        self.hf = {key: (val, self.hf_description_type) for key, val in hf.items()}
+        self.arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
 
-    nls = {}
-    for nl in newsletters:
-        nls.update({key: (val, nl_description_type) for key, val in nl.items()})
+        self.nls = {}
+        for nl in newsletters:
+            self.nls.update({key: (val, self.nl_description_type) for key, val in nl.items()})
 
+    def load_old_arxiv(self,n=1):
+        from dataset_loader import Arxiv_Longterm_Dataset 
+        ald = Arxiv_Longterm_Dataset()
+        ald.prepare()
+        arx = ald.get_dict_format(n)
+        self.old_arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
 
-    traversers = get_v3_traverser_dict() 
-    for dataset in [nls]: # simply add hf and arx if doing all
-        output = call_inference(
-                schema = v3_Schema,
-                parsed_paper_text = dataset,
-                graph_traversers = traversers,
-                return_dict_with_context = False,
-                traversal_problem_type = "text2graph",
-                # kwargs
-                save = True,
-                load = True,
-                context_shortener = "full_paper",
-                #ff_model = "4om",
-                ff_model = "41n",
-                #ff_model = "5n",
-                )
+    def call_run(self,datasets):
 
-def call_ccsv3_run(n=1):
-    from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
-    from dataset_loader import Arxiv_HF_datasets
-    ahd = Arxiv_HF_datasets()
-    ahd.prepare()
+        from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
 
-    hf, arx = ahd.get_dict_format(n)
-
-    hf_description_type = "Huggingface model, described by tags and model card"
-    arx_description_type = "Arxiv paper, described by title and abstract"
-    hf = {key: (val, hf_description_type) for key, val in hf.items()}
-    arx = {key: (val, arx_description_type) for key, val in arx.items()}
+        traversers = get_v3_traverser_dict() 
+        for dataset in datasets:
+            output = call_inference(
+                    schema = v3_Schema,
+                    parsed_paper_text = dataset,
+                    graph_traversers = traversers,
+                    return_dict_with_context = False,
+                    traversal_problem_type = "text2graph",
+                    # kwargs
+                    save = True,
+                    load = True,
+                    context_shortener = "full_paper",
+                    #ff_model = "4om",
+                    ff_model = "41n",
+                    #ff_model = "5n",
+                    )                                        
 
 
 
-    traversers = get_v3_traverser_dict() 
-    for dataset in [
-            hf, 
-            arx
-            ]:
-        output = call_inference(
-                schema = v3_Schema,
-                parsed_paper_text = dataset,
-                graph_traversers = traversers,
-                return_dict_with_context = False,
-                traversal_problem_type = "text2graph",
-                # kwargs
-                save = True,
-                load = True,
-                context_shortener = "full_paper",
-                #ff_model = "4om",
-                ff_model = "41n",
-                #ff_model = "5n",
-                )
-
-    
-def test_call():
-
-    path = "/mnt/data/upcast/data/all_xmls/12093373_ascii_pmcoa.xml"
-    path2= "/mnt/data/upcast/data/all_xmls/12095422_ascii_pmcoa.xml"
-    import dataset_loader
-
-    parsed_xml_paper_text = dataset_loader.load_paper_text_from_file_path(path)
-    with open(path, "r") as f:
-        raw_xml_paper_text = f.read()
-
-    #paper_path = path
-    paper_url = "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12093373/ascii"
-    paper_url2= "https://www.ncbi.nlm.nih.gov/research/bionlp/RESTful/pmcoa.cgi/BioC_xml/12095422/ascii"
+def call_5_nhrf_papers():
+    import os
+    folder = "../data/nhrf_papers/"
+    dataset = {}
+    for file in os.listdir(folder):
+        pmid = file[:-4]
+        with open(folder+file, "r") as f:
+            dataset[pmid] = f.read()
 
 
     from metadata_schemas.arxpr2_schema import Metadata_form as schema
@@ -194,32 +166,27 @@ def test_call():
 
     output = call_inference(
             schema,
+            parsed_paper_text = dataset,
             #
-            # choose one to try out:
-            #
-            parsed_paper_text = parsed_xml_paper_text,#[1500:2000],
-            #raw_xml_paper_text = raw_xml_paper_text,
-            #paper_path = paper_path,
-            #paper_path = [paper_path, path2],
-            #paper_url = paper_url,
-            #paper_url = {"paper1": paper_url, "paper2":paper_url2},
-            #
-            similarity_k = 2,
+            load=False,
+            similarity_k = 3,
             field_info_to_compare = "choices",
-            #field_info_to_compare = "description",
-            context_shortener = "full_paper",
-            #ff_model = "jakiAJK/DeepSeek-R1-Distill-Llama-8B_GPTQ-int4",
-            #ff_model = "llama3.1I-8b-q4",
-            #ff_model = "TheBloke/Mistral-7B-v0.1-GPTQ",
-            ff_model = "41n",
+            ff_model = "5n",
             )
 
     print("output:")
     import pprint
-    pprint.pprint(output)
+    pprint.pprint(output, width=160)
+    print(output)
+
 
 if __name__ == "__main__":
-    #test_call()
-    #call_ccsv3_run(5)
-    call_ccsv3_run(10)
-    #call_news_run(10)
+    C = Call_ccsv3_run()
+
+    #C.load_data(10)
+    #datasets = [C.hf, C.arx, C.nls]
+    C.load_old_arxiv(10)
+    datasets = [C.old_arx]
+
+    C.call_run(datasets)
+
