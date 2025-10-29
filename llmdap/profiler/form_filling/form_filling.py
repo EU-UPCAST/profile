@@ -138,9 +138,12 @@ You must choose which of these are most relevant for the document.
     else:
         prompt+="(parent, sibling or child nodes)"
     prompt +=""", you will move position to that node, and redo this task from there. This way you can iteratively traverse through the ontology. You should aim to end up at the most relevant node, and as specific as possible while still being correct (just choose the current node if none of the child nodes are appropriate)."""
-    if "Not relevant" in child_nodes:
-        prompt += f" If the ontology ({current_path[0]}) is not relevant to the document, please use the 'Not relevant' option."
     
+
+    if "Not relevant" in child_nodes:
+        prompt += f"\nNote: If the ontology ({current_path[0]}) is not relevant to the document, or if the document does not contain information relevant to the ontology, please use the 'Not relevant' option. In other words, use 'Not relevant' to avoid guessing labels not inferrable from the document." # Saying this 3 times to hopefully make it happen
+    if "Other" in child_nodes:
+        prompt += f"\nNote: If none of the child nodes are correct labels for the documents, but you still think the current node ({current_path[-1]}) is correct, please answer '{current_path[-1]}'. If you think the current node is not actually correct, please use the 'other' option."
     prompt +="""
 
 The concrete variables for the task are listed here:
