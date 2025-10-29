@@ -449,28 +449,32 @@ class Longterm_Datasets:
     def __init__(self, period=[2013.0, 2022.02]):
         self.full_arx = _load_arxiv_timeline()
         full_nls = _load_newsletter_timelines()
-        self.full_dlw full_nls[2]
+        self.full_imp = full_nls[0]
+        self.full_dlw = full_nls[2]
 
         self.period = period
 
     def prepare(self, m=1):
         self.arx = self.full_arx.copy()
         self.dlw = self.full_dlw.copy()
+        self.imp = self.full_imp.copy()
 
         self.group_dfs_in_months(m)
 
         # restrict to range
         self.arx = self.arx[self.arx["bin"]>=self.period[0]][self.arx["bin"]<=self.period[1]]
         self.dlw = self.dlw[self.dlw["bin"]>=self.period[0]][self.dlw["bin"]<=self.period[1]]
+        self.imp = self.imp[self.imp["bin"]>=self.period[0]][self.imp["bin"]<=self.period[1]]
 
     def sample_subsets(self, n):
         RANDOM_STATE = 123
         arxsubset=self.arx.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
         dlwsubset=self.dlw.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
-        return arxsubset, dlwsubset
+        impsubset=self.imp.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
+        return arxsubset, dlwsubset, impsubset
 
     def get_dict_format(self, n):
-        arx, dlw = self.sample_subsets(n)
+        arx, dlw, imp = self.sample_subsets(n)
 
         abstracts = arx["abstract"].to_dict()
         titles= arx["title"].to_dict()
@@ -481,12 +485,15 @@ class Longterm_Datasets:
         newsletters = []
         for nl in dlw:
             newsletters.append(nl["text"].to_dict())
+        for nl in imp:
+            newsletters.append(nl["text"].to_dict())
 
         return papers, newsletters
 
     def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
         self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
         self.dlw["bin"] = ((self.dlw["submission_date"].dt.month+m-1)//m)/100 + self.dlw["submission_date"].dt.year
+        self.imp["bin"] = ((self.imp["submission_date"].dt.month+m-1)//m)/100 + self.imp["submission_date"].dt.year
 
 
 class Arxiv_HF_Newsletters_datasets:

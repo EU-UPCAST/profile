@@ -123,9 +123,9 @@ class Call_ccsv3_run:
         from dataset_loader import Longterm_Datasets
         ld = Longterm_Datasets()
         ld.prepare()
-        arx, dlw = ald.get_dict_format(n)
+        arx, nls = ald.get_dict_format(n)
         self.old_arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
-        self.old_dlw = {key: (val, self.nl_description_type) for key, val in dlw.items()}
+        self.old_nls = {key: (val, self.nl_description_type) for key, val in imp.items()}
 
     def call_run(self,datasets):
 
@@ -189,7 +189,7 @@ if __name__ == "__main__":
     #datasets = [C.nls]
     C.load_old_data(1)
     #datasets = [C.old_arx]
-    datasets = [C.old_dlw]
+    datasets = [C.old_nls]
 
     C.call_run(datasets)
 
