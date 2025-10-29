@@ -483,17 +483,15 @@ class Longterm_Datasets:
             papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
 
         newsletters = []
-        for nl in dlw:
-            newsletters.append(nl["text"].to_dict())
-        for nl in imp:
+        for nl in [dlw, imp]:
             newsletters.append(nl["text"].to_dict())
 
         return papers, newsletters
 
     def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
         self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
-        self.dlw["bin"] = ((self.dlw["submission_date"].dt.month+m-1)//m)/100 + self.dlw["submission_date"].dt.year
-        self.imp["bin"] = ((self.imp["submission_date"].dt.month+m-1)//m)/100 + self.imp["submission_date"].dt.year
+        self.dlw["bin"] = ((self.dlw["date"].dt.month+m-1)//m)/100 + self.dlw["date"].dt.year
+        self.imp["bin"] = ((self.imp["date"].dt.month+m-1)//m)/100 + self.imp["date"].dt.year
 
 
 class Arxiv_HF_Newsletters_datasets:
