@@ -233,12 +233,32 @@ def serialize_node(node: Tag, depth: int = 0) -> List[str]:
             continue
 
         if name == "p":
+            entries = extract_paragraph_entries(child)
+            if entries:
+                for entry in entries:
+                    lines.append(f"### {entry.heading}")
+                    if entry.href:
+                        lines.append(f"[Link] {entry.href}")
+                    for description in entry.description:
+                        for desc_line in description.splitlines():
+                            stripped = desc_line.strip()
+                            if stripped:
+                                lines.append(stripped)
+                    lines.append("")
+                continue
+
             entry_heading = extract_entry_heading(child)
             if entry_heading:
                 heading_text, href = entry_heading
                 lines.append(f"### {heading_text}")
                 if href:
                     lines.append(f"[Link] {href}")
+                lines.append("")
+                continue
+
+            category_heading = extract_category_heading(child)
+            if category_heading:
+                lines.append(f"## {category_heading}")
                 lines.append("")
                 continue
             text = child.get_text(separator="\n", strip=True)
@@ -331,6 +351,90 @@ def extract_entry_heading(paragraph: Tag) -> Optional[Tuple[str, str]]:
 
     href = anchor.get("href", "").strip()
     return text, href
+
+
+@dataclass
+class ParagraphEntry:
+    heading: str
+    href: str
+    description: List[str]
+
+
+def extract_paragraph_entries(paragraph: Tag) -> Optional[List[ParagraphEntry]]:
+    anchors = paragraph.find_all("a")
+    if not anchors:
+        return None
+
+    # Require anchors to be wrapped in <strong> to avoid intro paragraphs with inline links.
+    if any(anchor.find_parent("strong") is None for anchor in anchors):
+        return None
+
+    entries: List[ParagraphEntry] = []
+    current: Optional[ParagraphEntry] = None
+
+    for child in paragraph.children:
+        if isinstance(child, NavigableString):
+            text = child.strip()
+            if text and current is not None:
+                current.description.append(text)
+            continue
+
+        if not isinstance(child, Tag):
+            continue
+
+        name = child.name.lower()
+
+        if name == "strong":
+            anchor = child.find("a")
+            if anchor:
+                heading = anchor.get_text(separator=" ", strip=True)
+                if not heading:
+                    current = None
+                    continue
+                href = anchor.get("href", "").strip()
+                current = ParagraphEntry(heading=heading, href=href, description=[])
+                entries.append(current)
+            else:
+                text = child.get_text(separator=" ", strip=True)
+                if text and current is not None:
+                    current.description.append(text)
+            continue
+
+        if name == "a":
+            heading = child.get_text(separator=" ", strip=True)
+            if heading:
+                href = child.get("href", "").strip()
+                current = ParagraphEntry(heading=heading, href=href, description=[])
+                entries.append(current)
+            continue
+
+        if name == "br":
+            continue
+
+        text = child.get_text(separator="\n", strip=True)
+        if text and current is not None:
+            current.description.append(text)
+
+    entries = [entry for entry in entries if entry.heading]
+    return entries if entries else None
+
+
+def extract_category_heading(paragraph: Tag) -> Optional[str]:
+    if paragraph.find("a"):
+        return None
+
+    strong_tags = paragraph.find_all("strong")
+    if not strong_tags:
+        return None
+
+    text = paragraph.get_text(separator=" ", strip=True)
+    strong_text = " ".join(
+        tag.get_text(separator=" ", strip=True) for tag in strong_tags
+    ).strip()
+
+    if text and text == strong_text:
+        return text
+    return None
 
 
 @dataclass
