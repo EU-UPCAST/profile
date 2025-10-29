@@ -119,12 +119,13 @@ class Call_ccsv3_run:
         for nl in newsletters:
             self.nls.update({key: (val, self.nl_description_type) for key, val in nl.items()})
 
-    def load_old_arxiv(self,n=1):
-        from dataset_loader import Arxiv_Longterm_Dataset 
-        ald = Arxiv_Longterm_Dataset()
-        ald.prepare()
-        arx = ald.get_dict_format(n)
+    def load_old_data(self,n=1):
+        from dataset_loader import Longterm_Datasets
+        ld = Longterm_Datasets()
+        ld.prepare()
+        arx, dlw = ald.get_dict_format(n)
         self.old_arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
+        self.old_dlw = {key: (val, self.nl_description_type) for key, val in dlw.items()}
 
     def call_run(self,datasets):
 
@@ -183,10 +184,12 @@ def call_5_nhrf_papers():
 if __name__ == "__main__":
     C = Call_ccsv3_run()
 
-    #C.load_data(10)
+    #C.load_data(1)
     #datasets = [C.hf, C.arx, C.nls]
-    C.load_old_arxiv(10)
-    datasets = [C.old_arx]
+    #datasets = [C.nls]
+    C.load_old_data(1)
+    #datasets = [C.old_arx]
+    datasets = [C.old_dlw]
 
     C.call_run(datasets)
 
