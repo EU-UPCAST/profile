@@ -99,7 +99,7 @@ def call_inference(
 
 
 
-class Call_ccsv3_run:
+class Call_ccsv4_run:
     def __init__(self,):
         self.hf_description_type = "Tags and model card of a Huggingface model"
         self.arx_description_type = "Title and abstract of an arXiv paper"
@@ -116,7 +116,7 @@ class Call_ccsv3_run:
         self.arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
 
         self.nls = {}
-        for nl in newsletters:
+        for nl in newsletters[-2:-1]:
             self.nls.update({key: (val, self.nl_description_type) for key, val in nl.items()})
 
     def load_old_data(self,n=1):
@@ -131,12 +131,12 @@ class Call_ccsv3_run:
 
     def call_run(self,datasets):
 
-        from metadata_schemas.ai_taxonomy import Traverser, v3_Schema, get_v3_traverser_dict
+        from metadata_schemas.ai_taxonomy import Traverser, v4_Schema, get_v4_traverser_dict
 
-        traversers = get_v3_traverser_dict() 
+        traversers = get_v4_traverser_dict() 
         for dataset in datasets:
             output = call_inference(
-                    schema = v3_Schema,
+                    schema = v4_Schema,
                     parsed_paper_text = dataset,
                     graph_traversers = traversers,
                     return_dict_with_context = False,
@@ -184,14 +184,14 @@ def call_5_nhrf_papers():
 
 
 if __name__ == "__main__":
-    C = Call_ccsv3_run()
+    C = Call_ccsv4_run()
 
-    #C.load_data(1)
-    #datasets = [C.hf, C.arx, C.nls]
-    #datasets = [C.nls]
-    C.load_old_data(1)
+    C.load_data(1)
+    datasets = [C.hf, C.arx]#, C.nls]
+    datasets = [C.nls]
+    #C.load_old_data(1)
     #datasets = [C.old_arx]
-    datasets = [C.old_nls]
+    #datasets = [C.old_nls]
 
     C.call_run(datasets)
 
