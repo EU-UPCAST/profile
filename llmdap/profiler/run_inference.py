@@ -116,7 +116,7 @@ class Call_ccsv4_run:
         self.arx = {key: (val, self.arx_description_type) for key, val in arx.items()}
 
         self.nls = {}
-        for nl in newsletters[-2:-1]:
+        for nl in newsletters:
             self.nls.update({key: (val, self.nl_description_type) for key, val in nl.items()})
 
     def load_old_data(self,n=1):
@@ -186,11 +186,11 @@ def call_5_nhrf_papers():
 if __name__ == "__main__":
     C = Call_ccsv4_run()
 
-    C.load_data(1)
-    datasets = [C.hf, C.arx]#, C.nls]
-    datasets = [C.nls]
-    #C.load_old_data(1)
-    #datasets = [C.old_arx]
+    C.load_data(10)
+    datasets = [C.hf, C.arx, C.nls]
+    #datasets = [C.nls]
+    #C.load_old_data(10)
+    #datasets = [C.old_arx, C.old_nls]
     #datasets = [C.old_nls]
 
     C.call_run(datasets)
