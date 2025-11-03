@@ -113,13 +113,13 @@ class Traverser:
             self.current_path = path.copy()
 
 
-class v3_Schema(BaseModel):
+class v4_Schema(BaseModel):
     arch : list[str] = Field(description = "Model architecture")
     prob : list[str] = Field(description = "AI problem type")
     para : list[str] = Field(description = "Learning paradigm")
     appl : list[str] = Field(description = "Application domain")
 
-def get_v3_traverser_dict():
+def get_v4_traverser_dict():
     traversers = {
             "arch": Traverser(AI_TAXONOMY, ["Model architecture"]),
             "prob": Traverser(AI_TAXONOMY, ["AI problem type"]),

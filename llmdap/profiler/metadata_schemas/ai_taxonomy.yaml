@@ -233,7 +233,7 @@ AI_Taxonomy:
   
   Application domain: 
     Not relevant: 
-    General-purpose applications: 
+    General-purpose AI products: 
       Assistants and chat: 
         Chatbots: 
           - Open-domain/social chatbots
@@ -443,6 +443,57 @@ AI_Taxonomy:
           - Climate science
           - Conservation
           - Sustainable resource management
+
+    AI_infrastructure_and_tooling:
+      Machine_learning_operations_MLOps:
+        - Experiment tracking
+        - Model versioning and registry
+        - Deployment and serving
+        - Production monitoring (latency, errors, SLOs)
+        - Canary/blue-green rollouts
+        - Incident response and alerting
+        - Drift detection and automated retraining
+    
+      Data_engineering_and_pipelines:
+        - Data collection and labeling
+        - Data validation and quality monitoring
+        - Feature stores and data versioning
+    
+      Evaluation_and_observability:
+        - Offline evaluation and benchmarks
+        - Behavioral/unit tests for prompts and agents
+        - Online evaluation (A/B tests, interleaving)
+        - Tracing and telemetry (requests, tokens, costs)
+        - Performance dashboards and analytics
+    
+      Infrastructure_and_scaling:
+        - Distributed training
+        - Inference optimization
+        - Resource scheduling and autoscaling
+        - Cloud and edge deployment
+    
+      Developer_frameworks_and_runtimes:
+        - ML libraries and frameworks
+        - Prompt/agent orchestration frameworks
+        - Simulation and sandbox environments
+        - API and SDK toolkits
+    
+      Safety_and_policy:
+        - Policy enforcement and guardrails
+        - Safety evaluation and red-teaming
+        - Content moderation
+        - Prompt injection and jailbreak defenses
+        - Toxicity and bias filtering
+        - PII filtering and data loss prevention
+    
+      Governance_and_compliance:
+        - Model and data provenance/watermarking
+        - Audit logging and traceability
+        - Access control and approval workflows
+        - Risk and compliance assessments (GDPR, HIPAA, etc.)
+        - Privacy-preserving inference (differential privacy, MPC)
+        - Model documentation and reporting (model cards, system cards)
+
         
       
     
