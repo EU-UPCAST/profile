@@ -1,4 +1,4 @@
-AI_Taxonomy:
+AI Taxonomy:
   Model architecture: 
     Not relevant: 
     Classical machine learning models: 
@@ -444,8 +444,8 @@ AI_Taxonomy:
           - Conservation
           - Sustainable resource management
 
-    AI_infrastructure_and_tooling:
-      Machine_learning_operations_MLOps:
+    AI infrastructure and tooling:
+      Machine learning operations MLOps:
         - Experiment tracking
         - Model versioning and registry
         - Deployment and serving
@@ -454,31 +454,31 @@ AI_Taxonomy:
         - Incident response and alerting
         - Drift detection and automated retraining
     
-      Data_engineering_and_pipelines:
+      Data engineering and pipelines:
         - Data collection and labeling
         - Data validation and quality monitoring
         - Feature stores and data versioning
     
-      Evaluation_and_observability:
+      Evaluation and observability:
         - Offline evaluation and benchmarks
         - Behavioral/unit tests for prompts and agents
         - Online evaluation (A/B tests, interleaving)
         - Tracing and telemetry (requests, tokens, costs)
         - Performance dashboards and analytics
     
-      Infrastructure_and_scaling:
+      Infrastructure and scaling:
         - Distributed training
         - Inference optimization
         - Resource scheduling and autoscaling
         - Cloud and edge deployment
     
-      Developer_frameworks_and_runtimes:
+      Developer frameworks and runtimes:
         - ML libraries and frameworks
         - Prompt/agent orchestration frameworks
         - Simulation and sandbox environments
         - API and SDK toolkits
     
-      Safety_and_policy:
+      Safety and policy:
         - Policy enforcement and guardrails
         - Safety evaluation and red-teaming
         - Content moderation
@@ -486,7 +486,7 @@ AI_Taxonomy:
         - Toxicity and bias filtering
         - PII filtering and data loss prevention
     
-      Governance_and_compliance:
+      Governance and compliance:
         - Model and data provenance/watermarking
         - Audit logging and traceability
         - Access control and approval workflows
