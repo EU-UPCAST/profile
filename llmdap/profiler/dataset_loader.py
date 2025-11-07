@@ -407,8 +407,8 @@ def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_t
 
 
 def _load_newsletter_timelines(csv_paths  = [
-            "/mnt/data/upcast/data/import_ai_stories.csv",
-            "/mnt/data/upcast/data/tldr_ai_stories.csv",
+            #"/mnt/data/upcast/data/import_ai_stories.csv",
+            #"/mnt/data/upcast/data/tldr_ai_stories.csv",
             "/mnt/data/upcast/data/dlweekly_stories.csv"
             ]):
     import pandas as pd
@@ -449,32 +449,33 @@ class Longterm_Datasets:
     def __init__(self, period=[2013.0, 2022.02]):
         self.full_arx = _load_arxiv_timeline()
         full_nls = _load_newsletter_timelines()
-        self.full_imp = full_nls[0]
-        self.full_dlw = full_nls[2]
+        #self.full_imp = full_nls[0]
+        self.full_dlw = full_nls[0]#2]
 
         self.period = period
 
     def prepare(self, m=1):
         self.arx = self.full_arx.copy()
         self.dlw = self.full_dlw.copy()
-        self.imp = self.full_imp.copy()
+        #self.imp = self.full_imp.copy()
 
         self.group_dfs_in_months(m)
 
         # restrict to range
         self.arx = self.arx[self.arx["bin"]>=self.period[0]][self.arx["bin"]<=self.period[1]]
         self.dlw = self.dlw[self.dlw["bin"]>=self.period[0]][self.dlw["bin"]<=self.period[1]]
-        self.imp = self.imp[self.imp["bin"]>=self.period[0]][self.imp["bin"]<=self.period[1]]
+        #self.imp = self.imp[self.imp["bin"]>=self.period[0]][self.imp["bin"]<=self.period[1]]
 
     def sample_subsets(self, n):
         RANDOM_STATE = 123
         arxsubset=self.arx.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
         dlwsubset=self.dlw.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
-        impsubset=self.imp.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
-        return arxsubset, dlwsubset, impsubset
+        #impsubset=self.imp.groupby(["bin"]).sample(n=n, random_state = RANDOM_STATE)
+        return arxsubset, dlwsubset, #impsubset
 
     def get_dict_format(self, n):
-        arx, dlw, imp = self.sample_subsets(n)
+        #arx, dlw, imp = self.sample_subsets(n)
+        arx, dlw = self.sample_subsets(n)
 
         abstracts = arx["abstract"].to_dict()
         titles= arx["title"].to_dict()
@@ -483,7 +484,7 @@ class Longterm_Datasets:
             papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
 
         newsletters = []
-        for nl in [dlw, imp]:
+        for nl in [dlw]:#, imp]:
             newsletters.append(nl["text"].to_dict())
 
         return papers, newsletters
@@ -491,7 +492,7 @@ class Longterm_Datasets:
     def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
         self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
         self.dlw["bin"] = ((self.dlw["date"].dt.month+m-1)//m)/100 + self.dlw["date"].dt.year
-        self.imp["bin"] = ((self.imp["date"].dt.month+m-1)//m)/100 + self.imp["date"].dt.year
+        #self.imp["bin"] = ((self.imp["date"].dt.month+m-1)//m)/100 + self.imp["date"].dt.year
 
 
 class Arxiv_HF_Newsletters_datasets:

@@ -186,10 +186,11 @@ def call_5_nhrf_papers():
 if __name__ == "__main__":
     C = Call_ccsv4_run()
 
-    C.load_data(10)
-    datasets = [C.hf, C.arx, C.nls]
+    C.load_data(30)
+    #datasets = [C.hf, C.arx, C.nls]
     #datasets = [C.nls]
-    #C.load_old_data(10)
+    C.load_old_data(30)
+    quit()
     #datasets = [C.old_arx, C.old_nls]
     #datasets = [C.old_nls]
 
