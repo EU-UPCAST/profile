@@ -5,7 +5,7 @@ from typing import Literal
 import yaml
 with open('metadata_schemas/ai_taxonomy.yaml', 'r') as file:
     AI_TAXONOMY= yaml.safe_load(file)
-AI_TAXONOMY = AI_TAXONOMY["AI_Taxonomy"]
+AI_TAXONOMY = AI_TAXONOMY["AI Taxonomy"]
 
 
 def find_child_nodes(tree, path):
