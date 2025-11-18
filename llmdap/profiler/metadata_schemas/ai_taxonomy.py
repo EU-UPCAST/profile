@@ -17,7 +17,7 @@ def find_child_nodes(tree, path):
             subtree = subtree[key]
         except:
             print(list(subtree.keys()), key)
-            quit()
+            raise KeyError
     if type(subtree) is dict:
         return list(subtree.keys())
     elif subtree is None: # no child nodes
@@ -128,14 +128,35 @@ def get_v4_traverser_dict():
             }
     return traversers
 
+class ieee_Schema(BaseModel):
+    category : list[str] = Field(description = "Topic category")
+
+def get_ieee_traverser_dict():
+    with open('metadata_schemas/ieee_tax.yaml', 'r') as file:
+        IEEE_TAX = yaml.safe_load(file)
+    traversers = {
+        "category": Traverser(AI_TAXONOMY, ["Computational and artificial intelligence"]),
+            }
+    return traversers
+
 
 if __name__ == "__main__":
+
+    with open('metadata_schemas/ieee_tax.yaml', 'r') as file:
+        IEEE_TAX = yaml.safe_load(file)
+    t = Traverser(IEEE_TAX, ["Computational and artificial intelligence"])
+    t.set_traversal_type("down")
+    print(t.get_child_nodes())
+    t.move("Artificial intelligence")
+    print(t.get_child_nodes())
+    t.move("Affective computing")
+    print(t.get_child_nodes())
+    quit()
+
+
+
     t = Traverser(AI_TAXONOMY, ["Model architecture"])
     t.set_traversal_type("down")
-    
-    #print(t.get_child_nodes())
-    #t.move("Neural/deep learning architectures")
-    #print(t.get_child_nodes())
 
     t.reset_position(["Application domain"])
     t.move("General-purpose applications")
