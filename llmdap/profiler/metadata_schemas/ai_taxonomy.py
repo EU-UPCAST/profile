@@ -131,20 +131,21 @@ def get_v4_traverser_dict():
 class ieee_Schema(BaseModel):
     category : list[str] = Field(description = "Topic category")
 
-def get_ieee_traverser_dict():
+def get_ieee_tax():
     with open('metadata_schemas/ieee_tax.yaml', 'r') as file:
         IEEE_TAX = yaml.safe_load(file)
+    return IEEE_TAX
+
+def get_ieee_traverser_dict():
     traversers = {
-        "category": Traverser(AI_TAXONOMY, ["Computational and artificial intelligence"]),
+        "category": Traverser(get_ieee_tax(), ["Computational and artificial intelligence"]),
             }
     return traversers
 
 
 if __name__ == "__main__":
 
-    with open('metadata_schemas/ieee_tax.yaml', 'r') as file:
-        IEEE_TAX = yaml.safe_load(file)
-    t = Traverser(IEEE_TAX, ["Computational and artificial intelligence"])
+    t = Traverser(get_ieee_tax(), ["Computational and artificial intelligence"])
     t.set_traversal_type("down")
     print(t.get_child_nodes())
     t.move("Artificial intelligence")
