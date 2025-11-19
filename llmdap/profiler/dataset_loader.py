@@ -405,6 +405,11 @@ def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_t
     df["submission_date"] = pd.to_datetime(df["submission_date"], utc=True).dt.tz_convert(None)
     return df
 
+def _load_ieee_ai_10_timeline(csv_path: str = "/mnt/data/upcast/data/trend_analysis/ieee_ai_cl10.csv") -> "pd.DataFrame":
+    import pandas as pd
+    df = pd.read_csv(csv_path)
+    return df
+
 
 def _load_newsletter_timelines(csv_paths  = [
             #"/mnt/data/upcast/data/import_ai_stories.csv",
@@ -444,6 +449,20 @@ def find_longest_true_sebseq(series, debug = False):
 
     return series
 
+class IEEE_Dataset:
+    def __init__(self):
+        self.IEEE = _load_ieee_ai_10_timeline()
+    def sample_subset(self, n):
+        return self.IEEE.groupby(["IEEE Term"]).head(n=n)
+    def get_dict_format(self,n):
+        subset = self.sample_subset(n)
+
+        abstracts = subset["Abstract"].to_dict()
+        titles= subset["Document Title"].to_dict()
+        papers = {}
+        for key in titles:
+            papers[str(key)] = f"Title: {titles[key]}\nAbstract: {abstracts[key]}"
+        return papers
 
 class Longterm_Datasets:
     def __init__(self, period=[2013.0, 2022.02]):
@@ -649,6 +668,8 @@ class Arxiv_HF_datasets:
     def group_dfs_in_months(self, m = 1): #m= number of months to combine in a bin (e.g. m=3 means we look at quarters)
         self.arx["bin"] = ((self.arx["submission_date"].dt.month+m-1)//m)/100 + self.arx["submission_date"].dt.year
         self.hf["bin"] = ((self.hf["createdAt"].dt.month+m-1)//m)/100 + self.hf["createdAt"].dt.year
+
+
 
 
 
