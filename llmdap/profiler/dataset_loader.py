@@ -407,7 +407,7 @@ def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_t
 
 def _load_ieee_ai_10_timeline(csv_path: str = "/mnt/data/upcast/data/trend_analysis/ieee_ai_cl10.csv") -> "pd.DataFrame":
     import pandas as pd
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, index_col=0)
     return df
 
 
