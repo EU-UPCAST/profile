@@ -142,6 +142,16 @@ def get_ieee_traverser_dict():
             }
     return traversers
 
+def get_ieeefull_tax():
+    with open('metadata_schemas/ieeefull_tax.yaml', 'r') as file:
+        IEEEFULL_TAX = yaml.safe_load(file)
+    return IEEEFULL_TAX
+
+def get_ieeefull_traverser_dict():
+    traversers = {
+        "category": Traverser(get_ieeefull_tax(), []),
+            }
+    return traversers
 
 if __name__ == "__main__":
 

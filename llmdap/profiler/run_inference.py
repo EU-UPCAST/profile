@@ -104,8 +104,6 @@ def call_ieee_run(n):
         ieee = IEEE_Dataset().get_dict_format(n)
 
         ieee = {key: (val, description_type) for key, val in ieee.items()}
-        print(ieee)
-        quit()
 
         from metadata_schemas.ai_taxonomy import Traverser, ieee_Schema, get_ieee_traverser_dict
 
@@ -209,7 +207,7 @@ def call_5_nhrf_papers():
 
 if __name__ == "__main__":
 
-    call_ieee_run(1)
+    call_ieee_run(10)
 
     #C = Call_ccsv4_run()
 
