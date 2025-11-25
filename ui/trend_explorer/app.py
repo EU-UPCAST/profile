@@ -35,13 +35,24 @@ def load_ai_taxonomy(path: Path) -> Dict:
         raise FileNotFoundError(f"Cannot find AI taxonomy at {path}")
     with path.open("r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle)
-    taxonomy = data.get("AI_Taxonomy", data)
+    # Accept either underscore or space spelling at root.
+    taxonomy = data.get("AI_Taxonomy") or data.get("AI Taxonomy") or data
     if not isinstance(taxonomy, dict):
         raise ValueError("Loaded taxonomy has unexpected structure.")
     return taxonomy
 
 
-AI_TAXONOMY = load_ai_taxonomy(TAXONOMY_PATH)
+def remove_not_relevant(node: Dict | List | None):
+    """Recursively drop any 'Not relevant' entries from the taxonomy tree for navigation."""
+
+    if isinstance(node, dict):
+        return {k: remove_not_relevant(v) for k, v in node.items() if k != "Not relevant"}
+    if isinstance(node, list):
+        return [item for item in node if item != "Not relevant"]
+    return node
+
+
+AI_TAXONOMY = remove_not_relevant(load_ai_taxonomy(TAXONOMY_PATH))
 ROOT_NODE = "AI Taxonomy"
 TAXONOMY_TREE: Dict[str, Dict] = {ROOT_NODE: AI_TAXONOMY}
 TOP_LEVEL_BRANCHES: Tuple[str, ...] = tuple(AI_TAXONOMY.keys())
@@ -217,6 +228,9 @@ def segment_branch_paths(tags: Tuple[str, ...]) -> Dict[str, TopicPath]:
     current_path: List[str] = []
 
     for label in tags:
+        if label == "Not relevant":
+            # Drop "Not relevant" and keep path at parent level.
+            continue
         if label in BRANCH_KEY_MAP:
             if current_branch is not None and current_path:
                 branch_paths[current_branch] = tuple(current_path)
@@ -232,6 +246,10 @@ def segment_branch_paths(tags: Tuple[str, ...]) -> Dict[str, TopicPath]:
 
     for branch in BRANCH_KEY_MAP:
         branch_paths.setdefault(branch, (ROOT_NODE, branch))
+
+    # Collapse any lingering "Not relevant" labels to their parent.
+    for branch, path in branch_paths.items():
+        branch_paths[branch] = collapse_not_relevant_path(path)
 
     return branch_paths
 
@@ -585,17 +603,28 @@ def format_branch_path(path: TopicPath) -> str:
     return " / ".join(path)
 
 
+def collapse_not_relevant_path(path: TopicPath) -> TopicPath:
+    """Remove any 'Not relevant' label by truncating to its parent."""
+
+    if "Not relevant" not in path:
+        return path
+
+    idx = path.index("Not relevant")
+    # Always keep at least root + branch to preserve grouping
+    return path[: max(2, idx)]
+
+
 def child_options(node: Dict | List | None) -> List[str]:
-    """Return available child labels, injecting an 'Other' catch-all where appropriate."""
+    """Return available child labels, skipping 'Not relevant' and injecting 'Other' when useful."""
 
     if isinstance(node, dict):
-        children = list(node.keys())
+        children = [child for child in node.keys() if child != "Not relevant"]
     elif isinstance(node, list):
-        children = list(node)
+        children = [child for child in node if child != "Not relevant"]
     else:
         children = []
 
-    if children and "Not relevant" not in children and "Other" not in children:
+    if children and "Other" not in children:
         children.append("Other")
 
     return sorted(children)
