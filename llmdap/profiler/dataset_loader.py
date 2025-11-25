@@ -450,8 +450,11 @@ def find_longest_true_sebseq(series, debug = False):
     return series
 
 class IEEE_Dataset:
-    def __init__(self):
-        self.IEEE = _load_ieee_ai_10_timeline()
+    def __init__(self, full=False):
+        if full:
+            self.IEEE = _load_ieee_ai_10_timeline("/mnt/data/upcast/data/trend_analysis/ieee_full_cl10.csv")
+        else:
+            self.IEEE = _load_ieee_ai_10_timeline("/mnt/data/upcast/data/trend_analysis/ieee_ai_cl10.csv")
     def sample_subset(self, n):
         return self.IEEE.groupby(["IEEE Term"]).head(n=n)
     def get_dict_format(self,n):

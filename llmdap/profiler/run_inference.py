@@ -97,17 +97,21 @@ def call_inference(
 
     return outputs
 
-def call_ieee_run(n):
+def call_ieee_run(n, full=False):
         description_type = "Title and abstract of an ieee paper"
 
         from dataset_loader import IEEE_Dataset
-        ieee = IEEE_Dataset().get_dict_format(n)
+        ieee = IEEE_Dataset(full=full).get_dict_format(n)
 
         ieee = {key: (val, description_type) for key, val in ieee.items()}
 
-        from metadata_schemas.ai_taxonomy import Traverser, ieee_Schema, get_ieee_traverser_dict
+  
+        from metadata_schemas.ai_taxonomy import Traverser, ieee_Schema, get_ieee_traverser_dict, get_ieeefull_traverser_dict
+        if full:
+            traversers = get_ieee_traverser_dict() 
+        else:
+            traversers = get_ieee_traverser_dict() 
 
-        traversers = get_ieee_traverser_dict() 
         output = call_inference(
                 schema = ieee_Schema,
                 parsed_paper_text = ieee,
@@ -207,7 +211,8 @@ def call_5_nhrf_papers():
 
 if __name__ == "__main__":
 
-    call_ieee_run(10)
+    #call_ieee_run(10)
+    call_ieee_run(5, True)
 
     #C = Call_ccsv4_run()
 
