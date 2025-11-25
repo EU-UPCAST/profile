@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -16,6 +17,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROFILER_DIR = REPO_ROOT / "llmdap" / "profiler"
+TREND_DATA_DIR = PROFILER_DIR / "trend_csvs"
 TAXONOMY_PATH = PROFILER_DIR / "metadata_schemas" / "ai_taxonomy.yaml"
 TopicPath = Tuple[str, ...]
 
@@ -43,10 +45,9 @@ AI_TAXONOMY = load_ai_taxonomy(TAXONOMY_PATH)
 ROOT_NODE = "AI Taxonomy"
 TAXONOMY_TREE: Dict[str, Dict] = {ROOT_NODE: AI_TAXONOMY}
 TOP_LEVEL_BRANCHES: Tuple[str, ...] = tuple(AI_TAXONOMY.keys())
-ARXIV_DATA_PATH = PROFILER_DIR / "arxiv_trends.csv.bz2"
-HF_DATA_PATH = PROFILER_DIR / "hf_trends.csv.bz2"
-IMP_DATA_PATH = PROFILER_DIR / "imp_trends.csv.bz2"
-TLDR_DATA_PATH = PROFILER_DIR / "tldr_trends.csv.bz2"
+ARXIV_DATA_PATH = TREND_DATA_DIR / "arx_long_trends.csv.bz2"
+DLW_DATA_PATH = TREND_DATA_DIR / "dlw_long_trends.csv.bz2"
+HF_DATA_PATH = TREND_DATA_DIR / "hf_trends.csv.bz2"
 
 
 @dataclass(frozen=True)
@@ -96,8 +97,8 @@ DATA_SOURCES: Dict[str, DataSourceConfig] = {
         label="arXiv",
         path=ARXIV_DATA_PATH,
         id_column="id",
-        primary_date_column="submission_date",
-        parse_dates=("submission_date",),
+        primary_date_column="date",
+        parse_dates=("date",),
         entity_label="Papers",
         link_template="https://arxiv.org/abs/{id}",
         link_label="arXiv",
@@ -107,40 +108,29 @@ DATA_SOURCES: Dict[str, DataSourceConfig] = {
         label="Hugging Face",
         path=HF_DATA_PATH,
         id_column="modelId",
-        primary_date_column="createdAt",
-        parse_dates=("createdAt", "last_modified"),
+        primary_date_column="date",
+        parse_dates=("date", "last_modified"),
         entity_label="Models",
         secondary_date_column="last_modified",
         link_template="https://huggingface.co/{modelId}",
         link_label="Hub",
     ),
-    "imp": DataSourceConfig(
-        key="imp",
-        label="IMP",
-        path=IMP_DATA_PATH,
+    "dlw": DataSourceConfig(
+        key="dlw",
+        label="DL Weekly",
+        path=DLW_DATA_PATH,
         id_column="record_id",
         primary_date_column="date",
         parse_dates=("date",),
         entity_label="Entries",
-        rename_columns={"Unnamed: 0": "record_id"},
-    ),
-    "tldr": DataSourceConfig(
-        key="tldr",
-        label="TL;DR",
-        path=TLDR_DATA_PATH,
-        id_column="record_id",
-        primary_date_column="date",
-        parse_dates=("date",),
-        entity_label="Summaries",
-        rename_columns={"Unnamed: 0": "record_id"},
+        rename_columns={"Unnamed: 0": "record_id", "": "record_id"},
     ),
 }
 
 EXTRA_TABLE_COLUMNS: Dict[str, List[str]] = {
     "arxiv": ["categories"],
     "hf": [],
-    "imp": [],
-    "tldr": [],
+    "dlw": [],
 }
 
 
@@ -388,7 +378,7 @@ def render_source_view_tab(view: SourceView, branch: str, selected_path: TopicPa
             labels={"month": "Month", "count": f"{entity_label} per month"},
         )
         trend_fig.update_layout(hovermode="x unified")
-        trend_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
+        trend_fig.update_xaxes(dtick="M12", tickformat="%Y", tickangle=0)
         st.plotly_chart(trend_fig, use_container_width=True)
 
     child_summaries = child_topic_summaries(selected_path, view.filtered_counts)
@@ -473,18 +463,72 @@ def compute_monthly_counts(df: pd.DataFrame, date_column: str, id_column: str) -
     return monthly_counts
 
 
-def build_combined_monthly_trends(series: List[Tuple[str, pd.DataFrame]]) -> pd.DataFrame:
+def calculate_curve(dates: Iterable[pd.Timestamp], search_radius: Tuple[int, str] = (25, "W"), n_steps: int = 100) -> Tuple[pd.DatetimeIndex, np.ndarray]:
+    """Smooth publication dates with a mirrored triangular kernel."""
+
+    dates_series = pd.Series(dates).dropna()
+    dates = pd.to_datetime(dates_series).sort_values().to_list()
+    if not dates:
+        return pd.DatetimeIndex([], name="timestamp"), np.array([])
+
+    min_date = dates[0]
+    max_date = dates[-1]
+    X = pd.date_range(start=min_date, end=max_date, periods=n_steps)
+
+    radius_td = pd.Timedelta(*search_radius)
+    sr_ns = np.timedelta64(radius_td.value, "ns")
+
+    D = np.array(dates, dtype="datetime64[ns]")
+
+    min_np = np.array(min_date, dtype="datetime64[ns]")
+    max_np = np.array(max_date, dtype="datetime64[ns]")
+    left_mask = (D - min_np) < sr_ns
+    right_mask = (max_np - D) < sr_ns
+
+    D_left = (min_np + (min_np - D[left_mask]))
+    D_right = (max_np + (max_np - D[right_mask]))
+    D_all = np.concatenate([D, D_left, D_right]) if (D_left.size or D_right.size) else D
+
+    X_np = X.to_numpy(dtype="datetime64[ns]")
+    dist = np.abs(X_np[:, None] - D_all[None, :])
+    weights = (sr_ns - dist) / sr_ns
+    weights = np.where(dist <= sr_ns, weights.astype(float), 0.0)
+    Y = weights.sum(axis=1)
+
+    return X, Y
+
+
+def build_smoothed_trend_dataframe(views: Dict[str, SourceView], search_radius_weeks: int, n_steps: int = 150) -> pd.DataFrame:
     frames: List[pd.DataFrame] = []
-    for label, monthly in series:
-        if monthly.empty:
+    radius = (search_radius_weeks, "W")
+
+    for view in views.values():
+        filtered = view.filtered_df
+        if filtered.empty:
             continue
-        frames.append(monthly.assign(dataset=label))
+
+        primary_dates = filtered[view.config.primary_date_column].dropna()
+        if primary_dates.empty:
+            continue
+
+        X, Y = calculate_curve(primary_dates, search_radius=radius, n_steps=n_steps)
+        if X.empty or Y.size == 0:
+            continue
+        frames.append(
+            pd.DataFrame(
+                {
+                    "timestamp": X,
+                    "value": Y,
+                    "dataset": view.config.label,
+                }
+            )
+        )
 
     if not frames:
-        return pd.DataFrame(columns=["month", "count", "dataset"])
+        return pd.DataFrame(columns=["timestamp", "value", "dataset"])
 
     combined = pd.concat(frames, ignore_index=True)
-    combined.sort_values("month", inplace=True)
+    combined.sort_values("timestamp", inplace=True)
     return combined
 
 
@@ -541,6 +585,22 @@ def format_branch_path(path: TopicPath) -> str:
     return " / ".join(path)
 
 
+def child_options(node: Dict | List | None) -> List[str]:
+    """Return available child labels, injecting an 'Other' catch-all where appropriate."""
+
+    if isinstance(node, dict):
+        children = list(node.keys())
+    elif isinstance(node, list):
+        children = list(node)
+    else:
+        children = []
+
+    if children and "Not relevant" not in children and "Other" not in children:
+        children.append("Other")
+
+    return sorted(children)
+
+
 def topic_selector() -> TopicPath:
     st.sidebar.subheader("Taxonomy Navigator")
 
@@ -554,7 +614,7 @@ def topic_selector() -> TopicPath:
     while True:
         label = f"Level {depth + 1}"
         if isinstance(current_node, dict):
-            options: List[Optional[str]] = [None] + sorted(current_node.keys())
+            options: List[Optional[str]] = [None] + child_options(current_node)
             selection = st.sidebar.selectbox(
                 label,
                 options,
@@ -564,10 +624,10 @@ def topic_selector() -> TopicPath:
             if selection is None:
                 break
             path.append(selection)
-            current_node = current_node.get(selection)
+            current_node = current_node.get(selection) if selection != "Other" else None
             depth += 1
         elif isinstance(current_node, list):
-            leaf_options: List[Optional[str]] = [None] + sorted(current_node)
+            leaf_options: List[Optional[str]] = [None] + child_options(current_node)
             selection = st.sidebar.selectbox(
                 label,
                 leaf_options,
@@ -632,24 +692,30 @@ def render_sunburst(
 def render_branch_overview(selected_path: TopicPath, views: Dict[str, SourceView], branch: str) -> None:
     st.header(format_branch_path(selected_path))
 
-    combined_series = [
-        (view.config.label, view.monthly_counts) for view in views.values()
-    ]
-    combined_monthly = build_combined_monthly_trends(combined_series)
+    smoothing_weeks = st.slider(
+        "Smoothing window (weeks)",
+        min_value=4,
+        max_value=100,
+        value=25,
+        help="Controls the triangular kernel radius used to smooth the activity curves.",
+        key="smoothing_window_weeks",
+    )
 
-    if not combined_monthly.empty:
-        st.subheader("Monthly activity across all sources")
-        combined_fig = px.line(
-            combined_monthly,
-            x="month",
-            y="count",
+    smoothed_df = build_smoothed_trend_dataframe(views, smoothing_weeks)
+
+    if not smoothed_df.empty:
+        st.subheader("Smoothed activity comparison")
+        curve_fig = px.line(
+            smoothed_df,
+            x="timestamp",
+            y="value",
             color="dataset",
-            markers=True,
-            labels={"month": "Month", "count": "Items per month", "dataset": "Source"},
+            labels={"timestamp": "Date", "value": "Relative activity", "dataset": "Source"},
         )
-        combined_fig.update_layout(hovermode="x unified")
-        combined_fig.update_xaxes(dtick="M1", tickformat="%b %Y")
-        st.plotly_chart(combined_fig, use_container_width=True)
+        curve_fig.update_layout(hovermode="x unified")
+        curve_fig.update_traces(mode="lines+markers")
+        curve_fig.update_xaxes(dtick="M12", tickformat="%Y", tickangle=0)
+        st.plotly_chart(curve_fig, use_container_width=True)
     else:
         st.info("No activity found for this topic across the available sources.")
 
@@ -663,7 +729,7 @@ def main() -> None:
     st.set_page_config(page_title="AI Taxonomy Trend Explorer", layout="wide")
     st.title("AI Taxonomy Trend Explorer")
     st.caption(
-        "Explore AI taxonomy topics across arXiv, Hugging Face, IMP, and TL;DR with unified monthly trends."
+        "Explore AI taxonomy topics across the long-range arXiv and DL Weekly datasets plus Hugging Face models, with adjustable smoothing."
     )
 
     sources = load_all_sources()
