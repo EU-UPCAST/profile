@@ -498,6 +498,10 @@ def calculate_curve(dates: Iterable[pd.Timestamp], search_radius: Tuple[int, str
 
     D = np.array(dates, dtype="datetime64[ns]")
 
+    # mirror at month start instead of as the first/last doc, to avoid unfairly high frequency at the edge
+    min_date = min_date.to_period("M").to_timestamp(how="start")
+    max_date = max_date.to_period("M").to_timestamp(how="end")
+
     min_np = np.array(min_date, dtype="datetime64[ns]")
     max_np = np.array(max_date, dtype="datetime64[ns]")
     left_mask = (D - min_np) < sr_ns
