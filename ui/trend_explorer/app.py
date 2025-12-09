@@ -517,6 +517,9 @@ def calculate_curve(dates: Iterable[pd.Timestamp], search_radius: Tuple[int, str
     weights = np.where(dist <= sr_ns, weights.astype(float), 0.0)
     Y = weights.sum(axis=1)
 
+    # standardize to documents per month
+    Y = Y * (pd.Timedelta(30.44, "D") / radius_td) # 30.44 days per month avg
+
     return X, Y
 
 
@@ -743,7 +746,14 @@ def render_branch_overview(selected_path: TopicPath, views: Dict[str, SourceView
             x="timestamp",
             y="value",
             color="dataset",
-            labels={"timestamp": "Date", "value": "Relative activity", "dataset": "Source"},
+            category_orders={"dataset": ["arXiv", "Hugging Face", "DL Weekly"]},
+            color_discrete_map={
+                "arXiv": "#1f77b4",
+                "Hugging Face": "#ff7f0e",
+                "DL Weekly": "#949827",
+                },
+            labels={"timestamp": "Date", "value": "Monthly activity", "dataset": "Source"},
+
         )
         curve_fig.update_layout(hovermode="x unified")
         curve_fig.update_traces(mode="lines+markers")
