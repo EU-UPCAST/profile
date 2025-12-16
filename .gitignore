@@ -1,11 +1,6 @@
 llmdap/**/__pycache__/
-llmdap/profiler/wandb/
 llmdap/profiler/openai_key.py
 llmdap/profiler/all_results**
-llmdap/profiler/output_log.txt
-llmdap/ontologies/efo.owl
-llmdap/ontologies/bto.owl
-llmdap/data/ai_news_2022_2025.csv
 *.swp
 *.pt
 .venv*
