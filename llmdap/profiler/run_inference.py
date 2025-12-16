@@ -97,7 +97,29 @@ def call_inference(
 
     return outputs
 
+def call_ieee_run(n):
+        description_type = "Title and abstract of an ieee paper"
 
+        from dataset_loader import IEEE_Dataset
+        ieee = IEEE_Dataset().get_dict_format(n)
+
+        ieee = {key: (val, description_type) for key, val in ieee.items()}
+
+        from metadata_schemas.ai_taxonomy import Traverser, ieee_Schema, get_ieee_traverser_dict
+
+        traversers = get_ieee_traverser_dict() 
+        output = call_inference(
+                schema = ieee_Schema,
+                parsed_paper_text = ieee,
+                graph_traversers = traversers,
+                return_dict_with_context = False,
+                traversal_problem_type = "text2graph",
+                # kwargs
+                save = True,
+                load = True,
+                context_shortener = "full_paper",
+                ff_model = "41n",
+                )                                        
 
 class Call_ccsv4_run:
     def __init__(self,):
@@ -184,13 +206,16 @@ def call_5_nhrf_papers():
 
 
 if __name__ == "__main__":
-    C = Call_ccsv4_run()
 
-    C.load_data(30)
-    datasets = [C.hf, C.arx, C.nls]
-    C.call_run(datasets)
+    call_ieee_run(10)
 
-    C.load_old_data(30)
-    datasets = [C.old_arx, C.old_nls]
-    C.call_run(datasets)
+    #C = Call_ccsv4_run()
+
+    #C.load_data(30)
+    #datasets = [C.hf, C.arx, C.nls]
+    #C.call_run(datasets)
+
+    #C.load_old_data(30)
+    #datasets = [C.old_arx, C.old_nls]
+    #C.call_run(datasets)
 
