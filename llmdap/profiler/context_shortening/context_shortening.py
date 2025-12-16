@@ -3,7 +3,6 @@ import pprint
 import torch
 import typing
 
-#from context_shortening import RAG
 from context_shortening.chunking import chunk_by_headeres_and_clean
 from context_shortening import keybert_functions
 from context_shortening import get_ontology_descriptions
@@ -29,106 +28,6 @@ class FullPaperShortener(ContextShortener):
     def __call__(self, **kwargs):
         return self.document
 
-
-#class CreateRetrievalPromptSignature(dspy.Signature):
-#    # dspy signature (prompt template) for sequential form filling (i.e. one field at a time), field-agnistic.
-#    """
-#    You are a RAG prompt engineer working on retrieving specific details for filling out a form, using scientific papers as the documents.
-#    Make a retrieval prompt for finding the field described below
-#    """ 
-#
-#    answer_field_name = dspy.InputField()
-#    answer_field_description = dspy.InputField()
-#    answer_field_examples = dspy.InputField()
-#
-#    answer = dspy.OutputField(desc="String to be used for retrieving the above info from the context")
-
-class RAGShortener(ContextShortener):
-    """ Retrieval implemented in the RAG.py file """
-
-    def __init__(self, embed_model, pydantic_form, retriever_type, chunk_size, chunk_overlap, similarity_k, mmr_param):
-        self.embed_model = embed_model
-        self.pydantic_form = pydantic_form
-        self.set_description_retrieval_prompt() # default : use description for retrieval
-        self.retriever_type = retriever_type
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-        self.similarity_k = similarity_k
-        self.mmr_param = mmr_param
-
-    def generate_retrieval_prompt_using_llm(self, dspy_lm):
-        """ Generate a retrieval prompt for each field using a dspy llm"""
-        dspy.settings.configure(lm=dspy_lm)
-
-        predictor = dspy.Predict(signature=CreateRetrievalPromptSignature)
-
-        # iterate through fields
-        fields = self.pydantic_form.__fields__
-        retrieval_prompts = {}
-        for fieldname in fields:
-            field = fields[fieldname]
-            
-            retrieval_prompts[fieldname] = predictor(
-                    answer_field_name = fieldname,
-                    answer_field_examples = str(field.examples),
-                    answer_field_description = field.description
-                    ).answer
-
-        print("\nretrieval prompts generated (Read through them and make sure they make sense!):")
-        pprint.pprint(retrieval_prompts)
-        self.retrieval_prompts = retrieval_prompts
-        print("")
-
-    def set_description_retrieval_prompt(self):
-        """Set the destricption of each field to be the retrieval prompt"""
-
-        # iterate through fields
-        fields = self.pydantic_form.__fields__
-        self.retrieval_prompts = {fieldname : fields[fieldname].description for fieldname in fields}
-        print("retrieval prompts generated:")
-        pprint.pprint(self.retrieval_prompts)
-
-    def set_document(self,document):
-        # make vectorstore
-        vs = RAG.VectorStoreWeave(document=document,
-                                  embed_model=self.embed_model,
-                                  chunk_size = self.chunk_size,
-                                  chunk_overlap = self.chunk_overlap,
-                                  similarity_k = self.similarity_k,
-                                  mmr_param = self.mmr_param,
-                                  )
-
-        # # Simple retriever
-        # if self.retriever_type == "simple":
-        #     self.retriever = vs.build_retriever()
-
-        # # Fancy retriever
-        # if self.retriever_type == "fusion":
-        #     self.retriever = vs.build_fusion_retriever()
-
-        # # Retriver with metadata (temporary)
-        # if self.retriever_type == "metadata":
-        #     self.retriever = vs.build_query_engine()
-
-        self.retriever = vs.build_query_engine()
-
-
-    def __call__(self, **kwargs):
-        context_nodes = self.retriever.retrieve(self.retrieval_prompts[kwargs["answer_field_name"]])
-
-        string_with_all_contexts = "\n...\n".join([node.get_text() for  node in context_nodes])
-        return string_with_all_contexts
-        #context = context_nodes[0].get_text()
-
-        # print("\nRetrieved Context:")
-        # print(context, "\n")
-
-        #print("\n\nRetrieved Context Metadata:")
-        #print(context_nodes[0].get_content(metadata_mode='all'))
-
-        # TODO: rank context nodes by similarity match with filtered ontologies for relevant fields
-
-        #return context
 
 
 
