@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, create_model
 from typing import Literal
 
 import yaml
-with open('metadata_schemas/ai_taxonomy.yaml', 'r') as file:
+with open('../ai_taxonomy.yaml', 'r') as file:
     AI_TAXONOMY= yaml.safe_load(file)
 AI_TAXONOMY = AI_TAXONOMY["AI Taxonomy"]
 
@@ -128,43 +128,9 @@ def get_v4_traverser_dict():
             }
     return traversers
 
-class ieee_Schema(BaseModel):
-    category : list[str] = Field(description = "Topic category")
 
-def get_ieee_tax():
-    with open('metadata_schemas/ieee_tax.yaml', 'r') as file:
-        IEEE_TAX = yaml.safe_load(file)
-    return IEEE_TAX
-
-def get_ieee_traverser_dict():
-    traversers = {
-        "category": Traverser(get_ieee_tax(), ["Computational and artificial intelligence"]),
-            }
-    return traversers
-
-def get_ieeefull_tax():
-    with open('metadata_schemas/ieeefull_tax.yaml', 'r') as file:
-        IEEEFULL_TAX = yaml.safe_load(file)
-    return IEEEFULL_TAX
-
-def get_ieeefull_traverser_dict():
-    traversers = {
-        "category": Traverser(get_ieeefull_tax(), []),
-            }
-    return traversers
 
 if __name__ == "__main__":
-
-    t = Traverser(get_ieee_tax(), ["Computational and artificial intelligence"])
-    t.set_traversal_type("down")
-    print(t.get_child_nodes())
-    t.move("Artificial intelligence")
-    print(t.get_child_nodes())
-    t.move("Affective computing")
-    print(t.get_child_nodes())
-    quit()
-
-
 
     t = Traverser(AI_TAXONOMY, ["Model architecture"])
     t.set_traversal_type("down")
