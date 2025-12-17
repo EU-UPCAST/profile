@@ -3,7 +3,7 @@
 Scrape the DeepLearningWeekly newsletter archive into plain text files.
 
 Usage (from repo root):
-    python scripts/scrape_deeplearningweekly.py --output-dir data/deeplearningweekly
+    python scrape_dlw.py --output-dir data/deeplearningweekly
 """
 from __future__ import annotations
 
