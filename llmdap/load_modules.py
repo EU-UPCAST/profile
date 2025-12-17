@@ -245,7 +245,6 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
                 graph_traversers = graph_traversers,
                 traversal_type = args.traversal_type,
                 traversal_max_steps = args.traversal_max_steps,
-                listify_form=args.listed_output,
                 answer_in_quotes=args.answer_in_quotes,
                 max_tokens = args.outlines_ff_max_tokens,
                 problem_type=traversal_problem_type,
@@ -255,14 +254,12 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
             form_filler = form_filling.OpenAIFormFiller(
                     model_id=model_id,
                     pydantic_form = pydantic_form,
-                    listify_form = args.listed_output,
                     max_tokens = args.openai_ff_max_tokens,
                     verbose=False)#True)
         elif args.context_shortener in ["rag", "retrieval"]:
             form_filler = form_filling.OpenAISequentialFormFiller(
                     model_id=model_id,
                     pydantic_form = pydantic_form,
-                    listify_form = args.listed_output,
                     max_tokens = args.openai_ff_max_tokens,
                     verbose=False)
         else:
@@ -270,7 +267,6 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     elif use_best_choice_generator:
         form_filler = form_filling.DirectKeywordSimilarityFiller(
                 pydantic_form=pydantic_form,
-                listify_form=args.listed_output,
                 verbose=False)
 
     else:
@@ -279,7 +275,6 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
                 outlines_llm,
                 outlines_sampler,
                 pydantic_form=pydantic_form,
-                listify_form=args.listed_output,
                 answer_in_quotes=args.answer_in_quotes,
                 max_tokens = args.outlines_ff_max_tokens)
 

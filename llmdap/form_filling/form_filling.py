@@ -12,7 +12,6 @@ from difflib import SequenceMatcher
 import openai
 
 
-from form_filling import listify_pydantic
 from form_filling import regex_handling
 
 
@@ -21,7 +20,6 @@ def make_FormFillPrompt(context,
                         answer_field_name=None, 
                         answer_field_type=None, 
                         answer_field_description=None, 
-                        listed_answer = False, 
                         prompt_for_reasoning=False,
                         reason=None
                         ):
@@ -30,8 +28,6 @@ def make_FormFillPrompt(context,
 You are to fill out values of a form based on some context from a part of a scientific paper or document.
 Use only the context to reply. If the answer is not in the context directly, make a qualified guess based on what is in the context.
 """
-    if listed_answer:
-        prompt += "Answer in list form, with as many answers as fitting.\n"
     prompt += "\n"
 
     # Add context
@@ -223,11 +219,10 @@ class FieldFiller:
     One FieldFiller is made per schema field, but used for multiple documents.
     document shortener is fed in the forwards fuction.
     """
-    def __init__(self, answer_generator, answer_in_quotes=False, listify = False, verbose=False):
+    def __init__(self, answer_generator, answer_in_quotes=False, verbose=False):
 
         self.answer_generator = answer_generator
         self.answer_in_quotes = answer_in_quotes
-        self.listify = listify
         self.verbose = verbose
 
     def forward(self, prompt_input, field_type, prompt_function = make_FormFillPrompt):
@@ -246,42 +241,10 @@ class FieldFiller:
         #print("generated answer", answer, type(answer))
         assert type(answer) is str, (answer, type(answer))
 
-        if self.listify:
-            assert answer[0] == "["
-            assert answer[-1] == "]"
 
-            # remmove space after comma
-            answer = answer.replace(", ",",")
-
-            # remove any last comma
-            if answer[-2] == ",":
-                answer = answer[:-2]+"]"
-
-            # add double quotes so its json parsable
-            if not self.answer_in_quotes:
-                answer = answer.replace("[",'["')
-                answer = answer.replace(",",'","')
-                answer = answer.replace("]",'"]')
-
-            # parse
-            try:
-                answers = json.loads(answer)
-            except json.decoder.JSONDecodeError as e:
-                print("unparsed:")
-                print(answer)
-                print([answer])
-                print(type(answer))
-                print(not self.answer_in_quotes)
-                print("")
-                raise e
-
-            answers = [self.parse_single_output(field_type, answer) for answer in answers]
-            return answers
-
-        else:
-            if self.answer_in_quotes:
-                answer=answer[1:-1] # remove quotes. Not nescessary with listify since its done by json.loads
-            return parse_single_output(field_type, answer)
+        if self.answer_in_quotes:
+            answer=answer[1:-1] # remove quotes. 
+        return parse_single_output(field_type, answer)
 
 def parse_single_output(field_type, stringoutput, answer_in_quotes = None):
     # parse string output into the given type
@@ -312,7 +275,6 @@ class SequentialFormFiller:
                  outlines_llm,
                  outlines_sampler,
                  pydantic_form = None,
-                 listify_form = False,
                  answer_in_quotes = True,
                  max_tokens = 50,
                  verbose = False
@@ -323,7 +285,6 @@ class SequentialFormFiller:
         self.max_tokens = max_tokens
 
         self.answer_in_quotes=answer_in_quotes
-        self.listify_form = listify_form
         if not pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
 
@@ -349,7 +310,6 @@ class SequentialFormFiller:
                         min_l=min_l,
                         max_l=max_l,
                         answer_in_quotes=self.answer_in_quotes,
-                        listify_form = self.listify_form,
                         sampler = self.sampler)
                 self.outlines_generators[(field_type, min_l, max_l)] = outlines_generator
 
@@ -368,7 +328,6 @@ class SequentialFormFiller:
                     answer_generator = generator,
                     verbose = self.verbose,
                     answer_in_quotes = self.answer_in_quotes,
-                    listify = self.listify_form,
                     )
 
     def re_set_pydantic_form(self,pydantic_form):
@@ -401,7 +360,6 @@ class SequentialFormFiller:
                            "answer_field_name":fieldname,
                            "answer_field_description":field.description,
                            "answer_field_type":str(field_type),
-                           "listed_answer":self.listify_form,
                             }
             context = get_context(**prompt_input)
             prompt_input["context"] = context
@@ -415,45 +373,35 @@ class SequentialFormFiller:
         if self.verbose:
             print("--INFO--: fields iterated")
 
-        # listify form
-        if self.listify_form:
-            pydantic_form = listify_pydantic.conlistify_pydantic_model(pydantic_form, min_length=1)
-        else:
-            pydantic_form = pydantic_form
+        try:
+            output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+        except pydantic_ValidationError: # outlines seem to allow non-allowable strings in rare occasions. Workaround: just choose closest allowable answer
 
-        if self.listify_form:
+            output_dict = {name : val.__str__() for name, val in output_dict.items()}
+            for name, predicted_string in output_dict.items():
+
+                field = self.fields[name]
+                field_type = field.annotation
+                if typing.get_origin(field_type) == typing.Literal: # i have only seen this problem in Literal fields
+                    allowed_answers = field_type.__args__
+                    if not predicted_string in allowed_answers: # only alter the field(s) with the problem
+                        
+                        best_similarity  = -1.0
+                        best_ans = None
+                        for ans in allowed_answers:
+                            similarity = SequenceMatcher(None, ans, predicted_string).ratio()
+                            if similarity > best_similarity:
+                                best_similarity = similarity
+                                best_ans = ans
+
+                        output_dict[name] = best_ans
+                        
+                        print("!!!!! Failed to generate allowable answer. Finding closest allowable answer instead")
+                        print("Predicted answer:", predicted_string, "while closest match is", best_ans)
+                        # log this 
+                        with open("output_log.txt", "a") as file:
+                            file.write(f"\nfound closest match: {predicted_string} -> {best_ans}\n")
             output = pydantic_form(**output_dict)
-        else:
-            # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
-            try:
-                output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
-            except pydantic_ValidationError: # outlines seem to allow non-allowable strings in rare occasions. Workaround: just choose closest allowable answer
-
-                output_dict = {name : val.__str__() for name, val in output_dict.items()}
-                for name, predicted_string in output_dict.items():
-
-                    field = self.fields[name]
-                    field_type = field.annotation
-                    if typing.get_origin(field_type) == typing.Literal: # i have only seen this problem in Literal fields
-                        allowed_answers = field_type.__args__
-                        if not predicted_string in allowed_answers: # only alter the field(s) with the problem
-                            
-                            best_similarity  = -1.0
-                            best_ans = None
-                            for ans in allowed_answers:
-                                similarity = SequenceMatcher(None, ans, predicted_string).ratio()
-                                if similarity > best_similarity:
-                                    best_similarity = similarity
-                                    best_ans = ans
-
-                            output_dict[name] = best_ans
-                            
-                            print("!!!!! Failed to generate allowable answer. Finding closest allowable answer instead")
-                            print("Predicted answer:", predicted_string, "while closest match is", best_ans)
-                            # log this 
-                            with open("output_log.txt", "a") as file:
-                                file.write(f"\nfound closest match: {predicted_string} -> {best_ans}\n")
-                output = pydantic_form(**output_dict)
 
         torch.cuda.empty_cache()
         return output
@@ -517,13 +465,11 @@ class OpenAIFormFiller:
     def __init__(self,
                  model_id,
                  pydantic_form=None,
-                 listify_form = False,
                  max_tokens = 50,
                  verbose = False
                  ):
         self.model_id = model_id
         self.verbose = verbose
-        self.listify_form = listify_form
 
 
         if not pydantic_form is None:
@@ -543,16 +489,6 @@ class OpenAIFormFiller:
 
         output_dict = {}
 
-        # listify form
-        if self.listify_form:
-            pydantic_form = listify_pydantic.conlistify_pydantic_model(pydantic_form, min_length=1)
-            raise NotImplementedError # is this just straight forward? I guess examples and descriptions need some tweeking.
-                                      # find out if this is used first, or we need do state them in prompt
-                                      # ( in that case we can make a listed prompt i guess)
-        else:
-            pydantic_form = pydantic_form
-
-
 
         # prepare context
         context = get_context()
@@ -570,7 +506,7 @@ class OpenAIFormFiller:
                                                         messages = [
                                                             {
                                                                 "role":"user",
-                                                                "content": make_FormFillPrompt(context = context, listed_answer=self.listify_form),
+                                                                "content": make_FormFillPrompt(context = context),
                                                             }
                                                         ],
                                                         response_format = pydantic_form,
@@ -610,7 +546,6 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
                       model_id,
                       subschema, # used for generation, and NOT retrieval
                       prompt_function=make_FormFillPrompt,
-                      listify=False,
                       verbose=False
                       ):
 
@@ -618,7 +553,7 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
 
         # generate answer
         generation_kwargs = dict(model = model_id,
-                                 messages = [{"role":"user", "content": prompt_function(**prompt_input, listed_answer=listify)}],
+                                 messages = [{"role":"user", "content": prompt_function(**prompt_input)}],
                                  response_format = subschema)
         try:
             completion = openai.beta.chat.completions.parse(**generation_kwargs)
@@ -637,16 +572,13 @@ def openAIFieldFiller(prompt_input, # used for retrieval and generation
         if verbose:
             print("------------called openai, model=", completion.model)
 
-        if listify:
-            raise NotImplementedError
-        else:
-            output_dict = json.loads(answer)
-            if len(output_dict) != 1:
-                print("!!!!!", output_dict)
-                raise ValueError
-            for key in output_dict:
-                value = output_dict[key]
-            return value
+        output_dict = json.loads(answer)
+        if len(output_dict) != 1:
+            print("!!!!!", output_dict)
+            raise ValueError
+        for key in output_dict:
+            value = output_dict[key]
+        return value
 
 
 
@@ -656,14 +588,12 @@ class OpenAISequentialFormFiller:
     def __init__(self,
                  model_id,
                  pydantic_form = None,
-                 listify_form = False,
                  max_tokens = 50,
                  verbose = False
                  ):
         self.model_id = model_id
         self.verbose = verbose
         self.max_tokens = max_tokens
-        self.listify_form = listify_form
         if not pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
 
@@ -712,7 +642,6 @@ class OpenAISequentialFormFiller:
                       prompt_input = prompt_input,
                       model_id = self.model_id,
                       subschema = subschema,
-                      listify=self.listify_form,
                       verbose=self.verbose,
                       )
 
@@ -721,17 +650,8 @@ class OpenAISequentialFormFiller:
         if self.verbose:
             print("--INFO--: fields iterated")
 
-        # listify form
-        if self.listify_form:
-            pydantic_form = listify_pydantic.conlistify_pydantic_model(pydantic_form, min_length=1)
-        else:
-            pydantic_form = pydantic_form
-
         # make pytantic object and return
-        if self.listify_form:
-            output = pydantic_form(**output_dict)
-        else:
-            output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+        output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
         torch.cuda.empty_cache()
         return output
 
@@ -744,15 +664,11 @@ class DirectKeywordSimilarityFiller:
     """
     def __init__(self,
                  pydantic_form = None,
-                 listify_form = False,
                  order = np.inf, # max norm works quite a bit better than sum/1- or 2-norm
                  verbose = False,
                  ):
         self.verbose = verbose
         self.order = order
-        if listify_form:
-            raise NotImplementedError # not yet (but could be relatively easy)
-        self.listify_form = listify_form
         if not pydantic_form is None:
             self.set_pydantic_form(pydantic_form)
     def set_pydantic_form(self, pydantic_form):
@@ -788,17 +704,8 @@ class DirectKeywordSimilarityFiller:
         if self.verbose:
             print("--INFO--: fields iterated")
 
-        # listify form
-        if self.listify_form:
-            pydantic_form = listify_pydantic.conlistify_pydantic_model(pydantic_form, min_length=1)
-        else:
-            pydantic_form = pydantic_form
-
-        if self.listify_form:
-            output = pydantic_form(**output_dict)
-        else:
-            # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
-            output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
+        # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
+        output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
         torch.cuda.empty_cache()
         return output
 
@@ -868,7 +775,6 @@ class AdaptiveFormFiller:
                  graph_traversers = None,
                  traversal_type = None,
                  traversal_max_steps = None,
-                 listify_form = False,
                  answer_in_quotes = True,
                  max_tokens = 50,
                  verbose = False,
@@ -879,7 +785,6 @@ class AdaptiveFormFiller:
         self.sampler = outlines_sampler
         self.verbose = verbose
         self.max_tokens = max_tokens
-        self.listify_form = listify_form
         self.starting_traversal_type = traversal_type
         self.traversal_max_steps = traversal_max_steps
 
@@ -905,7 +810,6 @@ class AdaptiveFormFiller:
                     min_l=None,
                     max_l=None,
                     answer_in_quotes=self.answer_in_quotes,
-                    listify_form = self.listify_form,
                     sampler = self.sampler)
 
             self.field_fillers[current_path_string] = FieldFiller(
@@ -973,7 +877,6 @@ class AdaptiveFormFiller:
                         prompt_input = prompt_input,
                         model_id = self.openai_model_id,
                         subschema = self.current_traverser.get_pydantic_form(),
-                        listify=self.listify_form,
                         verbose=self.verbose,
                         prompt_function=make_graph2graph_traversal_prompt if self.problem_type == "graph2graph" else make_text2graph_traversal_prompt,
                         )
