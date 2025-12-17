@@ -105,7 +105,7 @@ def call_ieee_run(n):
 
         ieee = {key: (val, description_type) for key, val in ieee.items()}
 
-        from metadata_schemas.ai_taxonomy import Traverser, ieee_Schema, get_ieee_traverser_dict
+        from metadata_schemas.taxonomy_traverser import Traverser, ieee_Schema, get_ieee_traverser_dict
 
         traversers = get_ieee_traverser_dict() 
         output = call_inference(
@@ -153,7 +153,7 @@ class Call_ccsv4_run:
 
     def call_run(self,datasets):
 
-        from metadata_schemas.ai_taxonomy import Traverser, v4_Schema, get_v4_traverser_dict
+        from metadata_schemas.taxonomy_traverser import Traverser, v4_Schema, get_v4_traverser_dict
 
         traversers = get_v4_traverser_dict() 
         for dataset in datasets:

@@ -1,4 +1,4 @@
-llmdap/**/__pycache__/
+**/__pycache__/
 llmdap/profiler/openai_key.py
 llmdap/profiler/all_results**
 *.swp
