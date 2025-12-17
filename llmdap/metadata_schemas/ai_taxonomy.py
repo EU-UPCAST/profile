@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field, create_model
 from typing import Literal
 
 import yaml
-with open('../ai_taxonomy.yaml', 'r') as file:
+with open('../../taxonomies/ai_taxonomies.yaml', 'r') as file:
     AI_TAXONOMY= yaml.safe_load(file)
 AI_TAXONOMY = AI_TAXONOMY["AI Taxonomy"]
 
