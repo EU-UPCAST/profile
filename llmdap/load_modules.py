@@ -1,4 +1,3 @@
-import weave
 import outlines
 import openai
 import importlib
@@ -26,7 +25,6 @@ def remove_empty_fields(labels):
     return [field for field in labels.keys() if len(labels[field]) == 0]
 
 
-@weave.op() # log args
 def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None, inference_schema = None, graph_traversers =None, traversal_problem_type=None):
     """
     prepare arguments, then call fill_out_forms 
@@ -34,11 +32,6 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     inference_schema : for running inference, schema is provided here instead of through dataset.
     adaptive_schema : for traversal, use one adaptive schema for each step, and use inference schema for field for full prediction.
     """
-
-    # log arguments
-    if args.log_to_weave:
-        weave.init(project_name = "upcast_profiler",
-                   )
 
     # load llm
     model_is_openai = False

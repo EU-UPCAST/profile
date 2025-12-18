@@ -131,8 +131,3 @@ query_storage__args:
     save:
         default: True
         help: "wether to save results to json"
-
-other__args:
-    log_to_weave:
-        default: False #True
-        help: "Log inputs/outputs to weave"

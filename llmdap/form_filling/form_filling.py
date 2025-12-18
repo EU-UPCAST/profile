@@ -3,7 +3,6 @@ from pydantic import constr
 from pydantic_core._pydantic_core import ValidationError as pydantic_ValidationError
 import pydantic
 import typing
-import weave
 import json
 import copy
 import pprint
@@ -338,7 +337,6 @@ class SequentialFormFiller:
         self.fields = pydantic_form.__fields__ 
 
 
-    @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
         pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
@@ -481,7 +479,6 @@ class OpenAIFormFiller:
     def re_set_pydantic_form(self, pydantic_form):
         self.set_pydantic_form(pydantic_form)
 
-    @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
         pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields, remove_maxlength= True)
@@ -541,7 +538,6 @@ class OpenAIFormFiller:
 # openai sequential
 ###
 
-@weave.op()
 def openAIFieldFiller(prompt_input, # used for retrieval and generation
                       model_id,
                       subschema, # used for generation, and NOT retrieval
@@ -603,7 +599,6 @@ class OpenAISequentialFormFiller:
     def re_set_pydantic_form(self, pydantic_form):
         self.set_pydantic_form(pydantic_form)
 
-    @weave.op()
     def forward(self, get_context, exclude_fields = []):
 
         pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
@@ -656,109 +651,6 @@ class OpenAISequentialFormFiller:
         return output
 
 
-
-class DirectKeywordSimilarityFiller:
-    """
-    Replaces the sequential form filler when using the direct keyword similarity approach.
-    Retrieves similarity matrices instead of chunks, uses the best match as answer instead of generating using llm
-    """
-    def __init__(self,
-                 pydantic_form = None,
-                 order = np.inf, # max norm works quite a bit better than sum/1- or 2-norm
-                 verbose = False,
-                 ):
-        self.verbose = verbose
-        self.order = order
-        if not pydantic_form is None:
-            self.set_pydantic_form(pydantic_form)
-    def set_pydantic_form(self, pydantic_form):
-        self.pydantic_form = pydantic_form
-        self.fields = pydantic_form.__fields__ 
-    def re_set_pydantic_form(self, pydantic_form):
-        self.set_pydantic_form(pydantic_form)
-
-
-    @weave.op()
-    def forward(self, context_shortener, exclude_fields = []):
-
-        pydantic_form = get_subschema(self.pydantic_form, exclude_fields = exclude_fields)
-
-        fields = pydantic_form.__fields__
-        output_dict = {}
-
-        # iterate through fields
-        if self.verbose:
-            print("--INFO--:starting to iterate through fields")
-        for fieldname in fields:
-            field = fields[fieldname]
-            field_type = field.annotation
-
-
-
-            # generate output
-            output = self.get_best_answer_for_field(context_shortener, fieldname, field_type)
-            self.contexts = {} # entire paper used
-
-            output_dict[fieldname] = output
-
-        if self.verbose:
-            print("--INFO--: fields iterated")
-
-        # remove weave stuff that raises erros for pydantic validator (i.e. change type from weave.trace.box.boxedstr to str)
-        output = pydantic_form(**{name : val.__str__() for name, val in output_dict.items()})
-        torch.cuda.empty_cache()
-        return output
-
-    def get_best_answer_for_field(self, context_shortener, fieldname, field_type):
-
-        target_keywords = context_shortener.target_keywords[fieldname] # strings to match (e.g. ontology node labels or allowed answers)
-        target_keywords = [t.lower() for t in target_keywords] # to lower, to match the allowed answers
-        if getattr(field_type, "__origin__", None) is typing.Literal:
-            allowed_answers = field_type.__args__
-
-
-            for ans in allowed_answers:
-                assert ans in target_keywords # if not all allowed answers are in the targets, it will not be possible to predict them (could still try predicting the others in certain cases i guess - e.g. ignoring "other", then predict other if best match is not good (future work)
-            allowed_indices = []
-            for i, kw in enumerate(target_keywords):
-                if kw in allowed_answers:
-                    allowed_indices.append(i)
-        else:
-            allowed_indices = list(range(len(target_keywords)))
-
-
-        # get similarities
-        similarities = context_shortener.get_similarity_matrices(fieldname)
-
-        # prep similarities:
-        prepared_similarities = []
-        for (similarity, kw_scores) in similarities:
-            
-            # only keep allowed answers
-            similarity = similarity[:,allowed_indices]
-
-            # clip minimum to 0, to ignore negatives when using norms later
-            similarity = similarity.clip(min=0)
-
-            # adjust for keyword scores
-            kw_scores = torch.Tensor(kw_scores)
-            similarity = torch.matmul(similarity.T, kw_scores)
-
-            prepared_similarities.append(similarity)
-
-        # to numpy array
-        prepared_similarities = np.array([sim.numpy() for sim in prepared_similarities])
-
-        # calculate which answer/node matches the chunks best
-        best_match_index = self.calculate_best_match(prepared_similarities)
-        best_string = target_keywords[allowed_indices[best_match_index]]
-        #print("best string:", best_string)
-        return best_string
-
-    def calculate_best_match(self, similarities):
-        scores_per_node = np.linalg.norm(similarities, ord=self.order, axis=0)
-        am = np.argmax(scores_per_node)
-        return am
 
 
 
@@ -822,7 +714,6 @@ class AdaptiveFormFiller:
 
 
 
-    @weave.op()
     def recursive_forward(self, get_context, exclude_fields = []):
         current_path = self.current_traverser.current_path
         current_path_string = "__".join(current_path)
@@ -907,7 +798,6 @@ class AdaptiveFormFiller:
 
 
 
-    @weave.op()
     def single_traverser_forward(self, get_context, exclude_fields = []):
         self.current_traverser.reset_position() # can add another node to start from (from e.g. similarity match)
         self.current_traverser.set_traversal_type(self.starting_traversal_type)
@@ -928,7 +818,6 @@ class AdaptiveFormFiller:
 
 
 
-    @weave.op()
     def forward(self, get_context, exclude_fields = []):
         if type(self.graph_traversers) == dict:
             output_dict = {}

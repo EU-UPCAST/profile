@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import weave
 import pprint
 import pydantic
 from typing import Optional
@@ -118,7 +117,6 @@ class FormFillingIterator:
         self.mode = args.pop("mode")
         self.fields_length = args.pop("fields_length")
         args.pop("dataset_length")
-        args.pop("log_to_weave")
         self.argstring = str(sorted(args.items()))
 
         self.dataset_name = args["dataset"]
@@ -134,7 +132,6 @@ class FormFillingIterator:
         self.skips = 0
 
 
-    @weave.op()
     def __call__(self):
         # make sure we have correct inputs
         if self.documents is None:
@@ -250,7 +247,6 @@ class FormFillingIterator:
                 self.fill_single_form(key,paper_text)
 
 
-    @weave.op()
     def fill_single_form(self, key, paper_text, paper_labels=None, pydantic_form=None, return_dict_with_context=False):
         if pydantic_form is None:
             pydantic_form = self.form_filler.pydantic_form
