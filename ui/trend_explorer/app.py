@@ -16,9 +16,8 @@ import streamlit as st
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PROFILER_DIR = REPO_ROOT / "llmdap" / "profiler"
-TREND_DATA_DIR = PROFILER_DIR / "trend_csvs"
-TAXONOMY_PATH = PROFILER_DIR / "metadata_schemas" / "ai_taxonomy.yaml"
+TREND_DATA_DIR = REPO_ROOT / "output_labels"
+TAXONOMY_PATH = REPO_ROOT / "taxonomies" / "ai_taxonomies.yaml"
 TopicPath = Tuple[str, ...]
 
 BRANCH_DEFINITIONS: Tuple[Tuple[str, str], ...] = (
