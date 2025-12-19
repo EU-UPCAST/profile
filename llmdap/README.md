@@ -29,6 +29,6 @@ python llmdap/run_inference.py
 - `llmdap/run_inference.py`: programmatic API for single or small-batch runs.
 - `llmdap/arguments.yaml`: CLI argument defaults and help text.
 - `llmdap/metadata_schemas/`: pydantic schemas and taxonomy traversers.
-- `llmdap/context_shortening/`: context selection and retrieval utilities.
+- `llmdap/context_shortening/`: this file is used for context selection (retrieval) in llmdap, however, in this experiment we only use the entire context.
 - `llmdap/form_filling/`: prompt templates and form-filling logic.
 - `llmdap/dataset_loader.py`: dataset loading/parsing helpers.
