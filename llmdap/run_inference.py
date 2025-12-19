@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 def add_defaults(parameters):
     """ given parameters for a run, add default values for all fields that are not included (from arguments.yaml) """
-    with open("arguments.yaml", "r") as f:
+    with open("llmdap/arguments.yaml", "r") as f:
         argument_template = yaml.safe_load(f)
 
     for argtype in argument_template:
