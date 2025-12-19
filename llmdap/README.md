@@ -6,21 +6,21 @@ form filling.
 ## Setup
 
 
-setup environment:
+setup environment (from repo root):
 ```
 conda create --name llmdap python==3.10.14
 conda activate llmdap
-pip install -r requirements.txt
+pip install -r llmdap/requirements.txt
 pip install --upgrade werkzeug==2.3.8
 ```
 (werkzeug must be downgraded from the required version, causing a warning)
 
-If using openAI api, you can add your key to `llmdap/openay_key.py`
+If using the OpenAI API, add your key to `llmdap/openai_key.py`
 
 ## Run (example)
 
 ```bash
-python run_inference.py
+python llmdap/run_inference.py
 ```
 
 ## Key paths

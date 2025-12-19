@@ -2,13 +2,21 @@
 # Note, as we first used the same duration for all datasets, some of the code loads arxiv only from 2022, then another part loads pre 2022. These are combined later.
 
 
-import json
 import glob
+import json
+import os
+from pathlib import Path
+
 import pandas as pd
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("TREND_DATA_DIR", REPO_ROOT / "data"))
 
 
-def _load_hf_timeline(hf_data_path: str = "/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/train") -> "pd.DataFrame":
+
+def _load_hf_timeline(
+    hf_data_path: str = str(DATA_ROOT / "model_cards_with_metadata" / "train"),
+) -> "pd.DataFrame":
     import pandas as pd
     import pyarrow as pa
     import pyarrow.ipc as ipc
@@ -39,7 +47,9 @@ def _load_hf_timeline(hf_data_path: str = "/mnt/data/upcast/data/trend_analysis/
     return df
 
 
-def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv") -> "pd.DataFrame":
+def _load_arxiv_timeline(
+    arxiv_csv_path: str = str(DATA_ROOT / "arxiv_ai_taxonomy_papers.csv"),
+) -> "pd.DataFrame":
     import pandas as pd
 
     df = pd.read_csv(arxiv_csv_path, index_col=0, low_memory=False)
@@ -47,9 +57,11 @@ def _load_arxiv_timeline(arxiv_csv_path: str = "/mnt/data/upcast/data/arxiv_ai_t
     return df
 
 
-def _load_newsletter_timelines(csv_paths  = [
-            "/mnt/data/upcast/data/dlweekly_stories.csv"
-            ]):
+def _load_newsletter_timelines(
+    csv_paths=(
+        str(DATA_ROOT / "dlweekly_stories.csv"),
+    ),
+):
     import pandas as pd
 
     dfs = []
