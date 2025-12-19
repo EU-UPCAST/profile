@@ -1,7 +1,13 @@
 # This file downloads arxiv and HF datasets
 
 import json
+import os
+from pathlib import Path
+
 import pandas as pd
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DATA_ROOT = Path(os.environ.get("TREND_DATA_DIR", REPO_ROOT / "data"))
 
 def download_latest_arxiv_data():
     import kagglehub
@@ -46,5 +52,7 @@ def update_HF_dataset(path):
 
 
 if __name__ == "__main__":
-    update_arxiv_file(path = "/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv")
-    update_HF_dataset(path = "/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/")
+    arxiv_path = DATA_ROOT / "arxiv_ai_taxonomy_papers.csv"
+    hf_path = DATA_ROOT / "model_cards_with_metadata"
+    update_arxiv_file(path=arxiv_path)
+    update_HF_dataset(path=hf_path)

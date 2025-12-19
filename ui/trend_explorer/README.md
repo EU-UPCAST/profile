@@ -2,7 +2,7 @@
 
 This directory contains a standalone Streamlit interface for exploring the
 custom ACM CCS hierarchy against the long-range trend datasets under
-`llmdap/profiler/trend_csvs` (`arx_long_trends.csv.bz2`, `dlw_long_trends.csv.bz2`,
+`output_labels` (`arx_long_trends.csv.bz2`, `dlw_long_trends.csv.bz2`,
 and `hf_trends.csv.bz2`).
 
 ## Quick start
