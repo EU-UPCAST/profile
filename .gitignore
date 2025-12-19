@@ -1,6 +1,6 @@
 **/__pycache__/
-llmdap/profiler/openai_key.py
-llmdap/profiler/all_results**
+llmdap/openai_key.py
+llmdap/all_results**
 *.swp
 *.pt
 .venv*

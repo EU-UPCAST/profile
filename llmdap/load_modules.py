@@ -6,7 +6,7 @@ import torch
 import dataset_loader
 import metadata_schemas 
 import form_filling
-import evaluation
+#import evaluation
 import context_shortening
 
 import nltk
@@ -287,7 +287,7 @@ def load_modules(args, preloaded_outlines_model = None, preloaded_dataset = None
     prepared_kwargs = dict(
             context_shortener = context_shortener,
             form_filler = form_filler,
-            evaluation_fnc=evaluation.score_general_prediction,
+            #evaluation_fnc=evaluation.score_general_prediction,
             remove_fields = remove_fields,
             **dataset_kwargs
             )
