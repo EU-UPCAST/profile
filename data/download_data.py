@@ -10,12 +10,12 @@ def download_latest_arxiv_data():
     path = kagglehub.dataset_download("Cornell-University/arxiv")
     return path
 
-def update_arxiv_file():
-    path = download_latest_arxiv_data()
-    path += "/arxiv-metadata-oai-snapshot.json"
+def update_arxiv_file(path):
+    download_path = download_latest_arxiv_data()
+    download_path += "/arxiv-metadata-oai-snapshot.json"
 
     arxiv_data = []  # create empty list
-    for line in open(path, 'r'):  # open file line by line
+    for line in open(download_path, 'r'):  # open file line by line
         arxiv_data.append(json.loads(line))  # append data to the initially created list
 
     df = pd.DataFrame.from_records(arxiv_data)  # convert data to dataframe
@@ -37,10 +37,14 @@ def update_arxiv_file():
         lambda x: x[0]['created'] if isinstance(x, list) and len(x) > 0 and 'created' in x[0] else None)
 
     df["submission_date"] = pd.to_datetime(df["submission_date"])
-    df.to_csv("/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv")
+    df.to_csv(path)
 
-def update_HF_dataset():
+def update_HF_dataset(path):
     from datasets import load_dataset
     ds = load_dataset("librarian-bots/model_cards_with_metadata")
-    ds.save_to_disk("/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/")
+    ds.save_to_disk(path)
 
+
+if __name__ == "__main__":
+    update_arxiv_file(path = "/mnt/data/upcast/data/arxiv_ai_taxonomy_papers.csv")
+    update_HF_dataset(path = "/mnt/data/upcast/data/trend_analysis/model_cards_with_metadata/")

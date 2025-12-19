@@ -2,7 +2,7 @@
 """
 Scrape the DeepLearningWeekly newsletter archive into plain text files.
 
-Usage (from repo root):
+Usage:
     python scrape_dlw.py --output-dir data/deeplearningweekly
 """
 from __future__ import annotations
